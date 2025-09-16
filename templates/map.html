@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Interactive Map - Catanduanes Connect{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+    #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+        z-index: 1;
+        border: 1px solid #ccc;
+        position: relative;
+    }
+    .map-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        background: white;
+        padding: 10px;
+        border-radius: 4px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .map-legend {
+        position: absolute;
+        bottom: 20px;
+        right: 10px;
+        z-index: 1000;
+        background: white;
+        padding: 10px;
+        border-radius: 4px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        margin: 5px 0;
+    }
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        margin-right: 8px;
+        border-radius: 50%;
+    }
+    .business-cluster {
+        background-color: #007bff;
+    }
+    .job-cluster {
+        background-color: #28a745;
+    }
+    .user-location {
+        background-color: #dc3545;
+    }
+    .map-loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        background: #f8f9fa;
+    }
+    .map-error {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        background: #f8f9fa;
+        color: #dc3545;
+        padding: 20px;
+        text-align: center;
+    }
+    .leaflet-container {
+        height: 100%;
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Interactive Map</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="position-relative">
+                <!-- Map Controls -->
+                <div class="map-controls">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="showBusinesses" checked disabled>
+                        <label class="form-check-label" for="showBusinesses">
+                            Show Businesses
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="showJobs" checked disabled>
+                        <label class="form-check-label" for="showJobs">
+                            Show Jobs
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="showUserLocation" checked disabled>
+                        <label class="form-check-label" for="showUserLocation">
+                            Show My Location
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Map Legend -->
+                <div class="map-legend">
+                    <h6 class="mb-2">Legend</h6>
+                    <div class="legend-item">
+                        <div class="legend-color business-cluster"></div>
+                        <span>Businesses</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color job-cluster"></div>
+                        <span>Jobs</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color user-location"></div>
+                        <span>Your Location</span>
+                    </div>
+                </div>
+
+                <!-- Map Container -->
+                <div id="map" style="height: 600px; width: 100%;">
+                    <iframe
+                        width="100%"
+                        height="600"
+                        frameborder="0" style="border:0"
+                        src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15797.5!2d124.210439!3d13.581149!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTPCsDM0JzUyLjEiTiAxMjTCsDEyJzM3LjYiRQ!5e0!3m2!1sen!2sph!4v1710000000000!5m2!1sen!2sph&markers=color:blue%7Clabel:B%7C13.581149,124.210439&markers=color:green%7Clabel:J%7C13.581149,124.210439&markers=color:red%7Clabel:U%7C13.581149,124.210439&markers=color:blue%7Clabel:B%7C13.585,124.215&markers=color:blue%7Clabel:B%7C13.575,124.205&markers=color:green%7Clabel:J%7C13.580,124.220&markers=color:green%7Clabel:J%7C13.570,124.200"
+                        allowfullscreen=""
+                        aria-hidden="false"
+                        tabindex="0">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- No map JS needed for Google Maps embed -->
+{% endblock %} 

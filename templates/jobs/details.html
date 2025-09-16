@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{{ job.title }} - Catanduanes Connect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('jobs') }}">Jobs</a></li>
+            <li class="breadcrumb-item active">{{ job.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Job Details -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h1 class="card-title h2 mb-3">{{ job.title }}</h1>
+                    <div class="mb-3">
+                        <span class="badge bg-primary me-2">{{ job.job_type }}</span>
+                        <span class="badge bg-secondary me-2">{{ job.location }}</span>
+                        <span class="badge bg-info">{{ job.category }}</span>
+                    </div>
+                    
+                    <h5 class="mt-4">Job Description</h5>
+                    <p class="card-text">{{ job.description }}</p>
+                    
+                    <h5 class="mt-4">Requirements</h5>
+                    <p class="card-text">{{ job.requirements }}</p>
+                    
+                    {% if job.salary %}
+                    <h5 class="mt-4">Salary</h5>
+                    <p class="card-text">{{ job.salary }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Business Info and Apply -->
+        <div class="col-lg-4">
+            <!-- Business Info -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">About the Business</h5>
+                    <h6 class="card-subtitle mb-3">
+                        <a href="{{ url_for('business_details', id=job.business.id) }}" class="text-decoration-none">
+                            {{ job.business.name }}
+                        </a>
+                    </h6>
+                    <p class="card-text">{{ job.business.description[:200] }}...</p>
+                    <a href="{{ url_for('business_details', id=job.business.id) }}" class="btn btn-outline-primary btn-sm">
+                        View Business Profile
+                    </a>
+                </div>
+            </div>
+
+            <!-- Apply Button -->
+            {% if current_user.is_authenticated %}
+                {% if current_user.role == 'job_seeker' %}
+                    {% if has_applied %}
+                        <div class="alert alert-info">
+                            You have already applied for this job.
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('apply_job', id=job.id) }}" class="btn btn-primary btn-lg w-100">
+                            Apply Now
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-warning">
+                        Only job seekers can apply for jobs.
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    Please <a href="{{ url_for('login') }}">log in</a> as a job seeker to apply for this job.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

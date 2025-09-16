@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Business Owner Dashboard - Catanduanes Connect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ current_user.name }}</h5>
+                    <p class="text-muted">{{ current_user.email }}</p>
+                    <a href="{{ url_for('profile', user_id=current_user.id) }}" class="btn btn-outline-primary">Edit Profile</a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Business Profile</h5>
+                    {% if business %}
+                        <div class="mb-3">
+                            <h6>{{ business.name }}</h6>
+                            <p class="text-muted mb-2">{{ business.category }}</p>
+                            <p class="mb-2">{{ business.location }}</p>
+                            <a href="{{ url_for('business_details', business_id=business.id) }}" class="btn btn-sm btn-outline-primary">View Profile</a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No business profile yet.</p>
+                        <a href="{{ url_for('create_business') }}" class="btn btn-primary">Create Business Profile</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Active Job Listings</h5>
+                        {% if business %}
+                            <a href="{{ url_for('post_job') }}" class="btn btn-primary">Post New Job</a>
+                        {% endif %}
+                    </div>
+                    <div class="list-group">
+                        {% if jobs %}
+                            {% for job in jobs %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ job.title }}</h6>
+                                    <small class="text-muted">{{ job.created_at.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                                <p class="mb-1">{{ job.job_type }} • {{ job.location }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Applications: <span class="badge bg-primary">0</span></small>
+                                    <a href="{{ url_for('job_details', job_id=job.id) }}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">No active job listings.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Applications</h5>
+                    <div class="list-group">
+                        {% if applications %}
+                            {% for application in applications %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ application.job.title }}</h6>
+                                    <small class="text-muted">{{ application.created_at.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                                <p class="mb-1">Applicant: {{ application.applicant.name }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Status: <span class="badge bg-{{ application.status }}">{{ application.status }}</span></small>
+                                    <a href="#" class="btn btn-sm btn-outline-primary">View Application</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">No applications yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

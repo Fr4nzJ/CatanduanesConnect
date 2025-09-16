@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Find Jobs - Catanduanes Connect{% endblock %}
+
+{% block styles %}
+<style>
+    .search-section {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+        padding: 60px 0;
+        margin-bottom: 40px;
+    }
+
+    .filter-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .job-card {
+        border: none;
+        border-radius: 15px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        margin-bottom: 20px;
+        background: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .job-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .job-type-badge {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .job-type-full-time {
+        background: #e3f2fd;
+        color: #1976d2;
+    }
+
+    .job-type-part-time {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .job-type-contract {
+        background: #fff3e0;
+        color: #f57c00;
+    }
+
+    .company-logo {
+        width: 60px;
+        height: 60px;
+        border-radius: 10px;
+        object-fit: cover;
+    }
+
+    .pagination .page-link {
+        border-radius: 5px;
+        margin: 0 2px;
+        color: #0d6efd;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .search-input {
+        border-radius: 30px;
+        padding: 12px 25px;
+        border: none;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .search-input:focus {
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .filter-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 8px;
+    }
+
+    .salary-badge {
+        background: #e8f5e9;
+        color: #2e7d32;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Search Section -->
+<section class="search-section">
+    <div class="container">
+        <h1 class="display-5 fw-bold mb-4">Find Your Dream Job</h1>
+        <form action="{{ url_for('jobs') }}" method="GET" class="row g-3">
+            <div class="col-md-6">
+                <input type="text" name="q" class="form-control search-input" placeholder="Search jobs, companies, or keywords..." value="{{ request.args.get('q', '') }}">
+            </div>
+            <div class="col-md-3">
+                <select name="job_type" class="form-select search-input">
+                    <option value="">All Job Types</option>
+                    <option value="full-time" {% if request.args.get('job_type') == 'full-time' %}selected{% endif %}>Full Time</option>
+                    <option value="part-time" {% if request.args.get('job_type') == 'part-time' %}selected{% endif %}>Part Time</option>
+                    <option value="contract" {% if request.args.get('job_type') == 'contract' %}selected{% endif %}>Contract</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="location" class="form-select search-input">
+                    <option value="">All Locations</option>
+                    <option value="Virac" {% if request.args.get('location') == 'Virac' %}selected{% endif %}>Virac</option>
+                    <option value="San Andres" {% if request.args.get('location') == 'San Andres' %}selected{% endif %}>San Andres</option>
+                    <option value="Caramoran" {% if request.args.get('location') == 'Caramoran' %}selected{% endif %}>Caramoran</option>
+                    <!-- Add more locations as needed -->
+                </select>
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- Main Content -->
+<div class="container">
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3">
+            <div class="filter-card">
+                <h5 class="mb-4">Filters</h5>
+                <form action="{{ url_for('jobs') }}" method="GET" id="filter-form">
+                    <div class="mb-4">
+                        <label class="filter-label">Category</label>
+                        <select name="category" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Categories</option>
+                            <option value="Technology" {% if request.args.get('category') == 'Technology' %}selected{% endif %}>Technology</option>
+                            <option value="Healthcare" {% if request.args.get('category') == 'Healthcare' %}selected{% endif %}>Healthcare</option>
+                            <option value="Education" {% if request.args.get('category') == 'Education' %}selected{% endif %}>Education</option>
+                            <option value="Business" {% if request.args.get('category') == 'Business' %}selected{% endif %}>Business</option>
+                            <!-- Add more categories as needed -->
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="filter-label">Experience Level</label>
+                        <select name="experience" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Levels</option>
+                            <option value="entry" {% if request.args.get('experience') == 'entry' %}selected{% endif %}>Entry Level</option>
+                            <option value="mid" {% if request.args.get('experience') == 'mid' %}selected{% endif %}>Mid Level</option>
+                            <option value="senior" {% if request.args.get('experience') == 'senior' %}selected{% endif %}>Senior Level</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Job Listings -->
+        <div class="col-lg-9">
+            {% if jobs %}
+                {% for job in jobs %}
+                <div class="job-card">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <img src="{{ job.business.logo_url or url_for('static', filename='images/default-company.png') }}" alt="{{ job.business.name }}" class="company-logo">
+                            </div>
+                            <div class="col">
+                                <h4 class="card-title mb-1">{{ job.title }}</h4>
+                                <p class="text-muted mb-2">{{ job.business.name }}</p>
+                                <div class="d-flex gap-2 mb-3">
+                                    <span class="job-type-badge job-type-{{ job.job_type.lower() }}">{{ job.job_type }}</span>
+                                    <span class="salary-badge">₱{{ job.salary }}</span>
+                                </div>
+                                <p class="card-text mb-3">{{ job.description[:200] }}...</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-map-marker-alt text-muted me-2"></i>
+                                        <span class="text-muted">{{ job.location }}</span>
+                                    </div>
+                                    <a href="{{ url_for('job_details', id=job.id) }}" class="btn btn-primary">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if pagination.pages > 1 %}
+                <nav aria-label="Job listings pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% for page in pagination.iter_pages() %}
+                            <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('jobs', page=page, **request.args) }}">{{ page }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h3>No jobs found</h3>
+                    <p class="text-muted">Try adjusting your search criteria</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-submit form when filters change
+    document.querySelectorAll('.filter-card select').forEach(select => {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Create Business - Catanduanes Connect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Create Business Profile</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('create_business') }}">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Business Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="location" name="location" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" id="category" name="category" required>
+                            <option value="">Select a category</option>
+                            <option value="retail">Retail</option>
+                            <option value="restaurant">Restaurant</option>
+                            <option value="hotel">Hotel</option>
+                            <option value="service">Service</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="phone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone" name="phone">
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email">
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="website" class="form-label">Website</label>
+                        <input type="url" class="form-control" id="website" name="website">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="latitude" class="form-label">Latitude</label>
+                        <input type="number" class="form-control" id="latitude" name="latitude" step="any" value="13.5">
+                        <div class="form-text">Default is centered on Catanduanes (13.5)</div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="longitude" class="form-label">Longitude</label>
+                        <input type="number" class="form-control" id="longitude" name="longitude" step="any" value="124.3">
+                        <div class="form-text">Default is centered on Catanduanes (124.3)</div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="size" class="form-label">Business Size</label>
+                    <select class="form-select" id="size" name="size" required>
+                        <option value="">Select business size</option>
+                        <option value="small">Small (1-10 employees)</option>
+                        <option value="medium">Medium (11-50 employees)</option>
+                        <option value="large">Large (51+ employees)</option>
+                    </select>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">Create Business Profile</button>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add map picker functionality here if needed
+    // This could be implemented using a map library like Leaflet.js
+    // to allow users to pick their location on a map
+});
+</script>
+{% endblock %} 

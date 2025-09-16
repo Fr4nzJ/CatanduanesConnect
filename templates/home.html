@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to Catanduanes Connect{% endblock %}
+
+{% block styles %}
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+        padding: 100px 0;
+        margin-bottom: 50px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('https://images.unsplash.com/photo-1573164713988-8665fc963095?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') center/cover;
+        opacity: 0.1;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .feature-card {
+        border: none;
+        border-radius: 15px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+        background: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #0d6efd;
+    }
+
+    .cta-section {
+        background: #f8f9fa;
+        padding: 80px 0;
+        margin-top: 50px;
+    }
+
+    .btn-custom {
+        padding: 12px 30px;
+        border-radius: 30px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .stats-section {
+        background: white;
+        padding: 40px 0;
+        margin: 50px 0;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 20px;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #0d6efd;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        font-size: 1.1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center hero-content">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Welcome to Catanduanes Connect</h1>
+                <p class="lead mb-4">Your gateway to opportunities in Catanduanes. Connect with local businesses, find your dream job, and grow your career in our vibrant community.</p>
+                {% if not current_user.is_authenticated %}
+                <div class="d-flex gap-3">
+                    <a href="{{ url_for('signup') }}" class="btn btn-light btn-custom">Get Started</a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-custom">Sign In</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 stat-item">
+                <div class="stat-number">100+</div>
+                <div class="stat-label">Local Businesses</div>
+            </div>
+            <div class="col-md-4 stat-item">
+                <div class="stat-number">500+</div>
+                <div class="stat-label">Job Opportunities</div>
+            </div>
+            <div class="col-md-4 stat-item">
+                <div class="stat-number">1000+</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="container mb-5">
+    <h2 class="text-center mb-5">Discover Our Features</h2>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-briefcase feature-icon"></i>
+                    <h3 class="card-title h4">Job Portal</h3>
+                    <p class="card-text">Find your dream job with our comprehensive job search platform. Browse listings, apply directly, and track your applications.</p>
+                    <a href="{{ url_for('jobs') }}" class="btn btn-primary btn-custom mt-3">Find Jobs</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-building feature-icon"></i>
+                    <h3 class="card-title h4">Business Directory</h3>
+                    <p class="card-text">Explore local businesses, read reviews, and connect with employers. Find the perfect match for your career goals.</p>
+                    <a href="{{ url_for('businesses') }}" class="btn btn-primary btn-custom mt-3">Browse Businesses</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-map-marked-alt feature-icon"></i>
+                    <h3 class="card-title h4">Interactive Map</h3>
+                    <p class="card-text">Visualize job opportunities and business locations across Catanduanes. Find the perfect location for your next career move.</p>
+                    <a href="{{ url_for('map') }}" class="btn btn-primary btn-custom mt-3">View Map</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Additional Features -->
+<section class="container mb-5">
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card feature-card">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-robot feature-icon"></i>
+                    <h3 class="card-title h4">AI Assistant</h3>
+                    <p class="card-text">Get personalized job recommendations and assistance from our AI-powered chatbot. Find opportunities tailored to your skills and preferences.</p>
+                    <a href="{{ url_for('chatbot') }}" class="btn btn-primary btn-custom mt-3">Chat Now</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card feature-card">
+                <div class="card-body text-center p-4">
+                    <i class="fas fa-user-circle feature-icon"></i>
+                    <h3 class="card-title h4">Profile Management</h3>
+                    <p class="card-text">Create and manage your professional profile. Upload your resume, showcase your skills, and get discovered by employers.</p>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('profile') }}" class="btn btn-primary btn-custom mt-3">View Profile</a>
+                    {% else %}
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary btn-custom mt-3">Create Profile</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container text-center">
+        <h2 class="mb-4">Ready to Start Your Journey?</h2>
+        <p class="lead mb-4">Join our community and discover endless opportunities in Catanduanes.</p>
+        {% if not current_user.is_authenticated %}
+        <a href="{{ url_for('signup') }}" class="btn btn-primary btn-custom">Join Now</a>
+        {% else %}
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-custom">Go to Dashboard</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add animation on scroll
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.feature-card');
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        });
+
+        cards.forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'all 0.5s ease-out';
+            observer.observe(card);
+        });
+    });
+</script>
+{% endblock %} 

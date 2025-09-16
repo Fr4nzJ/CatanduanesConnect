@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Job Seeker Dashboard - Catanduanes Connect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ current_user.name }}</h5>
+                    <p class="text-muted">{{ current_user.email }}</p>
+                    <a href="{{ url_for('profile', user_id=current_user.id) }}" class="btn btn-outline-primary">Edit Profile</a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Stats</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">Applications Submitted: <span class="badge bg-primary">0</span></li>
+                        <li class="mb-2">Interviews Scheduled: <span class="badge bg-success">0</span></li>
+                        <li>Saved Jobs: <span class="badge bg-info">0</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Applications</h5>
+                    <div class="list-group">
+                        {% if applications %}
+                            {% for application in applications %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ application.job.title }}</h6>
+                                    <small class="text-muted">{{ application.created_at.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                                <p class="mb-1">{{ application.job.business.name }}</p>
+                                <small class="text-muted">Status: <span class="badge bg-{{ application.status }}">{{ application.status }}</span></small>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">No applications yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Recommended Jobs</h5>
+                    <div class="list-group">
+                        {% if recommended_jobs %}
+                            {% for job in recommended_jobs %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ job.title }}</h6>
+                                    <small class="text-muted">{{ job.created_at.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                                <p class="mb-1">{{ job.business.name }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">{{ job.location }} • {{ job.job_type }}</small>
+                                    <a href="{{ url_for('job_details', job_id=job.id) }}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">No recommended jobs at the moment.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
