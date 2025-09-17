@@ -3,29 +3,417 @@ from flask_login import UserMixin
 from flask_bcrypt import Bcrypt
 from datetime import datetime
 import uuid
+import os
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
 
-# Neo4j Configuration
-NEO4J_URI = "bolt://localhost:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "Fr4nzJermido"
+# Load environment variables
+load_dotenv()
 
-# Initialize Neo4j driver
-driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+# Neo4j Configuration from environment variables
+driver = GraphDatabase.driver(
+    os.getenv("NEO4J_URI"),
+    auth=(os.getenv("NEO4J_USERNAME"), os.getenv("NEO4J_PASSWORD"))
+)
+DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
+
+class Notification:
+    TYPES = ['info', 'success', 'warning', 'error']
+    
+    def __init__(self, id=None, message=None, type='info', status='unread', 
+                 user_id=None, created_at=None, link=None):
+        self.id = id or str(uuid.uuid4())
+        self.message = message
+        self.type = type if type in self.TYPES else 'info'
+        self.status = status
+        self.user_id = user_id
+        self.created_at = created_at or datetime.now().isoformat()
+        self.link = link
+
+    @staticmethod
+    def create(user_id, message, type='info', link=None):
+        notification = Notification(
+            message=message,
+            type=type,
+            user_id=user_id,
+            link=link
+        )
+        notification.save()
+        return notification
+
+    def save(self):
+        with driver.session(database=DATABASE) as session:
+            session.run("""
+                MATCH (u:User {id: $user_id})
+                CREATE (n:Notification {
+                    id: $id,
+                    message: $message,
+                    type: $type,
+                    status: $status,
+                    created_at: $created_at,
+                    link: $link
+                })-[:HAS_NOTIFICATION]->(u)
+            """, self.__dict__)
+
+    def mark_as_read(self):
+        with driver.session(database=DATABASE) as session:
+            session.run("""
+                MATCH (n:Notification {id: $id})
+                SET n.status = 'read'
+            """, {'id': self.id})
+            self.status = 'read'
+
+    @staticmethod
+    def get_user_notifications(user_id, limit=10, unread_only=False):
+        with driver.session(database=DATABASE) as session:
+            query = """
+                MATCH (n:Notification)-[:HAS_NOTIFICATION]->(u:User {id: $user_id})
+                WHERE CASE WHEN $unread_only = true THEN n.status = 'unread' ELSE true END
+                RETURN n
+                ORDER BY n.created_at DESC
+                LIMIT $limit
+            """
+            result = session.run(query, {
+                'user_id': user_id,
+                'unread_only': unread_only,
+                'limit': limit
+            })
+            
+            notifications = []
+            for record in result:
+                node = record['n']
+                notification = Notification(
+                    id=node['id'],
+                    message=node['message'],
+                    type=node['type'],
+                    status=node['status'],
+                    user_id=user_id,
+                    created_at=node['created_at'],
+                    link=node.get('link')
+                )
+                notifications.append(notification)
+            return notifications
+
+    @staticmethod
+    def get_unread_count(user_id):
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (n:Notification {status: 'unread'})-[:HAS_NOTIFICATION]->(u:User {id: $user_id})
+                RETURN count(n) as count
+            """, {'user_id': user_id})
+            return result.single()['count']
+
+class Service:
+    def __init__(self, id=None, title=None, description=None, category=None, budget=None, 
+                 duration=None, location=None, requirements=None, client_id=None, 
+                 status='open', created_at=None):
+        self.id = id or str(uuid.uuid4())
+        self.title = title
+        self.description = description
+        self.category = category
+        self.budget = budget
+        self.duration = duration
+        self.location = location
+        self.requirements = requirements
+        self.client_id = client_id
+        self.status = status
+        self.created_at = created_at or datetime.now().isoformat()
+        self.offers = []
+
+    def save(self):
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MERGE (s:Service {id: $id})
+                SET s += {
+                    title: $title,
+                    description: $description,
+                    category: $category,
+                    budget: $budget,
+                    duration: $duration,
+                    location: $location,
+                    requirements: $requirements,
+                    status: $status,
+                    created_at: $created_at
+                }
+                WITH s
+                MATCH (c:User {id: $client_id})
+                MERGE (c)-[:REQUESTED]->(s)
+                RETURN s
+                """,
+                id=self.id,
+                title=self.title,
+                description=self.description,
+                category=self.category,
+                budget=self.budget,
+                duration=self.duration,
+                location=self.location,
+                requirements=self.requirements,
+                status=self.status,
+                created_at=self.created_at,
+                client_id=self.client_id
+            )
+            record = result.single()
+            if record:
+                return self
+            return None
+
+    @staticmethod
+    def get_by_id(service_id):
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (s:Service {id: $id})
+                OPTIONAL MATCH (c:User)-[:REQUESTED]->(s)
+                OPTIONAL MATCH (j:User)-[o:OFFERS]->(s)
+                RETURN s, c as client,
+                    collect({user: j, offer: o}) as offers
+                """,
+                id=service_id
+            )
+            record = result.single()
+            if record and record['s']:
+                service = Service(**record['s'])
+                service.client = User(**record['client']) if record['client'] else None
+                service.offers = [
+                    {
+                        'user': User(**offer['user']),
+                        'status': offer['offer']['status'],
+                        'proposal': offer['offer']['proposal'],
+                        'price': offer['offer']['price'],
+                        'created_at': offer['offer']['created_at']
+                    }
+                    for offer in record['offers']
+                    if offer['user'] is not None
+                ]
+                return service
+            return None
+
+    @staticmethod
+    def get_all(status=None, client_id=None):
+        with driver.session(database=DATABASE) as session:
+            query = """
+                MATCH (s:Service)
+                WHERE 1=1
+            """
+            params = {}
+            
+            if status:
+                query += " AND s.status = $status"
+                params['status'] = status
+                
+            if client_id:
+                query += " AND EXISTS((User {id: $client_id})-[:REQUESTED]->(s))"
+                params['client_id'] = client_id
+                
+            query += " RETURN s ORDER BY s.created_at DESC"
+            
+            result = session.run(query, **params)
+            return [Service(**record['s']) for record in result]
+
+    def add_offer(self, job_seeker_id, proposal, price):
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (s:Service {id: $service_id})
+                MATCH (j:User {id: $job_seeker_id})
+                WHERE s.status = 'open'
+                MERGE (j)-[o:OFFERS]->(s)
+                SET o += {
+                    status: 'pending',
+                    proposal: $proposal,
+                    price: $price,
+                    created_at: $created_at
+                }
+                RETURN o
+                """,
+                service_id=self.id,
+                job_seeker_id=job_seeker_id,
+                proposal=proposal,
+                price=price,
+                created_at=datetime.now().isoformat()
+            )
+            return result.single() is not None
+
+    def accept_offer(self, job_seeker_id):
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (j:User {id: $job_seeker_id})-[o:OFFERS]->(s:Service {id: $service_id})
+                WHERE s.status = 'open'
+                SET o.status = 'accepted',
+                    s.status = 'in_progress'
+                WITH s
+                MATCH (other:User)-[r:OFFERS]->(s)
+                WHERE other.id <> $job_seeker_id
+                SET r.status = 'rejected'
+                RETURN s
+                """,
+                service_id=self.id,
+                job_seeker_id=job_seeker_id
+            )
+            return result.single() is not None
+
+    @staticmethod
+    def get_offers_by_job_seeker(job_seeker_id):
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (j:User {id: $job_seeker_id})-[o:OFFERS]->(s:Service)
+                RETURN s, o
+                ORDER BY o.created_at DESC
+                """,
+                job_seeker_id=job_seeker_id
+            )
+            offers = []
+            for record in result:
+                service = Service(**record['s'])
+                offer = record['o']
+                offers.append({
+                    'service': service,
+                    'status': offer['status'],
+                    'proposal': offer['proposal'],
+                    'price': offer['price'],
+                    'created_at': offer['created_at']
+                })
+            return offers
+    def __init__(self, id=None, title=None, description=None, category=None, budget=None, duration=None, location=None, requirements=None, client_id=None, status='open', created_at=None):
+        self.id = id or str(uuid.uuid4())
+        self.title = title
+        self.description = description
+        self.category = category
+        self.budget = budget
+        self.duration = duration
+        self.location = location
+        self.requirements = requirements
+        self.client_id = client_id
+        self.status = status
+        self.created_at = created_at or datetime.now().isoformat()
+
+    def save(self):
+        with driver.session() as session:
+            result = session.run("""
+                MERGE (s:Service {id: $id})
+                SET s.title = $title,
+                    s.description = $description,
+                    s.category = $category,
+                    s.budget = $budget,
+                    s.duration = $duration,
+                    s.location = $location,
+                    s.requirements = $requirements,
+                    s.status = $status,
+                    s.created_at = $created_at
+                WITH s
+                MATCH (c:User {id: $client_id})
+                MERGE (c)-[:REQUESTED]->(s)
+                RETURN s
+                """,
+                id=self.id,
+                title=self.title,
+                description=self.description,
+                category=self.category,
+                budget=self.budget,
+                duration=self.duration,
+                location=self.location,
+                requirements=self.requirements,
+                status=self.status,
+                created_at=self.created_at,
+                client_id=self.client_id
+            )
+            return result.single()
+
+    @staticmethod
+    def get_by_id(service_id):
+        with driver.session() as session:
+            result = session.run("""
+                MATCH (s:Service {id: $id})
+                OPTIONAL MATCH (c:User)-[:REQUESTED]->(s)
+                OPTIONAL MATCH (j:User)-[:OFFERS {status: $status}]->(s)
+                RETURN s, c as client, collect(j) as job_seekers
+                """,
+                id=service_id,
+                status='pending'
+            )
+            record = result.single()
+            if record and record['s']:
+                service = Service(**record['s'].items())
+                service.client = User(**record['client'].items()) if record['client'] else None
+                service.offers = [User(**js.items()) for js in record['job_seekers']]
+                return service
+            return None
+
+    @staticmethod
+    def get_all(status=None, client_id=None):
+        with driver.session() as session:
+            query = """
+                MATCH (s:Service)
+                WHERE 1=1
+            """
+            params = {}
+            
+            if status:
+                query += " AND s.status = $status"
+                params['status'] = status
+                
+            if client_id:
+                query += " AND EXISTS((User {id: $client_id})-[:REQUESTED]->(s))"
+                params['client_id'] = client_id
+                
+            query += " RETURN s ORDER BY s.created_at DESC"
+            
+            result = session.run(query, **params)
+            return [Service(**record['s'].items()) for record in result]
+
+    def add_offer(self, job_seeker_id, proposal, price):
+        with driver.session() as session:
+            result = session.run("""
+                MATCH (s:Service {id: $service_id})
+                MATCH (j:User {id: $job_seeker_id})
+                MERGE (j)-[o:OFFERS]->(s)
+                SET o.status = $status,
+                    o.proposal = $proposal,
+                    o.price = $price,
+                    o.created_at = $created_at
+                RETURN o
+                """,
+                service_id=self.id,
+                job_seeker_id=job_seeker_id,
+                status='pending',
+                proposal=proposal,
+                price=price,
+                created_at=datetime.now().isoformat()
+            )
+            return result.single() is not None
+
+    def accept_offer(self, job_seeker_id):
+        with driver.session() as session:
+            result = session.run("""
+                MATCH (j:User {id: $job_seeker_id})-[o:OFFERS]->(s:Service {id: $service_id})
+                SET o.status = 'accepted',
+                    s.status = 'in_progress'
+                WITH s
+                MATCH (other:User)-[r:OFFERS]->(s)
+                WHERE other.id <> $job_seeker_id
+                SET r.status = 'rejected'
+                RETURN s
+                """,
+                service_id=self.id,
+                job_seeker_id=job_seeker_id
+            )
+            return result.single() is not None
 
 class User(UserMixin):
-    def __init__(self, id=None, email=None, password=None, name=None, role=None, phone=None, address=None, skills=None, experience=None, education=None, resume_path=None):
+    ROLES = ['business_owner', 'client', 'job_seeker', 'admin']  # admin is here but not available for signup
+    SIGNUP_ROLES = ['business_owner', 'client', 'job_seeker']  # roles available during signup
+    
+    def __init__(self, id=None, email=None, password=None, name=None, role=None, phone=None, address=None, skills=None, experience=None, education=None, resume_path=None, verification_status=None):
         self.id = id
         self.email = email
         self.password = password
         self.name = name
-        self.role = role or "user"
+        self.role = role if role in self.ROLES else 'job_seeker'
         self.phone = phone
         self.address = address
         self.skills = skills or []
         self.experience = experience or []
         self.education = education or []
         self.resume_path = resume_path
+        self.verification_status = verification_status or 'pending'  # pending, verified, rejected
 
     def get_id(self):
         return str(self.id)
@@ -42,36 +430,65 @@ class User(UserMixin):
         return check_password_hash(self.password, password)
 
     def save(self):
+        # Prevent setting role to admin via save
+        if not hasattr(self, 'id'):  # New user
+            if self.email != 'ermido09@gmail.com':  # Only allow the hardcoded admin email
+                self.role = self.role if self.role in self.SIGNUP_ROLES else 'job_seeker'
+            
         with driver.session() as session:
-            result = session.run(
-                """
-                CREATE (u:User {
-                    id: $id,
-                    email: $email,
-                    password: $password,
-                    name: $name,
-                    role: $role,
-                    phone: $phone,
-                    address: $address,
-                    skills: $skills,
-                    experience: $experience,
-                    education: $education,
-                    resume_path: $resume_path
-                })
-                RETURN u
-                """,
-                id=str(uuid.uuid4()),
-                email=self.email,
-                password=self.password,
-                name=self.name,
-                role=self.role,
-                phone=self.phone,
-                address=self.address,
-                skills=self.skills,
-                experience=self.experience,
-                education=self.education,
-                resume_path=self.resume_path
-            )
+            if hasattr(self, 'id'):  # Update existing user
+                result = session.run(
+                    """
+                    MATCH (u:User {id: $id})
+                    SET u.name = $name,
+                        u.phone = $phone,
+                        u.address = $address,
+                        u.skills = $skills,
+                        u.experience = $experience,
+                        u.education = $education,
+                        u.resume_path = $resume_path
+                    RETURN u
+                    """,
+                    id=self.id,
+                    name=self.name,
+                    phone=self.phone,
+                    address=self.address,
+                    skills=self.skills,
+                    experience=self.experience,
+                    education=self.education,
+                    resume_path=self.resume_path
+                )
+            else:  # Create new user
+                result = session.run(
+                    """
+                    CREATE (u:User {
+                        id: $id,
+                        email: $email,
+                        password: $password,
+                        name: $name,
+                        role: $role,
+                        phone: $phone,
+                        address: $address,
+                        skills: $skills,
+                        experience: $experience,
+                        education: $education,
+                        resume_path: $resume_path,
+                        created_at: datetime()
+                    })
+                    RETURN u
+                    """,
+                    id=str(uuid.uuid4()),
+                    email=self.email,
+                    password=self.password,
+                    name=self.name,
+                    role=self.role,
+                    phone=self.phone,
+                    address=self.address,
+                    skills=self.skills,
+                    experience=self.experience,
+                    education=self.education,
+                    resume_path=self.resume_path
+                )
             return result.single()["u"]
 
     @staticmethod
@@ -618,14 +1035,137 @@ class Job:
             return jobs
 
 class Application:
-    def __init__(self, id=None, job=None, applicant=None, cover_letter=None, resume_path=None, status=None, created_at=None):
-        self.id = id
+    STATUSES = ['pending', 'accepted', 'rejected', 'withdrawn']
+    
+    def __init__(self, id=None, job=None, applicant=None, status=None, date_applied=None, 
+                 cover_letter=None, resume_path=None, feedback=None):
+        self.id = id or str(uuid.uuid4())
         self.job = job
         self.applicant = applicant
+        self.status = status if status in self.STATUSES else "pending"
+        self.date_applied = date_applied or datetime.now().isoformat()
         self.cover_letter = cover_letter
         self.resume_path = resume_path
-        self.status = status or "pending"
-        self.created_at = created_at or datetime.now()
+        self.feedback = feedback  # Optional feedback from employer
+
+    def save(self):
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (j:Job {id: $job_id})
+                MATCH (a:User {id: $applicant_id})
+                MERGE (app:Application {id: $id})
+                SET app.status = $status,
+                    app.date_applied = $date_applied,
+                    app.cover_letter = $cover_letter,
+                    app.resume_path = $resume_path,
+                    app.feedback = $feedback
+                MERGE (a)-[:APPLIED_TO]->(app)
+                MERGE (app)-[:FOR_JOB]->(j)
+                RETURN app
+                """,
+                id=self.id,
+                job_id=self.job.id,
+                applicant_id=self.applicant.id,
+                status=self.status,
+                date_applied=self.date_applied,
+                cover_letter=self.cover_letter,
+                resume_path=self.resume_path,
+                feedback=self.feedback
+            )
+            record = result.single()
+            return record is not None
+
+    @staticmethod
+    def get_by_id(application_id):
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (app:Application {id: $id})
+                MATCH (a:User)-[:APPLIED_TO]->(app)-[:FOR_JOB]->(j:Job)
+                RETURN app, a as applicant, j as job
+                """,
+                id=application_id
+            )
+            record = result.single()
+            if record:
+                application = Application(**record['app'])
+                application.applicant = User(**record['applicant'])
+                application.job = Job(**record['job'])
+                return application
+            return None
+
+    @staticmethod
+    def get_by_job_id(job_id):
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (app:Application)-[:FOR_JOB]->(j:Job {id: $job_id})
+                MATCH (a:User)-[:APPLIED_TO]->(app)
+                RETURN app, a as applicant, j as job
+                ORDER BY app.date_applied DESC
+                """,
+                job_id=job_id
+            )
+            return [
+                {
+                    'application': Application(**record['app']),
+                    'applicant': User(**record['applicant']),
+                    'job': Job(**record['job'])
+                }
+                for record in result
+            ]
+
+    @staticmethod
+    def get_by_applicant_id(applicant_id):
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (a:User {id: $applicant_id})-[:APPLIED_TO]->(app:Application)-[:FOR_JOB]->(j:Job)
+                MATCH (b:Business)<-[:POSTED_BY]-(j)
+                RETURN app, a as applicant, j as job, b as business
+                ORDER BY app.date_applied DESC
+                """,
+                applicant_id=applicant_id
+            )
+            return [
+                {
+                    'application': Application(**record['app']),
+                    'job': Job(**record['job']),
+                    'business': Business(**record['business'])
+                }
+                for record in result
+            ]
+
+    def update_status(self, new_status, feedback=None):
+        if new_status not in self.STATUSES:
+            raise ValueError(f"Invalid status. Must be one of: {', '.join(self.STATUSES)}")
+            
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (app:Application {id: $id})
+                SET app.status = $status,
+                    app.feedback = $feedback
+                RETURN app
+                """,
+                id=self.id,
+                status=new_status,
+                feedback=feedback
+            )
+            record = result.single()
+            if record:
+                self.status = new_status
+                self.feedback = feedback
+                return True
+            return False
+
+    @staticmethod
+    def has_applied(applicant_id, job_id):
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (a:User {id: $applicant_id})-[:APPLIED_TO]->(app:Application)-[:FOR_JOB]->(j:Job {id: $job_id})
+                RETURN app
+                """,
+                applicant_id=applicant_id,
+                job_id=job_id
+            )
+            return result.single() is not None
 
     def save(self):
         with driver.session() as session:

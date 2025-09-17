@@ -2,10 +2,24 @@
 
 {% block title %}Job Seeker Dashboard - Catanduanes Connect{% endblock %}
 
+{% block styles %}
+<style>
+    .status-update {
+        animation: highlight 2s ease-out;
+    }
+    
+    @keyframes highlight {
+        0% { background-color: rgba(255, 243, 205, 1); }
+        100% { background-color: transparent; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-5">
     <div class="row">
         <div class="col-md-4">
+            <!-- Profile Card -->
             <div class="card mb-4">
                 <div class="card-body text-center">
                     <h5 class="card-title">{{ current_user.name }}</h5>
@@ -14,66 +28,278 @@
                 </div>
             </div>
             
-            <div class="card">
+            <!-- Quick Stats Card -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Quick Stats</h5>
+                    <div id="statsSpinner"></div>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Quick Stats</h5>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">Applications Submitted: <span class="badge bg-primary">0</span></li>
-                        <li class="mb-2">Interviews Scheduled: <span class="badge bg-success">0</span></li>
-                        <li>Saved Jobs: <span class="badge bg-info">0</span></li>
-                    </ul>
+                    <div id="quickStatsContainer">
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Offers Card -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Service Offers</h5>
+                    <div id="offersSpinner"></div>
+                </div>
+                <div class="card-body">
+                    <div id="serviceOffersContainer">
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         
         <div class="col-md-8">
+            <!-- Job Applications Card -->
             <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Applications</h5>
+                    <div id="applicationsSpinner"></div>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Recent Applications</h5>
-                    <div class="list-group">
-                        {% if applications %}
-                            {% for application in applications %}
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ application.job.title }}</h6>
-                                    <small class="text-muted">{{ application.created_at.strftime('%Y-%m-%d') }}</small>
-                                </div>
-                                <p class="mb-1">{{ application.job.business.name }}</p>
-                                <small class="text-muted">Status: <span class="badge bg-{{ application.status }}">{{ application.status }}</span></small>
+                    <div id="applicationsContainer">
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-muted">No applications yet.</p>
-                        {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
             
+            <!-- Updates Timeline Card -->
             <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Updates</h5>
+                    <div id="updatesSpinner"></div>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Recommended Jobs</h5>
-                    <div class="list-group">
-                        {% if recommended_jobs %}
-                            {% for job in recommended_jobs %}
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ job.title }}</h6>
-                                    <small class="text-muted">{{ job.created_at.strftime('%Y-%m-%d') }}</small>
-                                </div>
-                                <p class="mb-1">{{ job.business.name }}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">{{ job.location }} • {{ job.job_type }}</small>
-                                    <a href="{{ url_for('job_details', job_id=job.id) }}" class="btn btn-sm btn-outline-primary">View Details</a>
-                                </div>
+                    <div id="updatesContainer">
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-muted">No recommended jobs at the moment.</p>
-                        {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Get container references
+    const quickStatsContainer = document.getElementById('quickStatsContainer');
+    const applicationsContainer = document.getElementById('applicationsContainer');
+    const serviceOffersContainer = document.getElementById('serviceOffersContainer');
+    const updatesContainer = document.getElementById('updatesContainer');
+
+    // Create spinners
+    const statsSpinner = createLoadingSpinner('statsSpinner');
+    const applicationsSpinner = createLoadingSpinner('applicationsSpinner');
+    const offersSpinner = createLoadingSpinner('offersSpinner');
+    const updatesSpinner = createLoadingSpinner('updatesSpinner');
+
+    // Track previous states for highlighting changes
+    let previousApplications = new Map();
+    let previousOffers = new Map();
+
+    const dashboard = new DashboardUpdater({
+        endpoints: {
+            jobSeeker: '/api/dashboard/job-seeker'
+        },
+        loadingElements: {
+            jobSeeker: statsSpinner
+        },
+        updateCallbacks: {
+            jobSeeker: (data) => {
+                if (data.error) {
+                    const errorHtml = `<div class="alert alert-danger">${data.error}</div>`;
+                    quickStatsContainer.innerHTML = errorHtml;
+                    applicationsContainer.innerHTML = errorHtml;
+                    serviceOffersContainer.innerHTML = errorHtml;
+                    updatesContainer.innerHTML = errorHtml;
+                    return;
+                }
+
+                // Update Quick Stats
+                const totalApplications = data.applications.length;
+                const pendingApplications = data.applications.filter(a => a.status === 'pending').length;
+                const acceptedApplications = data.applications.filter(a => a.status === 'accepted').length;
+                const totalOffers = data.service_offers.length;
+                
+                quickStatsContainer.innerHTML = `
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Total Applications:</span>
+                                <span class="badge bg-primary rounded-pill">${totalApplications}</span>
+                            </div>
+                        </li>
+                        <li class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Pending Review:</span>
+                                <span class="badge bg-warning text-dark rounded-pill">${pendingApplications}</span>
+                            </div>
+                        </li>
+                        <li class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Accepted:</span>
+                                <span class="badge bg-success rounded-pill">${acceptedApplications}</span>
+                            </div>
+                        </li>
+                        <li>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Service Offers:</span>
+                                <span class="badge bg-info rounded-pill">${totalOffers}</span>
+                            </div>
+                        </li>
+                    </ul>`;
+
+                // Update Applications List
+                if (data.applications.length) {
+                    applicationsContainer.innerHTML = `
+                        <div class="list-group">
+                            ${data.applications.map(app => {
+                                const hasChanged = previousApplications.get(app.job_id)?.status !== app.status;
+                                previousApplications.set(app.job_id, app);
+                                return `
+                                    <div class="list-group-item ${hasChanged ? 'status-update' : ''}">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">${app.job_title}</h6>
+                                            <span class="badge bg-${
+                                                app.status === 'accepted' ? 'success' :
+                                                app.status === 'rejected' ? 'danger' :
+                                                'warning text-dark'
+                                            }">${app.status}</span>
+                                        </div>
+                                        ${app.feedback ? `
+                                            <p class="mb-1 small text-muted">
+                                                <strong>Feedback:</strong> ${app.feedback}
+                                            </p>
+                                        ` : ''}
+                                        <small class="text-muted">
+                                            Updated: ${new Date(app.updated_at).toLocaleString()}
+                                        </small>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>`;
+                } else {
+                    applicationsContainer.innerHTML = `
+                        <p class="text-muted text-center mb-0">No applications submitted yet.</p>`;
+                }
+
+                // Update Service Offers
+                if (data.service_offers.length) {
+                    serviceOffersContainer.innerHTML = `
+                        <div class="list-group">
+                            ${data.service_offers.map(offer => {
+                                const hasChanged = previousOffers.get(offer.service_id)?.status !== offer.status;
+                                previousOffers.set(offer.service_id, offer);
+                                return `
+                                    <div class="list-group-item ${hasChanged ? 'status-update' : ''}">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">${offer.service_title}</h6>
+                                            <span class="badge bg-${
+                                                offer.status === 'accepted' ? 'success' :
+                                                offer.status === 'rejected' ? 'danger' :
+                                                'primary'
+                                            }">${offer.status}</span>
+                                        </div>
+                                        <p class="mb-1">Price: ${offer.price}</p>
+                                        <small class="text-muted">
+                                            Updated: ${new Date(offer.updated_at).toLocaleString()}
+                                        </small>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>`;
+                } else {
+                    serviceOffersContainer.innerHTML = `
+                        <p class="text-muted text-center mb-0">No service offers made yet.</p>`;
+                }
+
+                // Update Recent Updates Timeline
+                const allUpdates = [
+                    ...data.applications.map(app => ({
+                        type: 'application',
+                        title: app.job_title,
+                        status: app.status,
+                        feedback: app.feedback,
+                        timestamp: new Date(app.updated_at)
+                    })),
+                    ...data.service_offers.map(offer => ({
+                        type: 'offer',
+                        title: offer.service_title,
+                        status: offer.status,
+                        price: offer.price,
+                        timestamp: new Date(offer.updated_at)
+                    }))
+                ].sort((a, b) => b.timestamp - a.timestamp)
+                .slice(0, 5);
+
+                if (allUpdates.length) {
+                    updatesContainer.innerHTML = `
+                        <div class="timeline">
+                            ${allUpdates.map(update => `
+                                <div class="border-start border-4 border-${
+                                    update.status === 'accepted' ? 'success' :
+                                    update.status === 'rejected' ? 'danger' :
+                                    'primary'
+                                } ps-3 pb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="mb-1">${update.title}</h6>
+                                        <small class="text-muted">
+                                            ${update.timestamp.toLocaleString()}
+                                        </small>
+                                    </div>
+                                    <p class="mb-1">
+                                        ${update.type === 'application' ? 
+                                            `Application ${update.status}` : 
+                                            `Service offer ${update.status}`}
+                                    </p>
+                                    ${update.feedback ? `
+                                        <small class="text-muted">
+                                            ${update.feedback}
+                                        </small>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>`;
+                } else {
+                    updatesContainer.innerHTML = `
+                        <p class="text-muted text-center mb-0">No recent updates.</p>`;
+                }
+            }
+        }
+    });
+
+    // Start real-time updates
+    dashboard.startUpdates();
+
+    // Clean up when leaving the page
+    window.addEventListener('beforeunload', () => {
+        dashboard.stopUpdates();
+    });
+});
+</script>
+{% endblock %}

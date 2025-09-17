@@ -1,6 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}Sign Up - Catanduanes Connect{% endblock %}
+{% block tit                            </label>
+                        </div>
+                        <div class="mb-3" id="resume-upload" style="display: none;">
+                            <label for="resume" class="form-label">Upload Resume (PDF, DOC, DOCX - Max 5MB)</label>
+                            <input type="file" class="form-control" id="resume" name="resume" accept=".pdf,.doc,.docx">
+                            <small class="text-muted">Optional: You can also upload your resume later from your profile.</small>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="#">Terms and Conditions</a> and <a href="#">Privacy Policy</a>
+                            </label>
+                        </div>
+                        <script>
+                            document.querySelectorAll('input[name="user_type"]').forEach(radio => {
+                                radio.addEventListener('change', function() {
+                                    document.getElementById('resume-upload').style.display = 
+                                        this.value === 'job_seeker' ? 'block' : 'none';
+                                });
+                            });
+                        </script>n Up - Catanduanes Connect{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -9,7 +29,7 @@
             <div class="card mt-5">
                 <div class="card-body">
                     <h2 class="text-center mb-4">Create an Account</h2>
-                    <form method="POST" action="{{ url_for('signup') }}">
+                    <form method="POST" action="{{ url_for('signup') }}" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label for="name" class="form-label">Full Name</label>
                             <input type="text" class="form-control" id="name" name="name" required>
@@ -29,17 +49,61 @@
                         <div class="mb-3">
                             <label class="form-label">I am a:</label>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="user_type" id="job_seeker" value="job_seeker" checked>
+                                <input class="form-check-input" type="radio" name="role" id="job_seeker" value="job_seeker" checked>
                                 <label class="form-check-label" for="job_seeker">
-                                    Job Seeker
+                                    Job Seeker (Apply for jobs and offer services)
                                 </label>
+                                <div class="form-text">Upload your resume to increase your chances of getting hired.</div>
                             </div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="user_type" id="business_owner" value="business_owner">
+                                <input class="form-check-input" type="radio" name="role" id="business_owner" value="business_owner">
                                 <label class="form-check-label" for="business_owner">
-                                    Business Owner
+                                    Business Owner (Post jobs and manage your business)
                                 </label>
+                                <div class="form-text">You'll need to upload a business permit for verification.</div>
                             </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="role" id="client" value="client">
+                                <label class="form-check-label" for="client">
+                                    Client (Post service requests and hire job seekers)
+                                </label>
+                                <div class="form-text">Hire freelancers for short-term work and services.</div>
+                            </div>
+                        </div>
+
+                        <div id="job_seeker_fields" class="mb-3 role-specific-fields">
+                            <label for="resume" class="form-label">Upload Resume (PDF, DOC, DOCX - Max 5MB)</label>
+                            <input type="file" class="form-control" id="resume" name="resume" accept=".pdf,.doc,.docx">
+                            <div class="form-text">Optional: You can also upload your resume later from your profile.</div>
+                        </div>
+
+                        <div id="business_owner_fields" class="mb-3 role-specific-fields" style="display: none;">
+                            <label for="permit" class="form-label">Business Permit (PDF or Image - Max 5MB)</label>
+                            <input type="file" class="form-control" id="permit" name="permit" accept=".pdf,.png,.jpg,.jpeg" required>
+                            <div class="form-text">Required: Upload your business permit for verification.</div>
+                        </div>
+
+                        <script>
+                            document.querySelectorAll('input[name="role"]').forEach(radio => {
+                                radio.addEventListener('change', function() {
+                                    // Hide all role-specific fields
+                                    document.querySelectorAll('.role-specific-fields').forEach(el => {
+                                        el.style.display = 'none';
+                                    });
+                                    
+                                    // Show fields for selected role
+                                    if (this.value === 'job_seeker') {
+                                        document.getElementById('job_seeker_fields').style.display = 'block';
+                                        document.getElementById('resume').removeAttribute('required');
+                                        document.getElementById('permit').setAttribute('required', 'required');
+                                    } else if (this.value === 'business_owner') {
+                                        document.getElementById('business_owner_fields').style.display = 'block';
+                                        document.getElementById('permit').setAttribute('required', 'required');
+                                        document.getElementById('resume').removeAttribute('required');
+                                    }
+                                });
+                            });
+                        </script>
                         </div>
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="terms" name="terms" required>

@@ -10,6 +10,13 @@
                 <div class="card-body text-center">
                     <h5 class="card-title">{{ user.name }}</h5>
                     <p class="text-muted">{{ user.email }}</p>
+                    {% if user.role == 'job_seeker' and user.resume_path %}
+                        <p>
+                            <a href="{{ url_for('static', filename='uploads/resumes/' + user.resume_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-file-alt"></i> View Resume
+                            </a>
+                        </p>
+                    {% endif %}
                     {% if current_user.id == user.id %}
                         <a href="#" class="btn btn-outline-primary">Edit Profile</a>
                     {% endif %}

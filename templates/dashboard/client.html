@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Client Dashboard - Catanduanes Connect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>My Dashboard</h1>
+        <a href="{{ url_for('create_service') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Post New Service Request
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Service Requests Card -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">My Service Requests</h5>
+                    <div id="servicesSpinner"></div>
+                </div>
+                <div class="card-body">
+                    <div id="servicesTableContainer">
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Latest Offers Card -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Latest Offers</h5>
+                    <div id="offersSpinner"></div>
+                </div>
+                <div class="card-body">
+                    <div id="latestOffersContainer">
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const servicesTableContainer = document.getElementById('servicesTableContainer');
+    const latestOffersContainer = document.getElementById('latestOffersContainer');
+    const servicesSpinner = createLoadingSpinner('servicesSpinner');
+    const offersSpinner = createLoadingSpinner('offersSpinner');
+
+    const dashboard = new DashboardUpdater({
+        endpoints: {
+            services: '/api/dashboard/client'
+        },
+        loadingElements: {
+            services: servicesSpinner
+        },
+        updateCallbacks: {
+            services: (data) => {
+                if (data.error) {
+                    servicesTableContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    latestOffersContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    return;
+                }
+
+                // Update services table
+                if (data.services && data.services.length > 0) {
+                    servicesTableContainer.innerHTML = `
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Category</th>
+                                        <th>Budget</th>
+                                        <th>Status</th>
+                                        <th>Offers</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.services.map(service => `
+                                        <tr>
+                                            <td>${service.service_title}</td>
+                                            <td>${service.category || 'N/A'}</td>
+                                            <td>${service.budget || 'N/A'}</td>
+                                            <td>
+                                                <span class="badge bg-${
+                                                    service.status === 'completed' ? 'success' :
+                                                    service.status === 'in_progress' ? 'warning' :
+                                                    'primary'
+                                                }">
+                                                    ${service.status || 'Open'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary rounded-pill">
+                                                    ${service.offer_count}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="/service/view/${service.service_id}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    View Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>`;
+                } else {
+                    servicesTableContainer.innerHTML = `
+                        <p class="text-muted text-center">You haven't posted any service requests yet.</p>`;
+                }
+
+                // Update latest offers section
+                const latestOffers = data.services
+                    .filter(service => service.offers && service.offers.length > 0)
+                    .flatMap(service => 
+                        service.offers.map(offer => ({
+                            ...offer,
+                            serviceTitle: service.service_title,
+                            serviceId: service.service_id
+                        }))
+                    )
+                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                    .slice(0, 5);
+
+                if (latestOffers.length > 0) {
+                    latestOffersContainer.innerHTML = `
+                        <div class="list-group">
+                            ${latestOffers.map(offer => `
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">${offer.serviceTitle}</h6>
+                                        <small class="text-${
+                                            offer.status === 'accepted' ? 'success' :
+                                            offer.status === 'rejected' ? 'danger' :
+                                            'primary'
+                                        }">
+                                            ${offer.status}
+                                        </small>
+                                    </div>
+                                    <p class="mb-1">
+                                        <strong>Price:</strong> ${offer.price}
+                                    </p>
+                                    ${offer.status === 'pending' ? `
+                                        <div class="btn-group">
+                                            <button onclick="acceptOffer('${offer.serviceId}', '${offer.job_seeker_id}')"
+                                                    class="btn btn-sm btn-success">
+                                                Accept
+                                            </button>
+                                            <button onclick="rejectOffer('${offer.serviceId}', '${offer.job_seeker_id}')"
+                                                    class="btn btn-sm btn-danger">
+                                                Reject
+                                            </button>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>`;
+                } else {
+                    latestOffersContainer.innerHTML = `
+                        <p class="text-muted text-center">No offers received yet.</p>`;
+                }
+            }
+        }
+    });
+
+    // Start real-time updates
+    dashboard.startUpdates();
+
+    // Clean up when leaving the page
+    window.addEventListener('beforeunload', () => {
+        dashboard.stopUpdates();
+    });
+});
+
+// Offer management functions
+async function acceptOffer(serviceId, jobSeekerId) {
+    try {
+        const response = await fetch(`/service/accept/${serviceId}/${jobSeekerId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) throw new Error('Failed to accept offer');
+        // The dashboard will automatically update on the next refresh
+    } catch (error) {
+        console.error('Error accepting offer:', error);
+        alert('Failed to accept offer. Please try again.');
+    }
+}
+
+async function rejectOffer(serviceId, jobSeekerId) {
+    try {
+        const response = await fetch(`/service/reject/${serviceId}/${jobSeekerId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) throw new Error('Failed to reject offer');
+        // The dashboard will automatically update on the next refresh
+    } catch (error) {
+        console.error('Error rejecting offer:', error);
+        alert('Failed to reject offer. Please try again.');
+    }
+}
+</script>
+{% endblock %}

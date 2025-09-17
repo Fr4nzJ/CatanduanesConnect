@@ -8,7 +8,7 @@
     
     <div class="card">
         <div class="card-body">
-            <form method="POST" action="{{ url_for('create_business') }}">
+            <form method="POST" action="{{ url_for('create_business') }}" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label for="name" class="form-label">Business Name</label>
                     <input type="text" class="form-control" id="name" name="name" required>
@@ -77,6 +77,12 @@
                         <option value="medium">Medium (11-50 employees)</option>
                         <option value="large">Large (51+ employees)</option>
                     </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="permit" class="form-label">Business Permit</label>
+                    <input type="file" class="form-control" id="permit" name="permit" accept=".pdf,.png,.jpg,.jpeg">
+                    <small class="text-muted">Upload your business permit (PDF or image format - Max 5MB)</small>
                 </div>
                 
                 <div class="d-grid gap-2">

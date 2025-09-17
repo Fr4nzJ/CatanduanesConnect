@@ -34,60 +34,146 @@
         
         <div class="col-md-8">
             <div class="card mb-4">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0">Active Job Listings</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Active Job Listings</h5>
+                    <div class="d-flex align-items-center">
+                        <div id="jobsSpinner" class="me-2"></div>
                         {% if business %}
                             <a href="{{ url_for('post_job') }}" class="btn btn-primary">Post New Job</a>
                         {% endif %}
                     </div>
-                    <div class="list-group">
-                        {% if jobs %}
-                            {% for job in jobs %}
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ job.title }}</h6>
-                                    <small class="text-muted">{{ job.created_at.strftime('%Y-%m-%d') }}</small>
-                                </div>
-                                <p class="mb-1">{{ job.job_type }} • {{ job.location }}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">Applications: <span class="badge bg-primary">0</span></small>
-                                    <a href="{{ url_for('job_details', job_id=job.id) }}" class="btn btn-sm btn-outline-primary">View Details</a>
-                                </div>
+                </div>
+                <div class="card-body">
+                    <div id="jobListingsContainer" class="list-group">
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-muted">No active job listings.</p>
-                        {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
             
             <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Applications</h5>
+                    <div id="applicationsSpinner"></div>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Recent Applications</h5>
-                    <div class="list-group">
-                        {% if applications %}
-                            {% for application in applications %}
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ application.job.title }}</h6>
-                                    <small class="text-muted">{{ application.created_at.strftime('%Y-%m-%d') }}</small>
-                                </div>
-                                <p class="mb-1">Applicant: {{ application.applicant.name }}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">Status: <span class="badge bg-{{ application.status }}">{{ application.status }}</span></small>
-                                    <a href="#" class="btn btn-sm btn-outline-primary">View Application</a>
-                                </div>
+                    <div id="applicationsContainer" class="list-group">
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-muted">No applications yet.</p>
-                        {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const jobListingsContainer = document.getElementById('jobListingsContainer');
+    const applicationsContainer = document.getElementById('applicationsContainer');
+    const jobsSpinner = createLoadingSpinner('jobsSpinner');
+    const applicationsSpinner = createLoadingSpinner('applicationsSpinner');
+
+    const dashboard = new DashboardUpdater({
+        endpoints: {
+            businessStats: '/api/dashboard/business-owner'
+        },
+        loadingElements: {
+            businessStats: jobsSpinner
+        },
+        updateCallbacks: {
+            businessStats: (data) => {
+                if (data.error) {
+                    jobListingsContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    applicationsContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    return;
+                }
+
+                // Update job listings with application counts
+                const jobsHtml = data.applications.map(job => `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${job.job_title}</h6>
+                            <span class="badge bg-primary rounded-pill">${
+                                Object.values(job.applications || {}).reduce((a, b) => a + b, 0)
+                            } applications</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div>
+                                <span class="badge bg-warning text-dark me-1">
+                                    ${job.stats.pending || 0} pending
+                                </span>
+                                <span class="badge bg-success me-1">
+                                    ${job.stats.accepted || 0} accepted
+                                </span>
+                                <span class="badge bg-danger">
+                                    ${job.stats.rejected || 0} rejected
+                                </span>
+                            </div>
+                            <a href="/job/${job.job_id}/applications" 
+                               class="btn btn-sm btn-outline-primary">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                `).join('') || '<p class="text-muted text-center">No active job listings.</p>';
+
+                jobListingsContainer.innerHTML = jobsHtml;
+
+                // Update recent applications list
+                const recentApplications = data.applications
+                    .flatMap(job => 
+                        Object.entries(job.applications || {}).map(([status, count]) => ({
+                            jobTitle: job.job_title,
+                            jobId: job.job_id,
+                            status,
+                            count
+                        }))
+                    )
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 5);
+
+                const applicationsHtml = recentApplications.length ? recentApplications.map(app => `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${app.jobTitle}</h6>
+                            <span class="badge bg-${
+                                app.status === 'accepted' ? 'success' : 
+                                app.status === 'rejected' ? 'danger' : 
+                                'warning text-dark'
+                            }">${app.status}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">${app.count} application(s)</small>
+                            <a href="/job/${app.jobId}/applications" 
+                               class="btn btn-sm btn-outline-primary">
+                                View Applications
+                            </a>
+                        </div>
+                    </div>
+                `).join('') : '<p class="text-muted text-center">No applications yet.</p>';
+
+                applicationsContainer.innerHTML = applicationsHtml;
+            }
+        }
+    });
+
+    // Start real-time updates
+    dashboard.startUpdates();
+
+    // Clean up when leaving the page
+    window.addEventListener('beforeunload', () => {
+        dashboard.stopUpdates();
+    });
+});
+</script>
+{% endblock %}
