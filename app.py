@@ -10,19 +10,47 @@ import os, uuid, json, logging, random
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
+import neo4j
 from models import User, Business, Job, Application, Review, Service
 from decorators import admin_required
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('app.log')
+    ]
+)
 logger = logging.getLogger(__name__)
+
+# Error tracking
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f'Server Error: {error}')
+    return 'Internal Server Error', 500
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return 'Not Found', 404
+
+@app.before_request
+def log_request_info():
+    logger.info('Headers: %s', request.headers)
+    logger.info('Body: %s', request.get_data())
 
 # Load environment variables
 load_dotenv()
 
 # Configure Flask app
 app = Flask(__name__)
+
+# Secret key config
 app.secret_key = os.getenv('FLASK_SECRET_KEY')
+if not app.secret_key:
+    app.secret_key = os.urandom(24)
+    logger.warning('No FLASK_SECRET_KEY set. Using random secret key.')
 
 if not app.secret_key:
     logger.error("No secret key set! Please set FLASK_SECRET_KEY environment variable.")
@@ -121,6 +149,10 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 bootstrap = Bootstrap(app)
 
+# Initialize CSRF protection
+from flask_wtf.csrf import CSRFProtect
+csrf = CSRFProtect(app)
+
 # File upload configuration
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
 ALLOWED_EXTENSIONS = {
@@ -132,15 +164,23 @@ MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB max file size
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
-# Create upload directories
-for dir_name in ['resumes', 'permits']:
-    dir_path = os.path.join(UPLOAD_FOLDER, dir_name)
-    if not os.path.exists(dir_path):
-        try:
+# Create upload directories with proper permissions
+try:
+    # Create parent uploads directory
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+        logger.info(f'Created main upload directory: {UPLOAD_FOLDER}')
+    
+    # Create subdirectories with proper permissions
+    for dir_name in ['resumes', 'permits']:
+        dir_path = os.path.join(UPLOAD_FOLDER, dir_name)
+        if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-            logger.info(f'Created upload directory: {dir_path}')
-        except Exception as e:
-            logger.error(f'Error creating upload directory {dir_path}: {str(e)}')
+            # Set directory permissions (readable/writable by app)
+            os.chmod(dir_path, 0o755)
+            logger.info(f'Created upload directory with permissions: {dir_path}')
+except Exception as e:
+    logger.error(f'Error setting up upload directories: {str(e)}')
 
 # Initialize the simple chatbot
 chatbot = SimpleBot()
@@ -150,15 +190,40 @@ def allowed_file(filename, file_type):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS[file_type]
 
 def secure_upload(file, file_type):
-    if file and file.filename:
-        if not allowed_file(file.filename, file_type):
-            raise ValueError(f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS[file_type])}")
+    """
+    Securely upload a file and return its filename.
+    Args:
+        file: FileStorage object from request.files
+        file_type: Type of file ('resume' or 'permit')
+    Returns:
+        str: The saved filename or None if file is invalid
+    Raises:
+        ValueError: If file type is not allowed
+        OSError: If there are file system errors
+    """
+    if not file or not file.filename:
+        return None
         
+    if not allowed_file(file.filename, file_type):
+        raise ValueError(f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS[file_type])}")
+    
+    try:
+        # Create a secure filename with UUID to prevent collisions
         filename = secure_filename(f"{file_type}_{uuid.uuid4()}_{file.filename}")
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{file_type}s", filename)
+        
+        # Save the file
         file.save(file_path)
+        
+        # Set proper file permissions
+        os.chmod(file_path, 0o644)
+        
+        logger.info(f'Successfully uploaded {file_type}: {filename}')
         return filename
-    return None
+        
+    except Exception as e:
+        logger.error(f'Error uploading {file_type}: {str(e)}')
+        raise OSError(f"Error saving {file_type} file: {str(e)}")
 
 # Email configuration
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
@@ -227,45 +292,81 @@ def home():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        name = request.form.get('name')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
-        role = request.form.get('role')
-
-        # Validate input
-        if not all([name, email, password, confirm_password, role]):
-            flash('All fields are required', 'danger')
-            return redirect(url_for('signup'))
-
-        if password != confirm_password:
-            flash('Passwords do not match', 'danger')
-            return redirect(url_for('signup'))
-
-        if role not in User.SIGNUP_ROLES:
-            flash('Invalid user role', 'danger')
-            return redirect(url_for('signup'))
-
-        # Check if email already exists
-        if User.get_by_email(email):
-            flash('Email already registered', 'danger')
-            return redirect(url_for('signup'))
-
-        # Create new user
-        user = User()
-        user.name = name
-        user.email = email
-        user.role = role
-        user.set_password(password)
-        
-        # Handle file uploads based on role
         try:
-            if role == 'job_seeker' and 'resume' in request.files:
-                filename = secure_upload(request.files['resume'], 'resume')
-                if filename:
-                    user.resume_path = filename
-                    
-            elif role == 'business_owner' and 'permit' in request.files:
+            # Get form data
+            name = request.form.get('name')
+            email = request.form.get('email')
+            password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
+            role = request.form.get('role')
+
+            # Validate input
+            if not all([name, email, password, confirm_password, role]):
+                flash('All fields are required', 'danger')
+                return redirect(url_for('signup'))
+
+            if password != confirm_password:
+                flash('Passwords do not match', 'danger')
+                return redirect(url_for('signup'))
+
+            if role not in User.SIGNUP_ROLES:
+                flash('Invalid user role', 'danger')
+                return redirect(url_for('signup'))
+
+            # Check if email already exists
+            if User.get_by_email(email):
+                flash('Email already registered', 'danger')
+                return redirect(url_for('signup'))
+
+            # Create new user
+            user = User()
+            user.name = name
+            user.email = email
+            user.role = role
+            user.set_password(password)
+            user.id = str(uuid.uuid4())  # Ensure ID is set before saving
+            
+            # Handle file uploads based on role
+            try:
+                if role == 'business_owner':
+                    # Business owner must upload permit
+                    if 'permit' not in request.files or not request.files['permit'].filename:
+                        flash('Business permit is required for business owners', 'danger')
+                        return redirect(url_for('signup'))
+                        
+                    permit_file = request.files['permit']
+                    if not allowed_file(permit_file.filename, 'permit'):
+                        flash('Invalid permit file type. Allowed types: PDF, PNG, JPG, JPEG', 'danger')
+                        return redirect(url_for('signup'))
+                        
+                    try:
+                        filename = secure_upload(permit_file, 'permit')
+                        if filename:
+                            user.permit_path = filename
+                            user.verification_status = 'pending'
+                    except Exception as e:
+                        logger.error(f'Error uploading permit: {str(e)}')
+                        flash('Error uploading business permit. Please try again.', 'danger')
+                        return redirect(url_for('signup'))
+                
+                elif role == 'job_seeker':
+                    # Resume is optional for job seekers
+                    if 'resume' in request.files and request.files['resume'].filename:
+                        resume_file = request.files['resume']
+                        if not allowed_file(resume_file.filename, 'resume'):
+                            flash('Invalid resume file type. Allowed types: PDF, DOC, DOCX', 'danger')
+                            return redirect(url_for('signup'))
+                            
+                        try:
+                            filename = secure_upload(resume_file, 'resume')
+                            if filename:
+                                user.resume_path = filename
+                        except Exception as e:
+                            logger.error(f'Error uploading resume: {str(e)}')
+                            flash('Error uploading resume. You can upload it later from your profile.', 'warning')
+                            
+            except Exception as e:
+                logger.error(f'File upload error: {str(e)}')
                 filename = secure_upload(request.files['permit'], 'permit')
                 if filename:
                     user.permit_path = filename
@@ -283,6 +384,7 @@ def signup():
             
         try:
             if not user.save():
+                logger.error('Failed to save user to database')
                 flash('Error creating account. Please try again.', 'danger')
                 return redirect(url_for('signup'))
                 
@@ -296,9 +398,19 @@ def signup():
             
         except Exception as e:
             logger.error(f'Database error during signup: {str(e)}')
-            flash('Error creating account. Please try again later.', 'danger')
+            flash('Error creating account. Please try again later. If the problem persists, contact support.', 'danger')
             return redirect(url_for('signup'))
-
+            
+        except neo4j.exceptions.ServiceUnavailable:
+            logger.error('Neo4j database is unavailable')
+            flash('Service temporarily unavailable. Please try again later.', 'danger')
+            return redirect(url_for('signup'))
+            
+        except Exception as e:
+            logger.error(f'Unexpected error during signup: {str(e)}')
+            flash('An unexpected error occurred. Please try again later.', 'danger')
+            return redirect(url_for('signup'))
+    
     return render_template('auth/signup.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -328,20 +440,41 @@ def logout():
 def dashboard():
     try:
         if current_user.role == 'job_seeker':
-            job_applications = Application.get_by_applicant_id(current_user.id)
-            service_offers = Service.get_offers_by_job_seeker(current_user.id)
-            return render_template('dashboard/job_seeker.html', 
-                                applications=job_applications,
-                                service_offers=service_offers)
+            try:
+                job_applications = Application.get_by_applicant_id(current_user.id)
+                service_offers = Service.get_offers_by_job_seeker(current_user.id)
+                return render_template('dashboard/job_seeker.html', 
+                                    applications=job_applications,
+                                    service_offers=service_offers)
+            except Exception as e:
+                logger.error(f'Error loading job seeker dashboard: {str(e)}')
+                flash('Error loading your applications and offers. Please try again.', 'danger')
+                return render_template('dashboard/job_seeker.html', 
+                                    applications=[],
+                                    service_offers=[])
                                 
         elif current_user.role == 'business_owner':
-            business = Business.get_by_owner_id(current_user.id)
-            jobs = Job.get_by_business_id(business.id) if business else []
-            applications = Application.get_by_business_id(business.id) if business else []
-            return render_template('dashboard/business_owner.html',
-                                business=business,
-                                jobs=jobs,
-                                applications=applications)
+            try:
+                business = Business.get_by_owner_id(current_user.id)
+                jobs = []
+                applications = []
+                if business:
+                    jobs = Job.get_by_business_id(business.id)
+                    # Get applications for each job
+                    for job in jobs:
+                        job_apps = Application.get_by_job_id(job.id)
+                        applications.extend(job_apps if job_apps else [])
+                return render_template('dashboard/business_owner.html',
+                                    business=business,
+                                    jobs=jobs,
+                                    applications=applications)
+            except Exception as e:
+                logger.error(f'Error loading business owner dashboard: {str(e)}')
+                flash('Error loading your business dashboard. Please try again.', 'danger')
+                return render_template('dashboard/business_owner.html',
+                                    business=None,
+                                    jobs=[],
+                                    applications=[])
                                 
         elif current_user.role == 'client':
             services = Service.get_all(client_id=current_user.id)

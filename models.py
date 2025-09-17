@@ -1,12 +1,13 @@
+import logging
+import os
+import uuid
+from datetime import datetime
 from neo4j import GraphDatabase
 from flask_login import UserMixin
 from flask_bcrypt import Bcrypt
-from datetime import datetime
-import uuid
-import os
-import os
-import uuid
-from datetime import datetime
+
+# Set up logging
+logger = logging.getLogger(__name__)
 from neo4j import GraphDatabase
 from flask_login import UserMixin
 from flask_bcrypt import Bcrypt
@@ -198,21 +199,33 @@ class Service:
     @staticmethod
     def get_all(status=None, client_id=None):
         with driver.session(database=DATABASE) as session:
-            query = """
-                MATCH (s:Service)
-                WHERE 1=1
-            """
-            params = {}
-            
-            if status:
-                query += " AND s.status = $status"
-                params['status'] = status
+            try:
+                if client_id:
+                    # When looking for a specific client's services, use MATCH to ensure proper relationship
+                    query = """
+                        MATCH (u:User {id: $client_id})-[:REQUESTED]->(s:Service)
+                        WHERE 1=1
+                    """
+                else:
+                    # When getting all services, just match Service nodes
+                    query = """
+                        MATCH (s:Service)
+                        WHERE 1=1
+                    """
                 
-            if client_id:
-                query += " AND EXISTS((User {id: $client_id})-[:REQUESTED]->(s))"
-                params['client_id'] = client_id
+                params = {'client_id': client_id} if client_id else {}
                 
-            query += " RETURN s ORDER BY s.created_at DESC"
+                if status:
+                    query += " AND s.status = $status"
+                    params['status'] = status
+                
+                query += " RETURN s ORDER BY s.created_at DESC"
+                
+                result = session.run(query, params)
+                return [Service(**record["s"]) for record in result]
+            except Exception as e:
+                logger.error(f'Error in Service.get_all: {str(e)}')
+                return []
             
             result = session.run(query, **params)
             return [Service(**record['s']) for record in result]
