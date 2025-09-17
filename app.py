@@ -169,15 +169,20 @@ def create_admin_if_none_exists():
     try:
         admin = User.get_by_email('ermido09@gmail.com')
         if not admin:
-            admin = User()
-            admin.name = 'Franz Jermido'  # Using your name based on the email
-            admin.email = 'ermido09@gmail.com'
-            admin.role = 'admin'
+            admin = User(
+                id=str(uuid.uuid4()),
+                name='Franz Jermido',
+                email='ermido09@gmail.com',
+                role='admin',
+                created_at=datetime.now().isoformat()
+            )
             admin.set_password('Fr4nzJermido')
             admin.save()
             logger.info('Default admin account created successfully')
+        return admin
     except Exception as e:
         logger.error(f'Error creating default admin: {str(e)}')
+        return None
 
 # User loader for Flask-Login
 @login_manager.user_loader
