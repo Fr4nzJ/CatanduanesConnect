@@ -892,12 +892,8 @@ def accept_offer(service_id, job_seeker_id):
         return redirect(url_for('view_service', id=service_id))
 
 @app.route('/chatbot')
-def chatbot_page():
-    return render_template('chatbot.html')
-
-@app.route('/chatbot')
-def chatbot_page():
-    # Get quick stats for the welcome message
+def chatbot_main():
+    """Main chatbot interface with job and business statistics"""
     try:
         job_count = len(Job.get_all())
         business_count = len(Business.get_all())
@@ -908,6 +904,16 @@ def chatbot_page():
     except:
         stats = None
     return render_template('chatbot.html', stats=stats)
+
+@app.route('/chatbot-ai')
+def chatbot_ai():
+    """AI-powered chatbot interface focused on job matching and career advice"""
+    return render_template('chatbot/ai.html')
+
+@app.route('/chatbot-support')
+def chatbot_support():
+    """Support chatbot for general inquiries and platform help"""
+    return render_template('chatbot/support.html')
 
 @app.route('/chat', methods=['POST'])
 def chat():
