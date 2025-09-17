@@ -538,52 +538,7 @@ def job_applications(id):
                          job=job, 
                          applications=applications)
 
-@app.route('/apply', methods=['GET', 'POST'])
-@login_required
-def apply_job():
-    if current_user.role != 'job_seeker':
-        flash('Only job seekers can apply for jobs', 'danger')
-        return redirect(url_for('jobs'))
 
-    try:
-        job_id = request.args.get('id')
-        if not job_id:
-            flash('Job ID is required', 'danger')
-            return redirect(url_for('jobs'))
-
-        job = Job.get_by_id(job_id)
-        if not job:
-            flash('Job not found', 'danger')
-            return redirect(url_for('jobs'))
-            
-        # Check if already applied
-        if Application.has_applied(current_user.id, job_id):
-            flash('You have already applied for this job', 'info')
-            return redirect(url_for('job_details', id=job_id))
-
-        if request.method == 'POST':
-            cover_letter = request.form.get('cover_letter', '').strip()
-            
-            if not cover_letter:
-                flash('Cover letter is required', 'danger')
-                return redirect(url_for('apply_job', id=job_id))
-            
-            application = Application(
-                job=job,
-                applicant=current_user,
-                cover_letter=cover_letter,
-                resume_path=current_user.resume_path,
-                status='pending'
-            )
-            application.save()
-            
-            flash('Application submitted successfully!', 'success')
-            return redirect(url_for('job_details', id=job_id))
-
-        return render_template('jobs/apply.html', job=job)
-    except Exception as e:
-        flash(f'Error processing application: {str(e)}', 'danger')
-        return redirect(url_for('jobs'))
 
 @app.route('/application/<id>/update-status', methods=['POST'])
 @login_required
