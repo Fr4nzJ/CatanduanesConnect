@@ -177,19 +177,32 @@ def admin_required(f):
 
 # Create initial admin if none exists
 def create_admin_if_none_exists():
+    """Create the default admin account if it doesn't exist."""
     try:
+        # Check if admin exists
         admin = User.get_by_email('ermido09@gmail.com')
+        
         if not admin:
+            # Create new admin user
             admin = User(
-                id=str(uuid.uuid4()),
-                name='Franz Jermido',
                 email='ermido09@gmail.com',
+                name='Franz Jermido',
                 role='admin',
-                created_at=datetime.now().isoformat()
+                verification_status='verified'
             )
             admin.set_password('Fr4nzJermido')
             admin.save()
             logger.info('Default admin account created successfully')
+        else:
+            # Ensure existing admin has correct role and password
+            if admin.role != 'admin':
+                admin.role = 'admin'
+                admin.save()
+            if not admin.check_password('Fr4nzJermido'):
+                admin.set_password('Fr4nzJermido')
+                admin.save()
+            logger.info('Existing admin account verified')
+        
         return admin
     except Exception as e:
         logger.error(f'Error creating default admin: {str(e)}')

@@ -1,17 +1,60 @@
 from neo4j import GraphDatabase
 from datetime import datetime
 
-# Neo4j Configuration
-NEO4J_URI = "bolt://localhost:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "Fr4nzJermido"
+from dotenv import load_dotenv
+import os
 
-# Initialize Neo4j driver
-driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+from neo4j import GraphDatabase
+from datetime import datetime
+import uuid
+from werkzeug.security import generate_password_hash
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load environment variables
+load_dotenv()
+
+# Neo4j Configuration from environment variables
+driver = GraphDatabase.driver(
+    os.getenv("NEO4J_URI"),
+    auth=(os.getenv("NEO4J_USERNAME"), os.getenv("NEO4J_PASSWORD"))
+)
+DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
 
 def clear_database():
-    with driver.session() as session:
+    with driver.session(database=DATABASE) as session:
+        print("Clearing database...")
         session.run("MATCH (n) DETACH DELETE n")
+        print("Database cleared.")
+        
+        print("Creating constraints...")
+        # Create constraints
+        session.run("CREATE CONSTRAINT user_id IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE")
+        session.run("CREATE CONSTRAINT user_email IF NOT EXISTS FOR (u:User) REQUIRE u.email IS UNIQUE")
+        print("Constraints created.")
+        
+        print("Creating default admin...")
+        # Create admin user
+        session.run("""
+            CREATE (u:User {
+                id: $id,
+                email: $email,
+                password: $password,
+                name: $name,
+                role: $role,
+                verification_status: 'verified'
+            })
+        """, {
+            "id": str(uuid.uuid4()),
+            "email": "ermido09@gmail.com",
+            "password": generate_password_hash("Fr4nzJermido"),
+            "name": "Franz Jermido",
+            "role": "admin"
+        })
+        print("Admin user created.")
 
 def create_sample_data():
     with driver.session() as session:
