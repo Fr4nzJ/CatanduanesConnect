@@ -14,6 +14,7 @@ import neo4j
 from models import User, Business, Job, Application, Review, Service
 from decorators import admin_required
 
+app = Flask(__name__)
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
@@ -44,7 +45,7 @@ def log_request_info():
 load_dotenv()
 
 # Configure Flask app
-app = Flask(__name__)
+
 
 # Secret key config
 app.secret_key = os.getenv('FLASK_SECRET_KEY')
