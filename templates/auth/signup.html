@@ -74,17 +74,17 @@
                                     // Show fields for selected role
                                     if (this.value === 'job_seeker') {
                                         document.getElementById('job_seeker_fields').style.display = 'block';
-                                        document.getElementById('resume').removeAttribute('required');
-                                        document.getElementById('permit').setAttribute('required', 'required');
+                                        document.getElementById('permit').removeAttribute('required');
                                     } else if (this.value === 'business_owner') {
                                         document.getElementById('business_owner_fields').style.display = 'block';
                                         document.getElementById('permit').setAttribute('required', 'required');
-                                        document.getElementById('resume').removeAttribute('required');
+                                    } else {
+                                        document.getElementById('permit').removeAttribute('required');
                                     }
                                 });
                             });
                         </script>
-                        </div>
+                        
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
                             <label class="form-check-label" for="terms">

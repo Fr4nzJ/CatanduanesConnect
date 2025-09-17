@@ -58,22 +58,23 @@ class Notification:
                     status: $status,
                     created_at: $created_at,
                     link: $link
-                })-[:HAS_NOTIFICATION]->(u)
+                })
+                CREATE (u)-[:HAS_NOTIFICATION]->(n)
             """, self.__dict__)
 
     def mark_as_read(self):
         with driver.session(database=DATABASE) as session:
             session.run("""
-                MATCH (n:Notification {id: $id})
+                MATCH (u:User {id: $user_id})-[:HAS_NOTIFICATION]->(n:Notification {id: $id})
                 SET n.status = 'read'
-            """, {'id': self.id})
+            """, {'id': self.id, 'user_id': self.user_id})
             self.status = 'read'
 
     @staticmethod
     def get_user_notifications(user_id, limit=10, unread_only=False):
         with driver.session(database=DATABASE) as session:
             query = """
-                MATCH (n:Notification)-[:HAS_NOTIFICATION]->(u:User {id: $user_id})
+                MATCH (u:User {id: $user_id})-[:HAS_NOTIFICATION]->(n:Notification)
                 WHERE CASE WHEN $unread_only = true THEN n.status = 'unread' ELSE true END
                 RETURN n
                 ORDER BY n.created_at DESC
@@ -104,7 +105,8 @@ class Notification:
     def get_unread_count(user_id):
         with driver.session(database=DATABASE) as session:
             result = session.run("""
-                MATCH (n:Notification {status: 'unread'})-[:HAS_NOTIFICATION]->(u:User {id: $user_id})
+                MATCH (u:User {id: $user_id})-[:HAS_NOTIFICATION]->(n:Notification)
+                WHERE n.status = 'unread'
                 RETURN count(n) as count
             """, {'user_id': user_id})
             return result.single()['count']
@@ -282,7 +284,7 @@ class User(UserMixin):
     ROLES = ['business_owner', 'client', 'job_seeker', 'admin']  # admin is here but not available for signup
     SIGNUP_ROLES = ['business_owner', 'client', 'job_seeker']  # roles available during signup
     
-    def __init__(self, id=None, email=None, password=None, name=None, role=None, phone=None, address=None, skills=None, experience=None, education=None, resume_path=None, verification_status=None):
+    def __init__(self, id=None, email=None, password=None, name=None, role=None, phone=None, address=None, skills=None, experience=None, education=None, resume_path=None, permit_path=None, verification_status=None):
         self.id = id
         self.email = email
         self.password = password
@@ -294,6 +296,7 @@ class User(UserMixin):
         self.experience = experience or []
         self.education = education or []
         self.resume_path = resume_path
+        self.permit_path = permit_path
         self.verification_status = verification_status or 'pending'  # pending, verified, rejected
 
     def get_id(self):
@@ -332,6 +335,7 @@ class User(UserMixin):
                 'experience': self.experience,
                 'education': self.education,
                 'resume_path': self.resume_path,
+                'permit_path': self.permit_path,
                 'verification_status': self.verification_status
             }
             
@@ -372,7 +376,9 @@ class User(UserMixin):
                     skills=user.get("skills", []),
                     experience=user.get("experience", []),
                     education=user.get("education", []),
-                    resume_path=user.get("resume_path")
+                    resume_path=user.get("resume_path"),
+                    permit_path=user.get("permit_path"),
+                    verification_status=user.get("verification_status", "pending")
                 )
             return None
 
@@ -397,7 +403,9 @@ class User(UserMixin):
                     skills=user.get("skills", []),
                     experience=user.get("experience", []),
                     education=user.get("education", []),
-                    resume_path=user.get("resume_path")
+                    resume_path=user.get("resume_path"),
+                    permit_path=user.get("permit_path"),
+                    verification_status=user.get("verification_status", "pending")
                 )
             return None
 

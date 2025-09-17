@@ -133,8 +133,14 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # Create upload directories
-os.makedirs(os.path.join(UPLOAD_FOLDER, 'resumes'), exist_ok=True)
-os.makedirs(os.path.join(UPLOAD_FOLDER, 'permits'), exist_ok=True)
+for dir_name in ['resumes', 'permits']:
+    dir_path = os.path.join(UPLOAD_FOLDER, dir_name)
+    if not os.path.exists(dir_path):
+        try:
+            os.makedirs(dir_path)
+            logger.info(f'Created upload directory: {dir_path}')
+        except Exception as e:
+            logger.error(f'Error creating upload directory {dir_path}: {str(e)}')
 
 # Initialize the simple chatbot
 chatbot = SimpleBot()
@@ -274,15 +280,24 @@ def signup():
         except Exception as e:
             flash('Error uploading file. Please try again.', 'danger')
             return redirect(url_for('signup'))
-        
-        user.save()
-        login_user(user)
-        
-        flash('Account created successfully!', 'success')
-        if role == 'business_owner':
-            flash('Your account will be reviewed by an admin before you can post jobs.', 'info')
             
-        return redirect(url_for('dashboard'))
+        try:
+            if not user.save():
+                flash('Error creating account. Please try again.', 'danger')
+                return redirect(url_for('signup'))
+                
+            login_user(user)
+            flash('Account created successfully!', 'success')
+            
+            if role == 'business_owner':
+                flash('Your account will be reviewed by an admin before you can post jobs.', 'info')
+                
+            return redirect(url_for('dashboard'))
+            
+        except Exception as e:
+            logger.error(f'Database error during signup: {str(e)}')
+            flash('Error creating account. Please try again later.', 'danger')
+            return redirect(url_for('signup'))
 
     return render_template('auth/signup.html')
 
