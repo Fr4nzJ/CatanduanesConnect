@@ -17,6 +17,17 @@ from decorators import admin_required
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Load environment variables
+load_dotenv()
+
+# Configure Flask app
+app = Flask(__name__)
+app.secret_key = os.getenv('FLASK_SECRET_KEY')
+
+if not app.secret_key:
+    logger.error("No secret key set! Please set FLASK_SECRET_KEY environment variable.")
+    raise ValueError("No secret key set! Please set FLASK_SECRET_KEY environment variable.")
+
 # Custom Chatbot class
 class SimpleBot:
     def __init__(self):
