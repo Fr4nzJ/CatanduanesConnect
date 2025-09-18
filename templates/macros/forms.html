@@ -1,0 +1,26 @@
+{% macro csrf() %}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{% endmacro %}
+
+{% macro form_start(action='', method='POST', enctype=None) %}
+<form action="{{ action }}" method="{{ method }}"{% if enctype %} enctype="{{ enctype }}"{% endif %}>
+{{ csrf() }}
+{% endmacro %}
+
+{% macro form_end() %}
+</form>
+{% endmacro %}
+
+{% macro form_errors() %}
+{% if form.errors %}
+<div class="alert alert-danger">
+    <ul class="mb-0">
+        {% for field, errors in form.errors.items() %}
+            {% for error in errors %}
+                <li>{{ field }}: {{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endmacro %}

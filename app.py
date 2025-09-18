@@ -1,20 +1,33 @@
+import os
+import uuid
+import json
+import logging
+import random
+from datetime import datetime, timedelta
+from functools import wraps
+from neo4j import GraphDatabase, exceptions as neo4j
+
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
 from flask_bootstrap import Bootstrap
-from datetime import datetime, timedelta
-from functools import wraps
-from models import User, Business, Job, Application, Review, Service, Notification
-import os, uuid, json, logging, random
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
-from neo4j import GraphDatabase
-import neo4j
-from models import User, Business, Job, Application, Review, Service
-from decorators import admin_required
+from neo4j import GraphDatabase, exceptions as neo4j_exceptions
 
+from models import (
+    User, Business, Job, Application, 
+    Review, Service, Notification, Activity
+)
+from decorators import admin_required
+from admin_routes import admin
+
+# Initialize Flask app
 app = Flask(__name__)
+
+# Register blueprints
+app.register_blueprint(admin)
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
@@ -134,15 +147,42 @@ class SimpleBot:
 # Load environment variables
 load_dotenv()
 
-# Neo4j AuraDB setup
-driver = GraphDatabase.driver(
-    os.getenv("NEO4J_URI"),
-    auth=(os.getenv("NEO4J_USERNAME"), os.getenv("NEO4J_PASSWORD"))
-)
+# Load required environment variables
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
+if not all([NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD]):
+    logger.error("Missing required Neo4j environment variables!")
+    raise ValueError("Missing required Neo4j environment variables!")
+
+# Neo4j AuraDB setup
+try:
+    driver = GraphDatabase.driver(
+        NEO4J_URI,
+        auth=(NEO4J_USERNAME, NEO4J_PASSWORD)
+    )
+    # Test the connection
+    with driver.session(database=DATABASE) as session:
+        session.run("RETURN 1")
+    logger.info("Successfully connected to Neo4j database")
+except Exception as e:
+    logger.error(f"Failed to connect to Neo4j: {str(e)}")
+    raise
+
+# Configure Flask app
+FLASK_SECRET_KEY = os.getenv('FLASK_SECRET_KEY')
+if not FLASK_SECRET_KEY:
+    FLASK_SECRET_KEY = os.urandom(24)
+    logger.warning('No FLASK_SECRET_KEY set. Using random secret key.')
+
+app.config.update(
+    SECRET_KEY=FLASK_SECRET_KEY,
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax'
+)
 
 # Initialize extensions
 bcrypt = Bcrypt(app)
@@ -365,6 +405,10 @@ def signup():
                         except Exception as e:
                             logger.error(f'Error uploading resume: {str(e)}')
                             flash('Error uploading resume. You can upload it later from your profile.', 'warning')
+            except Exception as e:
+                logger.error(f'Error handling file uploads: {str(e)}')
+                flash('Error processing file uploads. Please try again.', 'danger')
+                return redirect(url_for('signup'))
                             
             except Exception as e:
                 logger.error(f'File upload error: {str(e)}')
@@ -436,6 +480,58 @@ def logout():
     logout_user()
     return redirect(url_for('home'))
 
+@app.route('/admin/dashboard/data')
+@login_required
+@admin_required
+def admin_dashboard_data():
+    try:
+        with driver.session(database=DATABASE) as session:
+            # Get user statistics by role
+            user_stats = session.run("""
+                MATCH (u:User)
+                WITH u.role as role, count(u) as count
+                RETURN collect({role: role, count: count}) as roles
+            """).single()['roles']
+            
+            # Get total counts
+            total_counts = session.run("""
+                MATCH (u:User) WITH count(u) as users
+                MATCH (b:Business) WITH users, count(b) as businesses
+                MATCH (j:Job) WITH users, businesses, count(j) as jobs
+                MATCH (s:Service) WITH users, businesses, jobs, count(s) as services
+                MATCH (a:Application)
+                RETURN {
+                    users: users,
+                    businesses: businesses,
+                    jobs: jobs,
+                    services: services,
+                    applications: count(a)
+                } as counts
+            """).single()['counts']
+            
+            # Get application statistics by status
+            app_stats = session.run("""
+                MATCH (a:Application)
+                WITH a.status as status, count(a) as count
+                RETURN collect({status: status, count: count}) as statuses
+            """).single()['statuses']
+            
+            # Get recent activities with user names
+            activities = Activity.get_recent(10)
+            
+            return jsonify({
+                'users': user_stats,
+                'businesses': total_counts['businesses'],
+                'jobs': total_counts['jobs'],
+                'services': total_counts['services'],
+                'applications': app_stats,
+                'recent_activity': activities
+            })
+            
+    except Exception as e:
+        logger.error(f"Error fetching admin stats: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -478,20 +574,118 @@ def dashboard():
                                     applications=[])
                                 
         elif current_user.role == 'client':
-            services = Service.get_all(client_id=current_user.id)
-            return render_template('dashboard/client.html',
-                                services=services)
+            try:
+                # Get services where the current user is the client
+                with driver.session(database=DATABASE) as session:
+                    result = session.run("""
+                        MATCH (s:Service)-[:REQUESTED_BY]->(u:User {id: $user_id})
+                        RETURN s ORDER BY s.created_at DESC
+                    """, {"user_id": current_user.id})
+                    services = [Service(**record["s"]) for record in result]
+                return render_template('dashboard/client.html', services=services)
+            except neo4j_exceptions.ServiceUnavailable as e:
+                logger.error(f'Database connection error in client dashboard: {str(e)}')
+                flash('Database connection error. Please try again later.', 'danger')
+                return render_template('dashboard/client.html', services=[])
+            except Exception as e:
+                logger.error(f'Error loading client dashboard: {str(e)}')
+                flash('Error loading your services. Please try again.', 'danger')
+                return render_template('dashboard/client.html', services=[])
                                 
         else:  # admin
-            users = User.get_all()
-            businesses = Business.get_all()
-            jobs = Job.get_all()
-            services = Service.get_all()
-            return render_template('dashboard/admin.html',
-                                users=users,
-                                businesses=businesses,
-                                jobs=jobs,
-                                services=services)
+            try:
+                with driver.session(database=DATABASE) as session:
+                    # Get user statistics
+                    user_stats = session.run("""
+                        MATCH (u:User)
+                        WITH u.role as role, count(u) as count
+                        RETURN collect({role: role, count: count}) as roles
+                    """).single()['roles']
+                    
+                    # Get total counts
+                    total_counts = session.run("""
+                        MATCH (u:User) WITH count(u) as users
+                        MATCH (b:Business) WITH users, count(b) as businesses
+                        MATCH (j:Job) WITH users, businesses, count(j) as jobs
+                        MATCH (s:Service) WITH users, businesses, jobs, count(s) as services
+                        MATCH (a:Application)
+                        RETURN {
+                            users: users,
+                            businesses: businesses,
+                            jobs: jobs,
+                            services: services,
+                            applications: count(a)
+                        } as counts
+                    """).single()['counts']
+                    
+                    # Get application statistics
+                    app_stats = session.run("""
+                        MATCH (a:Application)
+                        WITH a.status as status, count(a) as count
+                        RETURN collect({status: status, count: count}) as statuses
+                    """).single()['statuses']
+                    
+                    # Get recent activities (last 10)
+                    recent_activities = session.run("""
+                        MATCH (a:Activity)
+                        RETURN a
+                        ORDER BY a.timestamp DESC
+                        LIMIT 10
+                    """).data()
+
+                return render_template('dashboard/admin.html',
+                                    user_stats=user_stats,
+                                    total_counts=total_counts,
+                                    app_stats=app_stats,
+                                    recent_activities=recent_activities)
+            except Exception as e:
+                logger.error(f'Error loading admin dashboard: {str(e)}')
+                flash(f'Error loading dashboard: {str(e)}', 'danger') 
+                return redirect(url_for('home'))
+                with driver.session(database=DATABASE) as session:
+                    # Get user statistics
+                    user_stats = session.run("""
+                        MATCH (u:User)
+                        WITH u.role as role, count(u) as count
+                        RETURN collect({role: role, count: count}) as roles
+                    """).single()['roles']
+                    
+                    # Get total counts
+                    total_counts = session.run("""
+                        MATCH (u:User) WITH count(u) as users
+                        MATCH (b:Business) WITH users, count(b) as businesses
+                        MATCH (j:Job) WITH users, businesses, count(j) as jobs
+                        MATCH (s:Service) WITH users, businesses, jobs, count(s) as services
+                        MATCH (a:Application)
+                        RETURN {
+                            users: users,
+                            businesses: businesses,
+                            jobs: jobs,
+                            services: services,
+                            applications: count(a)
+                        } as counts
+                    """).single()['counts']
+                    
+                    # Get application statistics
+                    app_stats = session.run("""
+                        MATCH (a:Application)
+                        WITH a.status as status, count(a) as count
+                        RETURN collect({status: status, count: count}) as statuses
+                    """).single()['statuses']
+                    
+                    # Get recent activities (last 10)
+                    recent_activities = session.run("""
+                        MATCH (a:Activity)
+                        RETURN a
+                        ORDER BY a.timestamp DESC
+                        LIMIT 10
+                    """).data()
+
+                return render_template('dashboard/admin.html',
+                                    user_stats=user_stats,
+                                    total_counts=total_counts,
+                                    app_stats=app_stats,
+                                    recent_activities=recent_activities)
     except Exception as e:
         flash(f'Error loading dashboard: {str(e)}', 'danger')
         return redirect(url_for('home'))
@@ -1023,6 +1217,205 @@ def accept_offer(service_id, job_seeker_id):
     except Exception as e:
         flash(f'Error accepting offer: {str(e)}', 'danger')
         return redirect(url_for('view_service', id=service_id))
+
+@app.route('/admin/dashboard/data')
+@login_required
+@admin_required
+def admin_dashboard_data():
+    try:
+        with driver.session(database=DATABASE) as session:
+            # Get user statistics
+            user_stats = session.run("""
+                MATCH (u:User)
+                WITH u.role as role, count(u) as count
+                RETURN collect({role: role, count: count}) as roles
+            """).single()['roles']
+            
+            # Get total counts
+            total_counts = session.run("""
+                MATCH (u:User) WITH count(u) as users
+                MATCH (b:Business) WITH users, count(b) as businesses
+                MATCH (j:Job) WITH users, businesses, count(j) as jobs
+                MATCH (s:Service) WITH users, businesses, jobs, count(s) as services
+                MATCH (a:Application)
+                RETURN {
+                    users: users,
+                    businesses: businesses,
+                    jobs: jobs,
+                    services: services,
+                    applications: count(a)
+                } as counts
+            """).single()['counts']
+            
+            # Get application statistics
+            app_stats = session.run("""
+                MATCH (a:Application)
+                WITH a.status as status, count(a) as count
+                RETURN collect({status: status, count: count}) as statuses
+            """).single()['statuses']
+            
+            # Get recent activities (last 10)
+            recent_activities = session.run("""
+                MATCH (a:Activity)
+                RETURN a
+                ORDER BY a.timestamp DESC
+                LIMIT 10
+            """).data()
+
+        return jsonify({
+            'user_stats': user_stats,
+            'total_counts': total_counts,
+            'app_stats': app_stats,
+            'recent_activities': recent_activities
+        })
+    except Exception as e:
+        logger.error(f'Error fetching dashboard data: {str(e)}')
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/users', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_users():
+    if request.method == 'POST':
+        try:
+            action = request.form.get('action')
+            user_id = request.form.get('user_id')
+            
+            with driver.session(database=DATABASE) as session:
+                if action == 'deactivate':
+                    session.run("""
+                        MATCH (u:User {id: $user_id})
+                        SET u.is_active = false
+                        RETURN u
+                    """, {'user_id': user_id})
+                    flash('User deactivated successfully', 'success')
+                elif action == 'delete':
+                    session.run("""
+                        MATCH (u:User {id: $user_id})
+                        DETACH DELETE u
+                    """, {'user_id': user_id})
+                    flash('User deleted successfully', 'success')
+                
+                # Log the activity
+                session.run("""
+                    CREATE (a:Activity {
+                        id: $activity_id,
+                        type: 'user_management',
+                        action: $action,
+                        user_id: $user_id,
+                        admin_id: $admin_id,
+                        timestamp: datetime()
+                    })
+                """, {
+                    'activity_id': str(uuid.uuid4()),
+                    'action': action,
+                    'user_id': user_id,
+                    'admin_id': current_user.id
+                })
+                
+        except Exception as e:
+            logger.error(f'Error managing user: {str(e)}')
+            flash(f'Error: {str(e)}', 'danger')
+            
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/businesses', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_businesses():
+    if request.method == 'POST':
+        try:
+            action = request.form.get('action')
+            business_id = request.form.get('business_id')
+            
+            with driver.session(database=DATABASE) as session:
+                if action == 'approve':
+                    session.run("""
+                        MATCH (b:Business {id: $business_id})
+                        SET b.is_verified = true
+                        RETURN b
+                    """, {'business_id': business_id})
+                    flash('Business approved successfully', 'success')
+                elif action == 'deny':
+                    session.run("""
+                        MATCH (b:Business {id: $business_id})
+                        SET b.is_verified = false
+                        RETURN b
+                    """, {'business_id': business_id})
+                    flash('Business denied successfully', 'success')
+                
+                # Log the activity
+                session.run("""
+                    CREATE (a:Activity {
+                        id: $activity_id,
+                        type: 'business_management',
+                        action: $action,
+                        business_id: $business_id,
+                        admin_id: $admin_id,
+                        timestamp: datetime()
+                    })
+                """, {
+                    'activity_id': str(uuid.uuid4()),
+                    'action': action,
+                    'business_id': business_id,
+                    'admin_id': current_user.id
+                })
+                
+        except Exception as e:
+            logger.error(f'Error managing business: {str(e)}')
+            flash(f'Error: {str(e)}', 'danger')
+            
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/content', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_content():
+    if request.method == 'POST':
+        try:
+            action = request.form.get('action')
+            content_type = request.form.get('content_type')
+            content_id = request.form.get('content_id')
+            
+            with driver.session(database=DATABASE) as session:
+                if action == 'remove':
+                    if content_type == 'job':
+                        session.run("""
+                            MATCH (j:Job {id: $content_id})
+                            DETACH DELETE j
+                        """, {'content_id': content_id})
+                    elif content_type == 'service':
+                        session.run("""
+                            MATCH (s:Service {id: $content_id})
+                            DETACH DELETE s
+                        """, {'content_id': content_id})
+                    
+                    flash(f'{content_type.capitalize()} removed successfully', 'success')
+                    
+                    # Log the activity
+                    session.run("""
+                        CREATE (a:Activity {
+                            id: $activity_id,
+                            type: 'content_moderation',
+                            action: $action,
+                            content_type: $content_type,
+                            content_id: $content_id,
+                            admin_id: $admin_id,
+                            timestamp: datetime()
+                        })
+                    """, {
+                        'activity_id': str(uuid.uuid4()),
+                        'action': action,
+                        'content_type': content_type,
+                        'content_id': content_id,
+                        'admin_id': current_user.id
+                    })
+                    
+        except Exception as e:
+            logger.error(f'Error moderating content: {str(e)}')
+            flash(f'Error: {str(e)}', 'danger')
+            
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/chatbot')
 def chatbot_main():
