@@ -33,6 +33,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('map') }}">Map</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('about') }}">About Us</a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-robot me-1"></i>Chatbot
@@ -106,8 +109,27 @@
 
     <!-- Footer -->
     <footer class="bg-light py-4 mt-5">
-        <div class="container text-center">
-            <p class="mb-0">&copy; 2024 Catanduanes Connect. All rights reserved.</p>
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-8 text-center">
+                    <p class="mb-2">&copy; 2025 Catanduanes Connect Team</p>
+                    <div class="d-flex flex-column flex-md-row justify-content-center gap-3 mb-2">
+                        <a href="mailto:catanduanesconnect@gmail.com" class="text-muted text-decoration-none">
+                            <i class="fas fa-envelope me-2"></i>catanduanesconnect@gmail.com
+                        </a>
+                        <a href="tel:09952049746" class="text-muted text-decoration-none">
+                            <i class="fas fa-phone me-2"></i>09952049746
+                        </a>
+                    </div>
+                    <div>
+                        <a href="https://www.facebook.com/profile.php?id=61581162686907" 
+                           target="_blank" 
+                           class="text-muted text-decoration-none">
+                            <i class="fab fa-facebook me-2"></i>Follow us
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </footer>
 

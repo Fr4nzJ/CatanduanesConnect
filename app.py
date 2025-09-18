@@ -47,6 +47,12 @@ logging.basicConfig(
         )
     ])
 
+# Routes
+@app.route('/about')
+def about():
+    """Render the about us page."""
+    return render_template('about.html')
+
 # Error handlers
 @app.errorhandler(HTTPException)
 def handle_http_error(e):
