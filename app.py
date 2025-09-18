@@ -1287,46 +1287,64 @@ def accept_offer(service_id, job_seeker_id):
         flash(f'Error accepting offer: {str(e)}', 'danger')
         return redirect(url_for('view_service', id=service_id))
 
-# Removed duplicate route - this was causing the conflict
+# Flowise AI Chatbot Integration
+import requests
 
-@app.route('/chatbot')
-def chatbot_main():
-    """General chat interface"""
-    return render_template('chatbot/main.html')
+# Flowise configuration
+FLOWISE_API_URL = "http://127.0.0.1:3000/api/v1/prediction" 
+FLOWISE_FLOW_ID = os.getenv("2d65a42f-97bd-47c6-9219-7a4f4dbed874")
+FLOWISE_API_KEY = os.getenv("Wv7HhwYnuJ39aLjsKnWtwQt5ATqUSAnr88Q_87Rt7Bk")
 
-@app.route('/chatbot/ai')
-def chatbot_ai():
-    """AI-powered job assistant"""
-    return render_template('chatbot/ai.html')
+@app.route('/chat')
+def chat():
+    """Render the chat interface page"""
+    return render_template('chat.html')
 
-@app.route('/chatbot/support')
-def chatbot_support():
-    """Customer support interface"""
-    return render_template('chatbot/support.html')
-
-@app.route('/api/chatbot/message', methods=['POST'])
-def chatbot_message():
-    """Handle chatbot messages"""
+@app.route('/chatbot', methods=['POST'])
+def chatbot():
+    """Proxy requests to internal Flowise AI instance"""
     try:
+        # Validate request
         data = request.get_json()
         if not data or 'message' not in data:
             return jsonify({'error': 'No message provided'}), 400
 
-        user_message = data['message']
-        chat_type = data.get('type', 'general')  # general, ai, or support
+        # Validate Flowise configuration
+        if not FLOWISE_FLOW_ID or not FLOWISE_API_KEY:
+            logging.error("Missing required Flowise environment variables")
+            return jsonify({'error': 'Chatbot service not configured'}), 503
 
-        # Example response logic - customize based on chat type
-        if chat_type == 'ai':
-            response = handle_ai_chat(user_message)
-        elif chat_type == 'support':
-            response = handle_support_chat(user_message)
-        else:
-            response = handle_general_chat(user_message)
-
+        # Forward the message to local Flowise instance
+        response = requests.post(
+            f"{FLOWISE_API_URL}/{FLOWISE_FLOW_ID}",
+            json={"question": data['message']},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {FLOWISE_API_KEY}"
+            },
+            timeout=30  # Add timeout to prevent hanging
+        )
+        
+        response.raise_for_status()  # Raise an exception for bad status codes
+        
+        # Get response data
+        response_data = response.json()
+        
+        # Return a consistent response format
         return jsonify({
-            'message': response,
+            'message': response_data.get('text', response_data.get('response', 'No response from chatbot')),
             'timestamp': datetime.now().isoformat()
         })
+
+    except requests.Timeout:
+        logging.error("Timeout connecting to Flowise API")
+        return jsonify({'error': 'Chatbot service took too long to respond'}), 504
+    except requests.ConnectionError:
+        logging.error("Could not connect to Flowise API")
+        return jsonify({'error': 'Could not connect to chatbot service'}), 503
+    except requests.RequestException as e:
+        logging.error(f"Flowise API error: {str(e)}")
+        return jsonify({'error': 'Failed to communicate with chatbot service'}), 503
     except Exception as e:
         logging.error(f"Chatbot error: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
