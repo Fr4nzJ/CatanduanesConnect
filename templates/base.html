@@ -36,15 +36,21 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('about') }}">About Us</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('chat') }}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-robot me-1"></i>Chatbot
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('chat') }}">
-                            <i class="fas fa-robot me-1"></i>Chatbot
-                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('chatbot_main') }}">
+                                <i class="fas fa-comments me-2"></i>General Chat
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('chatbot_ai') }}">
+                                <i class="fas fa-brain me-2"></i>AI Job Assistant
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('chatbot_support') }}">
+                                <i class="fas fa-headset me-2"></i>Support
+                            </a></li>
+                        </ul>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
