@@ -74,11 +74,13 @@ class Activity:
         try:
             with driver.session(database=DATABASE) as session:
                 result = session.run("""
-                    CALL (MATCH (a:Activity)
+                    CALL (() 
+                        MATCH (a:Activity)
                         OPTIONAL MATCH (u:User {id: a.user_id})
                         RETURN a, u.name as user_name
                         ORDER BY a.timestamp DESC
-                        LIMIT $limit)
+                        LIMIT $limit
+                    )
                     RETURN a, user_name
                 """, {"limit": limit})
                 
@@ -732,6 +734,21 @@ class Business:
                     )
                 ))
             return businesses
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'location': self.location,
+            'category': self.category,
+            'phone': self.phone,
+            'email': self.email,
+            'website': self.website,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'owner': self.owner.to_dict() if self.owner else None
+        }
 
     def get_average_rating(self):
         try:
