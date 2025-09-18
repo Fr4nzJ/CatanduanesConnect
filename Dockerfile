@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install Flowise with increased network timeout and better Node.js settings
 ENV NODE_OPTIONS="--max-old-space-size=4096"
-RUN npm config set network-timeout 1000000 && \
+RUN npm config set network-timeout-ms 1000000 && \
     npm install -g flowise --unsafe-perm=true
 
 # Set working directory
