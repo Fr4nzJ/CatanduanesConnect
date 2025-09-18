@@ -40,16 +40,16 @@ class Activity:
         try:
             with driver.session(database=DATABASE) as session:
                 result = session.run("""
-                    CREATE (a:Activity {
-                        id: $id,
-                        type: $type,
-                        action: $action,
-                        user_id: $user_id,
-                        target_id: $target_id,
-                        target_type: $target_type,
-                        timestamp: $timestamp,
-                        details: $details
-                    })
+                    MERGE (a:Activity {id: $id})
+                    ON CREATE SET
+                        a.id = $id,
+                        a.type = $type,
+                        a.action = $action,
+                        a.user_id = $user_id,
+                        a.target_id = $target_id,
+                        a.target_type = $target_type,
+                        a.timestamp = $timestamp,
+                        a.details = $details
                     RETURN a
                 """, self.__dict__)
                 return bool(result.single())
@@ -62,11 +62,14 @@ class Activity:
         try:
             with driver.session(database=DATABASE) as session:
                 result = session.run("""
-                    MATCH (a:Activity)
-                    OPTIONAL MATCH (u:User {id: a.user_id})
-                    RETURN a, u.name as user_name
-                    ORDER BY a.timestamp DESC
-                    LIMIT $limit
+                    CALL {
+                        MATCH (a:Activity)
+                        OPTIONAL MATCH (u:User {id: a.user_id})
+                        RETURN a, u.name as user_name
+                        ORDER BY a.timestamp DESC
+                        LIMIT $limit
+                    }
+                    RETURN a, user_name
                 """, {"limit": limit})
                 
                 activities = []
@@ -370,6 +373,20 @@ class User(UserMixin):
 
     def get_id(self):
         return str(self.id)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'name': self.name,
+            'role': self.role,
+            'phone': self.phone,
+            'address': self.address,
+            'skills': self.skills,
+            'experience': self.experience,
+            'education': self.education,
+            'verification_status': self.verification_status
+        }
 
     def set_password(self, password):
         if password:
