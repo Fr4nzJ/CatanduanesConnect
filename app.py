@@ -1212,47 +1212,15 @@ def accept_offer(service_id, job_seeker_id):
         flash(f'Error accepting offer: {str(e)}', 'danger')
         return redirect(url_for('view_service', id=service_id))
 
-@app.route('/admin/dashboard/stats')
-@login_required
-@admin_required
-def admin_dashboard_stats():
-    try:
-        with driver.session(database=DATABASE) as session:
-            user_stats = session.run("""
-                MATCH (u:User)
-                WITH u.role as role, count(u) as count
-                RETURN collect({ role: role, count: count }) as roles;
-            """).single()['roles']
-            
-            total_counts = session.run("""
-                MATCH (u:User), (b:Business), (j:Job), (s:Service), (a:Application)
-                RETURN { users: count(u), businesses: count(b), jobs: count(j), services: count(s), applications: count(a) } as counts;
-            """).single()['counts']
-            
-            # Get application statistics
-            app_stats = session.run("""
-                MATCH (a:Application)
-                WITH a.status as status, count(a) as count
-                RETURN collect({ status: status, count: count }) as statuses;
-            """).single()['statuses']
-            
-            # Get recent activities (last 10)
-            recent_activities = session.run("""
-                MATCH (a:Activity)
-                RETURN a
-                ORDER BY a.timestamp DESC
-                LIMIT 10;
-            """).data()
+# Removed duplicate route - this was causing the conflict
 
-        return jsonify({
-            'user_stats': user_stats,
-            'total_counts': total_counts,
-            'app_stats': app_stats,
-            'recent_activities': recent_activities
-        })
-    except Exception as e:
-        logger.error(f'Error fetching dashboard data: {str(e)}')
-        return jsonify({'error': str(e)}), 500
+@app.route('/chatbot')
+def chatbot_main():
+    return render_template('chatbot/support.html')
+
+@app.route('/chatbot/ai')
+def chatbot_ai():
+    return render_template('chatbot/ai.html')
 
 @app.route('/admin/users', methods=['GET', 'POST'])
 @login_required
