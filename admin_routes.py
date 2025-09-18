@@ -62,18 +62,28 @@ def dashboard():
                     RETURN collect({role: role, count: count}) as roles
                 """).single()['roles']
                 
-                # Get total counts using the new CALL syntax
+                # Get total counts using the correct CALL subquery syntax
                 total_counts = session.run("""
-                    CALL (MATCH (u:User)
-                        RETURN count(u) AS users)
-                    CALL (MATCH (b:Business)
-                        RETURN count(b) AS businesses)
-                    CALL (MATCH (j:Job)
-                        RETURN count(j) AS jobs)
-                    CALL (MATCH (s:Service)
-                        RETURN count(s) AS services)
-                    CALL (MATCH (a:Application)
-                        RETURN count(a) AS applications)
+                    CALL {
+                        MATCH (u:User)
+                        RETURN count(u) AS users
+                    }
+                    CALL {
+                        MATCH (b:Business)
+                        RETURN count(b) AS businesses
+                    }
+                    CALL {
+                        MATCH (j:Job)
+                        RETURN count(j) AS jobs
+                    }
+                    CALL {
+                        MATCH (s:Service)
+                        RETURN count(s) AS services
+                    }
+                    CALL {
+                        MATCH (a:Application)
+                        RETURN count(a) AS applications
+                    }
                     RETURN {
                         users: users,
                         businesses: businesses,
