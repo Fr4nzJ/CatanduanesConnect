@@ -45,8 +45,7 @@ logging.basicConfig(
             maxBytes=10240,
             backupCount=10
         )
-    ]
-)
+    ])
 
 # Error handlers
 @app.errorhandler(HTTPException)
@@ -67,7 +66,6 @@ def log_request_info():
     if not request.path.startswith('/static'):
         app.logger.info('Headers: %s', request.headers)
         app.logger.info('Body: %s', request.get_data())
-)
 logger = logging.getLogger(__name__)
 
 # Error tracking
