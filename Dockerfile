@@ -1,15 +1,19 @@
 # Use Node.js as base image
-FROM node:18-slim
+FROM node:18-bullseye-slim
 
-# Install Python, pip and supervisor
+# Install Python, pip, supervisor and build dependencies
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     supervisor \
+    build-essential \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Flowise globally
-RUN npm install -g flowise
+# Install Flowise with increased network timeout and better Node.js settings
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+RUN npm config set network-timeout 1000000 && \
+    npm install -g flowise --unsafe-perm=true
 
 # Set working directory
 WORKDIR /app
