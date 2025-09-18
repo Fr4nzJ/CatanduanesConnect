@@ -134,36 +134,16 @@ def dashboard_data():
             
             # Get total counts
             total_counts = session.run("""
-                CALL {
-                    MATCH (u:User)
-                    WITH count(u) AS users
-                    RETURN users
-                }
-                WITH users
-                CALL {
-                    MATCH (b:Business)
-                    WITH count(b) AS businesses
-                    RETURN businesses
-                }
-                WITH users, businesses
-                CALL {
-                    MATCH (j:Job)
-                    WITH count(j) AS jobs
-                    RETURN jobs
-                }
-                WITH users, businesses, jobs
-                CALL {
-                    MATCH (s:Service)
-                    WITH count(s) AS services
-                    RETURN services
-                }
-                WITH users, businesses, jobs, services
-                CALL {
-                    MATCH (a:Application)
-                    WITH count(a) AS applications
-                    RETURN applications
-                }
-                WITH users, businesses, jobs, services, applications
+                MATCH (u:User)
+                WITH count(u) AS users
+                MATCH (b:Business)
+                WITH users, count(b) AS businesses
+                MATCH (j:Job)
+                WITH users, businesses, count(j) AS jobs
+                MATCH (s:Service)
+                WITH users, businesses, jobs, count(s) AS services
+                MATCH (a:Application)
+                WITH users, businesses, jobs, services, count(a) AS applications
                 RETURN { 
                     users: users, 
                     businesses: businesses, 
