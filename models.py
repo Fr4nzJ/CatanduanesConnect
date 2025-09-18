@@ -76,11 +76,14 @@ class Activity:
                 result = session.run("""
                     CALL {
                         MATCH (a:Activity)
+                        WITH a
                         OPTIONAL MATCH (u:User {id: a.user_id})
-                        RETURN a, u.name as user_name
+                        WITH a, u.name as user_name
                         ORDER BY a.timestamp DESC
                         LIMIT $limit
+                        RETURN a, user_name
                     }
+                    WITH a, user_name
                     RETURN a, user_name
                 """, {"limit": limit})
                 
