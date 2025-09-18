@@ -64,23 +64,29 @@ def dashboard():
                 
                 # Get total counts
                 total_counts = session.run("""
+                    WITH 1 as dummy
                     CALL {
+                        WITH dummy
                         MATCH (u:User)
                         RETURN count(u) AS users
                     }
                     CALL {
+                        WITH dummy
                         MATCH (b:Business)
                         RETURN count(b) AS businesses
                     }
                     CALL {
+                        WITH dummy
                         MATCH (j:Job)
                         RETURN count(j) AS jobs
                     }
                     CALL {
+                        WITH dummy
                         MATCH (s:Service)
                         RETURN count(s) AS services
                     }
                     CALL {
+                        WITH dummy
                         MATCH (a:Application)
                         RETURN count(a) AS applications
                     }

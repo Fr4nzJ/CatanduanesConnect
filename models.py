@@ -41,7 +41,7 @@ class Activity:
             with driver.session(database=DATABASE) as session:
                 result = session.run("""
                     MERGE (a:Activity {id: $id})
-                    ON CREATE SET
+                    SET
                         a.id = $id,
                         a.type = $type,
                         a.action = $action,
@@ -51,7 +51,16 @@ class Activity:
                         a.timestamp = $timestamp,
                         a.details = $details
                     RETURN a
-                """, self.__dict__)
+                """, {
+                    'id': self.id,
+                    'type': self.type,
+                    'action': self.action,
+                    'user_id': self.user_id,
+                    'target_id': self.target_id,
+                    'target_type': self.target_type,
+                    'timestamp': self.timestamp,
+                    'details': self.details
+                })
                 return bool(result.single())
         except Exception as e:
             logger.error(f"Error saving activity: {str(e)}")
@@ -62,7 +71,9 @@ class Activity:
         try:
             with driver.session(database=DATABASE) as session:
                 result = session.run("""
+                    WITH 1 as dummy
                     CALL {
+                        WITH dummy
                         MATCH (a:Activity)
                         OPTIONAL MATCH (u:User {id: a.user_id})
                         RETURN a, u.name as user_name
