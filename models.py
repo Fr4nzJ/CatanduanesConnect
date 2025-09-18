@@ -24,6 +24,61 @@ driver = GraphDatabase.driver(
 )
 DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
 
+class Activity:
+    def __init__(self, id=None, type=None, action=None, user_id=None, target_id=None, 
+                 target_type=None, timestamp=None, details=None):
+        self.id = id or str(uuid.uuid4())
+        self.type = type  # e.g., 'user_management', 'business_verification', 'content_moderation'
+        self.action = action  # e.g., 'create', 'update', 'delete', 'approve', 'deny'
+        self.user_id = user_id  # ID of the user who performed the action
+        self.target_id = target_id  # ID of the affected resource
+        self.target_type = target_type  # Type of the affected resource
+        self.timestamp = timestamp or datetime.now().isoformat()
+        self.details = details or {}
+    
+    def save(self):
+        try:
+            with driver.session(database=DATABASE) as session:
+                result = session.run("""
+                    CREATE (a:Activity {
+                        id: $id,
+                        type: $type,
+                        action: $action,
+                        user_id: $user_id,
+                        target_id: $target_id,
+                        target_type: $target_type,
+                        timestamp: $timestamp,
+                        details: $details
+                    })
+                    RETURN a
+                """, self.__dict__)
+                return bool(result.single())
+        except Exception as e:
+            logger.error(f"Error saving activity: {str(e)}")
+            return False
+
+    @staticmethod
+    def get_recent(limit=10):
+        try:
+            with driver.session(database=DATABASE) as session:
+                result = session.run("""
+                    MATCH (a:Activity)
+                    OPTIONAL MATCH (u:User {id: a.user_id})
+                    RETURN a, u.name as user_name
+                    ORDER BY a.timestamp DESC
+                    LIMIT $limit
+                """, {"limit": limit})
+                
+                activities = []
+                for record in result:
+                    activity = record['a']
+                    activity['user_name'] = record['user_name']
+                    activities.append(activity)
+                return activities
+        except Exception as e:
+            logger.error(f"Error fetching recent activities: {str(e)}")
+            return []
+
 class Notification:
     TYPES = ['info', 'success', 'warning', 'error']
     
@@ -146,7 +201,7 @@ class Service:
                 }
                 WITH s
                 MATCH (c:User {id: $client_id})
-                MERGE (c)-[:REQUESTED]->(s)
+                MERGE (s)-[:REQUESTED_BY]->(c)
                 RETURN s
                 """,
                 id=self.id,
@@ -171,8 +226,9 @@ class Service:
         with driver.session(database=DATABASE) as session:
             result = session.run("""
                 MATCH (s:Service {id: $id})
-                OPTIONAL MATCH (c:User)-[:REQUESTED]->(s)
-                OPTIONAL MATCH (j:User)-[o:OFFERS]->(s)
+                OPTIONAL MATCH (s)-[:REQUESTED_BY]->(c:User)
+                OPTIONAL MATCH (o:ServiceOffer)-[:OFFERS_FOR]->(s)
+                OPTIONAL MATCH (o)-[:OFFERED_BY]->(j:User)
                 RETURN s, c as client,
                     collect({user: j, offer: o}) as offers
                 """,
