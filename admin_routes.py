@@ -8,10 +8,22 @@ import uuid
 import logging
 
 # Initialize Neo4j driver
-DATABASE = "neo4j"  # your database name
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
+
+if not all([NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD]):
+    raise ValueError("Missing required Neo4j environment variables!")
+
 driver = GraphDatabase.driver(
-    "bolt://localhost:7687",  # your Neo4j connection URI
-    auth=("neo4j", "password")  # your Neo4j credentials
+    NEO4J_URI,
+    auth=(NEO4J_USERNAME, NEO4J_PASSWORD)
 )
 
 logger = logging.getLogger(__name__)
@@ -33,50 +45,63 @@ def admin_required(f):
 def dashboard():
     """Admin dashboard main view."""
     try:
+        # Test Neo4j connection first
+        try:
+            driver.verify_connectivity()
+        except Exception as e:
+            logger.error(f"Neo4j connection test failed: {str(e)}")
+            flash("Database connection error. Please check database configuration.", "error")
+            return render_template('admin/dashboard.html', error="Database connection error")
+
         with driver.session(database=DATABASE) as session:
-            # Get user statistics
-            user_stats = session.run("""
-                MATCH (u:User)
-                WITH u.role as role, count(u) as count
-                RETURN collect({role: role, count: count}) as roles
-            """).single()['roles']
+            try:
+                # Get user statistics
+                user_stats = session.run("""
+                    MATCH (u:User)
+                    WITH u.role as role, count(u) as count
+                    RETURN collect({role: role, count: count}) as roles
+                """).single()['roles']
+                
+                # Get total counts
+                total_counts = session.run("""
+                    CALL { MATCH (u:User) RETURN count(u) AS users }
+                    CALL { MATCH (b:Business) RETURN count(b) AS businesses }
+                    CALL { MATCH (j:Job) RETURN count(j) AS jobs }
+                    CALL { MATCH (s:Service) RETURN count(s) AS services }
+                    CALL { MATCH (a:Application) RETURN count(a) AS applications }
+                    RETURN { 
+                        users: users, 
+                        businesses: businesses, 
+                        jobs: jobs, 
+                        services: services, 
+                        applications: applications 
+                    } AS counts
+                """).single()['counts']
             
-            # Get total counts
-            total_counts = session.run("""
-                CALL { MATCH (u:User) RETURN count(u) AS users }
-                CALL { MATCH (b:Business) RETURN count(b) AS businesses }
-                CALL { MATCH (j:Job) RETURN count(j) AS jobs }
-                CALL { MATCH (s:Service) RETURN count(s) AS services }
-                CALL { MATCH (a:Application) RETURN count(a) AS applications }
-                RETURN { 
-                    users: users, 
-                    businesses: businesses, 
-                    jobs: jobs, 
-                    services: services, 
-                    applications: applications 
-                } AS counts
-            """).single()['counts']
-            
-            # Get application statistics
-            app_stats = session.run("""
-                MATCH (a:Application)
-                WITH a.status as status, count(a) as count
-                RETURN collect({status: status, count: count}) as statuses
-            """).single()['statuses']
-            
-            # Get recent activities
-            recent_activities = Activity.get_recent(10)
-            
-            return render_template('admin/dashboard.html',
-                                user_stats=user_stats,
-                                total_counts=total_counts,
-                                app_stats=app_stats,
-                                recent_activities=recent_activities)
+                # Get application statistics
+                app_stats = session.run("""
+                    MATCH (a:Application)
+                    WITH a.status as status, count(a) as count
+                    RETURN collect({status: status, count: count}) as statuses
+                """).single()['statuses']
+                
+                # Get recent activities
+                recent_activities = Activity.get_recent(10)
+                
+                return render_template('admin/dashboard.html',
+                                    user_stats=user_stats,
+                                    total_counts=total_counts,
+                                    app_stats=app_stats,
+                                    recent_activities=recent_activities)
+            except Exception as e:
+                logger.error(f"Error executing Neo4j queries: {str(e)}")
+                flash("Error retrieving dashboard data. Please try again.", "error")
+                return render_template('admin/dashboard.html', error="Query execution error")
                                 
     except Exception as e:
         logger.error(f'Error loading admin dashboard: {str(e)}')
-        flash('Error loading dashboard data', 'danger')
-        return render_template('admin/dashboard.html')
+        flash('Database connection error. Please check configuration.', 'danger')
+        return render_template('admin/dashboard.html', error="Database connection error")
 
 @admin.route('/dashboard/data')
 @login_required
