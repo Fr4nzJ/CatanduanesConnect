@@ -1304,6 +1304,146 @@ def chatbot_support():
     """Customer support interface"""
     return render_template('chatbot/support.html')
 
+@app.route('/api/chatbot/message', methods=['POST'])
+def chatbot_message():
+    """Handle chatbot messages"""
+    try:
+        data = request.get_json()
+        if not data or 'message' not in data:
+            return jsonify({'error': 'No message provided'}), 400
+
+        user_message = data['message']
+        chat_type = data.get('type', 'general')  # general, ai, or support
+
+        # Example response logic - customize based on chat type
+        if chat_type == 'ai':
+            response = handle_ai_chat(user_message)
+        elif chat_type == 'support':
+            response = handle_support_chat(user_message)
+        else:
+            response = handle_general_chat(user_message)
+
+        return jsonify({
+            'message': response,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        logging.error(f"Chatbot error: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+def handle_ai_chat(message):
+    """Handle AI job assistant messages"""
+    # AI chat logic - customize based on requirements
+    try:
+        # Basic response logic - enhance this with actual AI processing
+        message = message.lower()
+        
+        if 'job' in message or 'work' in message:
+            return ("I can help you find job opportunities in Catanduanes! "
+                   "You can browse available jobs in our Jobs section or "
+                   "tell me what kind of work you're looking for.")
+        
+        elif 'salary' in message or 'pay' in message:
+            return ("Salary information varies by position and employer. "
+                   "You can find specific salary details in each job listing.")
+        
+        elif 'resume' in message or 'cv' in message:
+            return ("To create a strong resume, make sure to: \n"
+                   "1. Include your relevant work experience\n"
+                   "2. List your skills and qualifications\n"
+                   "3. Add your educational background\n"
+                   "4. Keep it concise and professional")
+        
+        elif 'interview' in message:
+            return ("Here are some interview tips:\n"
+                   "1. Research the company beforehand\n"
+                   "2. Prepare examples of your work experience\n"
+                   "3. Dress professionally\n"
+                   "4. Arrive early\n"
+                   "5. Ask relevant questions about the role")
+        
+        elif 'help' in message:
+            return ("I can help you with:\n"
+                   "- Finding job opportunities\n"
+                   "- Resume writing tips\n"
+                   "- Interview preparation\n"
+                   "- Salary information\n"
+                   "Just ask me what you'd like to know!")
+        
+        else:
+            return ("I'm your AI job search assistant. I can help you find jobs, "
+                   "prepare your resume, and get ready for interviews. "
+                   "What would you like to know about?")
+    except Exception as e:
+        logging.error(f"AI chat error: {str(e)}")
+        return "I'm having trouble processing that. Could you try rephrasing your question?"
+
+def handle_support_chat(message):
+    """Handle customer support messages"""
+    try:
+        message = message.lower()
+        
+        if 'password' in message:
+            return ("To reset your password, click the 'Forgot Password' link on the login page. "
+                   "We'll send you instructions via email.")
+        
+        elif 'account' in message:
+            return ("For account-related issues, please make sure you're logged in. "
+                   "You can manage your account settings in your profile.")
+        
+        elif 'contact' in message:
+            return ("You can reach us at:\n"
+                   "Email: catanduanesconnect@gmail.com\n"
+                   "Phone: 09952049746\n"
+                   "Facebook: https://www.facebook.com/profile.php?id=61581162686907")
+        
+        elif 'help' in message:
+            return ("I can help you with:\n"
+                   "- Account issues\n"
+                   "- Password reset\n"
+                   "- Technical support\n"
+                   "- Contact information\n"
+                   "What do you need assistance with?")
+        
+        else:
+            return ("Welcome to Catanduanes Connect support! "
+                   "How can I assist you today?")
+    except Exception as e:
+        logging.error(f"Support chat error: {str(e)}")
+        return "I'm having trouble processing that. Could you try rephrasing your question?"
+
+def handle_general_chat(message):
+    """Handle general chat messages"""
+    try:
+        message = message.lower()
+        
+        if 'business' in message:
+            return ("Looking to connect with local businesses? Check out our Business Directory! "
+                   "You can search by category, location, or specific services.")
+        
+        elif 'service' in message:
+            return ("Need a service provider? Browse our Services section to find "
+                   "skilled professionals in Catanduanes.")
+        
+        elif 'about' in message:
+            return ("Catanduanes Connect is your local platform for finding jobs, "
+                   "businesses, and services in Catanduanes. We're here to help "
+                   "connect our community!")
+        
+        elif 'help' in message:
+            return ("I can help you with:\n"
+                   "- Finding local businesses\n"
+                   "- Discovering services\n"
+                   "- Learning about Catanduanes Connect\n"
+                   "What would you like to know more about?")
+        
+        else:
+            return ("Welcome to Catanduanes Connect! I'm here to help you discover "
+                   "local businesses, services, and opportunities. What can I help you with?")
+    except Exception as e:
+        logging.error(f"General chat error: {str(e)}")
+        return "I'm having trouble understanding that. Could you try rephrasing your message?"
+
 @app.route('/admin/users', methods=['GET', 'POST'])
 @login_required
 @admin_required
