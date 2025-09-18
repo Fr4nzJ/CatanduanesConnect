@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from 'macros/forms.html' import csrf %}
 
 {% block title %}{{ service.title }} - Catanduanes Connect{% endblock %}
 
@@ -43,6 +44,7 @@
                 <div class="card-body">
                     <h5 class="card-title">Submit Your Offer</h5>
                     <form action="{{ url_for('offer_service', id=service.id) }}" method="POST">
+                        {{ csrf() }}
                         <div class="mb-3">
                             <label for="proposal" class="form-label">Your Proposal</label>
                             <textarea class="form-control" id="proposal" name="proposal" rows="3" required></textarea>
@@ -77,6 +79,7 @@
                             
                             {% if current_user.id == service.client_id and service.status == 'open' %}
                             <form action="{{ url_for('accept_offer', service_id=service.id, job_seeker_id=offer.user.id) }}" method="POST">
+                                {{ csrf() }}
                                 <button type="submit" class="btn btn-success btn-sm">Accept Offer</button>
                             </form>
                             {% endif %}

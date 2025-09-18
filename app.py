@@ -2,12 +2,14 @@ import os
 import uuid
 import json
 import logging
+from logging.handlers import RotatingFileHandler
 import random
 from datetime import datetime, timedelta
 from functools import wraps
 from neo4j import GraphDatabase, exceptions as neo4j
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g
+from werkzeug.exceptions import HTTPException
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
@@ -28,14 +30,43 @@ app = Flask(__name__)
 
 # Register blueprints
 app.register_blueprint(admin)
-# Set up logging
+
+# Set up enhanced logging
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('app.log')
+        RotatingFileHandler(
+            'logs/app.log', 
+            maxBytes=10240,
+            backupCount=10
+        )
     ]
+)
+
+# Error handlers
+@app.errorhandler(HTTPException)
+def handle_http_error(e):
+    """Handle HTTP exceptions."""
+    app.logger.error(f'HTTP error occurred: {e}')
+    return render_template('errors/error.html', error=e), e.code
+
+@app.errorhandler(Exception)
+def handle_error(e):
+    """Handle non-HTTP exceptions."""
+    app.logger.error(f'Unhandled exception: {str(e)}', exc_info=True)
+    return render_template('errors/500.html'), 500
+
+@app.before_request
+def log_request_info():
+    """Log request details."""
+    if not request.path.startswith('/static'):
+        app.logger.info('Headers: %s', request.headers)
+        app.logger.info('Body: %s', request.get_data())
 )
 logger = logging.getLogger(__name__)
 
