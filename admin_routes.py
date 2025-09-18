@@ -55,24 +55,25 @@ def dashboard():
 
         with driver.session(database=DATABASE) as session:
             try:
-                # Get user statistics
+                # Get user statistics with OPTIONAL MATCH
                 user_stats = session.run("""
-                    MATCH (u:User)
+                    OPTIONAL MATCH (u:User)
                     WITH u.role as role, count(u) as count
+                    WHERE role IS NOT NULL
                     RETURN collect({role: role, count: count}) as roles
                 """).single()['roles']
                 
-                # Get total counts using the correct CALL subquery syntax
+                # Get total counts with OPTIONAL MATCH for resilience
                 total_counts = session.run("""
-                    MATCH (u:User)
+                    OPTIONAL MATCH (u:User)
                     WITH count(u) AS users
-                    MATCH (b:Business)
+                    OPTIONAL MATCH (b:Business)
                     WITH users, count(b) AS businesses
-                    MATCH (j:Job)
+                    OPTIONAL MATCH (j:Job)
                     WITH users, businesses, count(j) AS jobs
-                    MATCH (s:Service)
+                    OPTIONAL MATCH (s:Service)
                     WITH users, businesses, jobs, count(s) AS services
-                    MATCH (a:Application)
+                    OPTIONAL MATCH (a:Application)
                     WITH users, businesses, jobs, services, count(a) AS applications
                     RETURN {
                         users: users,
@@ -83,10 +84,11 @@ def dashboard():
                     } AS counts
                 """).single()['counts']
             
-                # Get application statistics
+                # Get application statistics with OPTIONAL MATCH
                 app_stats = session.run("""
-                    MATCH (a:Application)
+                    OPTIONAL MATCH (a:Application)
                     WITH a.status as status, count(a) as count
+                    WHERE status IS NOT NULL
                     RETURN collect({status: status, count: count}) as statuses
                 """).single()['statuses']
                 
