@@ -39,17 +39,20 @@ class Activity:
     def save(self):
         try:
             with driver.session(database=DATABASE) as session:
+                # Create Activity label and constraints if they don't exist
+                session.run("CREATE CONSTRAINT activity_id IF NOT EXISTS FOR (a:Activity) REQUIRE a.id IS UNIQUE")
+                
                 result = session.run("""
                     MERGE (a:Activity {id: $id})
                     SET
                         a.id = $id,
                         a.type = $type,
                         a.action = $action,
-                        a.user_id = $user_id,
-                        a.target_id = $target_id,
-                        a.target_type = $target_type,
-                        a.timestamp = $timestamp,
-                        a.details = $details
+                        a.user_id = COALESCE($user_id, ''),
+                        a.target_id = COALESCE($target_id, ''),
+                        a.target_type = COALESCE($target_type, ''),
+                        a.timestamp = COALESCE($timestamp, datetime()),
+                        a.details = COALESCE($details, {})
                     RETURN a
                 """, {
                     'id': self.id,
@@ -59,7 +62,7 @@ class Activity:
                     'target_id': self.target_id,
                     'target_type': self.target_type,
                     'timestamp': self.timestamp,
-                    'details': self.details
+                    'details': self.details or {}
                 })
                 return bool(result.single())
         except Exception as e:
@@ -71,15 +74,11 @@ class Activity:
         try:
             with driver.session(database=DATABASE) as session:
                 result = session.run("""
-                    WITH 1 as dummy
-                    CALL {
-                        WITH dummy
-                        MATCH (a:Activity)
+                    CALL (MATCH (a:Activity)
                         OPTIONAL MATCH (u:User {id: a.user_id})
                         RETURN a, u.name as user_name
                         ORDER BY a.timestamp DESC
-                        LIMIT $limit
-                    }
+                        LIMIT $limit)
                     RETURN a, user_name
                 """, {"limit": limit})
                 
