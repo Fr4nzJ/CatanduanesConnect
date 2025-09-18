@@ -74,16 +74,13 @@ class Activity:
         try:
             with driver.session(database=DATABASE) as session:
                 result = session.run("""
-                    CALL {
-                        MATCH (a:Activity)
-                        WITH a
-                        OPTIONAL MATCH (u:User {id: a.user_id})
-                        WITH a, u.name as user_name
-                        ORDER BY a.timestamp DESC
-                        LIMIT $limit
-                        RETURN a, user_name
-                    }
-                    WITH a, user_name
+                    MATCH (a:Activity)
+                    WITH a
+                    ORDER BY a.timestamp DESC
+                    LIMIT $limit
+                    WITH a
+                    OPTIONAL MATCH (u:User {id: a.user_id})
+                    WITH a, u.name as user_name
                     RETURN a, user_name
                 """, {"limit": limit})
                 
