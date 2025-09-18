@@ -64,26 +64,16 @@ def dashboard():
                 
                 # Get total counts using the correct CALL subquery syntax
                 total_counts = session.run("""
-                    CALL {
-                        MATCH (u:User)
-                        RETURN count(u) AS users
-                    }
-                    CALL {
-                        MATCH (b:Business)
-                        RETURN count(b) AS businesses
-                    }
-                    CALL {
-                        MATCH (j:Job)
-                        RETURN count(j) AS jobs
-                    }
-                    CALL {
-                        MATCH (s:Service)
-                        RETURN count(s) AS services
-                    }
-                    CALL {
-                        MATCH (a:Application)
-                        RETURN count(a) AS applications
-                    }
+                    MATCH (u:User)
+                    WITH count(u) AS users
+                    MATCH (b:Business)
+                    WITH users, count(b) AS businesses
+                    MATCH (j:Job)
+                    WITH users, businesses, count(j) AS jobs
+                    MATCH (s:Service)
+                    WITH users, businesses, jobs, count(s) AS services
+                    MATCH (a:Application)
+                    WITH users, businesses, jobs, services, count(a) AS applications
                     RETURN {
                         users: users,
                         businesses: businesses,
