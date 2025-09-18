@@ -1216,11 +1216,18 @@ def accept_offer(service_id, job_seeker_id):
 
 @app.route('/chatbot')
 def chatbot_main():
-    return render_template('chatbot/support.html')
+    """General chat interface"""
+    return render_template('chatbot/main.html')
 
 @app.route('/chatbot/ai')
 def chatbot_ai():
+    """AI-powered job assistant"""
     return render_template('chatbot/ai.html')
+
+@app.route('/chatbot/support')
+def chatbot_support():
+    """Customer support interface"""
+    return render_template('chatbot/support.html')
 
 @app.route('/admin/users', methods=['GET', 'POST'])
 @login_required

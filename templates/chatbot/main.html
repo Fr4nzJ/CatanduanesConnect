@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}General Chat{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Chat Interface</h4>
+                </div>
+                <div class="card-body">
+                    <div class="chat-messages p-3" id="chat-messages" style="height: 400px; overflow-y: auto;">
+                        <!-- Messages will appear here -->
+                    </div>
+                    <div class="chat-input mt-3">
+                        <form id="chat-form" class="d-flex gap-2">
+                            <input type="text" id="message-input" class="form-control" placeholder="Type your message here..." required>
+                            <button type="submit" class="btn btn-primary">Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('message-input');
+    const chatMessages = document.getElementById('chat-messages');
+
+    // Function to add a message to the chat
+    function addMessage(message, isUser = true) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message mb-2 ${isUser ? 'text-end' : ''}`;
+        messageDiv.innerHTML = `
+            <div class="d-inline-block p-2 rounded ${isUser ? 'bg-primary text-white' : 'bg-light'}">
+                ${message}
+            </div>
+        `;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Handle form submission
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const message = messageInput.value.trim();
+        if (message) {
+            // Add user message
+            addMessage(message, true);
+            
+            // TODO: Send message to backend
+            // fetch('/api/chat', {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //     },
+            //     body: JSON.stringify({ message })
+            // })
+            // .then(response => response.json())
+            // .then(data => {
+            //     // Add bot response
+            //     addMessage(data.response, false);
+            // });
+
+            // For now, just add a mock response
+            setTimeout(() => {
+                addMessage("Thank you for your message. This is a placeholder response.", false);
+            }, 1000);
+
+            messageInput.value = '';
+        }
+    });
+});
+</script>
+{% endblock %}
