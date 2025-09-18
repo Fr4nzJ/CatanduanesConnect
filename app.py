@@ -509,6 +509,40 @@ def logout():
     logout_user()
     return redirect(url_for('home'))
 
+@app.route('/notifications')
+@login_required
+def view_notifications():
+    """View user notifications."""
+    try:
+        # Get notification parameters
+        limit = request.args.get('limit', 10, type=int)
+        unread_only = request.args.get('unread_only', False, type=bool)
+        
+        # If it's an AJAX request, return JSON data
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            notifications = Notification.get_user_notifications(
+                current_user.id, 
+                limit=limit,
+                unread_only=unread_only
+            )
+            unread_count = Notification.get_unread_count(current_user.id)
+            
+            return jsonify({
+                'notifications': [vars(n) for n in notifications],
+                'unread_count': unread_count
+            })
+            
+        # For regular requests, return the template
+        notifications = Notification.get_user_notifications(current_user.id)
+        return render_template('notifications.html', notifications=notifications)
+        
+    except Exception as e:
+        logger.error(f'Error fetching notifications: {str(e)}')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': str(e)}), 500
+        flash('Error loading notifications', 'danger')
+        return redirect(url_for('dashboard'))
+
 @app.route('/admin/dashboard/data')
 @login_required
 @admin_required
