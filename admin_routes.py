@@ -43,18 +43,18 @@ def dashboard():
             
             # Get total counts
             total_counts = session.run("""
-                MATCH (u:User) WITH count(u) as users
-                MATCH (b:Business) WITH users, count(b) as businesses
-                MATCH (j:Job) WITH users, businesses, count(j) as jobs
-                MATCH (s:Service) WITH users, businesses, jobs, count(s) as services
-                MATCH (a:Application)
-                RETURN {
-                    users: users,
-                    businesses: businesses,
-                    jobs: jobs,
-                    services: services,
-                    applications: count(a)
-                } as counts
+                CALL { MATCH (u:User) RETURN count(u) AS users }
+                CALL { MATCH (b:Business) RETURN count(b) AS businesses }
+                CALL { MATCH (j:Job) RETURN count(j) AS jobs }
+                CALL { MATCH (s:Service) RETURN count(s) AS services }
+                CALL { MATCH (a:Application) RETURN count(a) AS applications }
+                RETURN { 
+                    users: users, 
+                    businesses: businesses, 
+                    jobs: jobs, 
+                    services: services, 
+                    applications: applications 
+                } AS counts
             """).single()['counts']
             
             # Get application statistics
@@ -94,18 +94,18 @@ def dashboard_data():
             
             # Get total counts
             total_counts = session.run("""
-                MATCH (u:User) WITH count(u) as users
-                MATCH (b:Business) WITH users, count(b) as businesses
-                MATCH (j:Job) WITH users, businesses, count(j) as jobs
-                MATCH (s:Service) WITH users, businesses, jobs, count(s) as services
-                MATCH (a:Application)
-                RETURN {
-                    users: users,
-                    businesses: businesses,
-                    jobs: jobs,
-                    services: services,
-                    applications: count(a)
-                } as counts
+                CALL { MATCH (u:User) RETURN count(u) AS users }
+                CALL { MATCH (b:Business) RETURN count(b) AS businesses }
+                CALL { MATCH (j:Job) RETURN count(j) AS jobs }
+                CALL { MATCH (s:Service) RETURN count(s) AS services }
+                CALL { MATCH (a:Application) RETURN count(a) AS applications }
+                RETURN { 
+                    users: users, 
+                    businesses: businesses, 
+                    jobs: jobs, 
+                    services: services, 
+                    applications: applications 
+                } AS counts
             """).single()['counts']
             
             # Get application statistics
