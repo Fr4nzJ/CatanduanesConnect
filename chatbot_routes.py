@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify
-from chatbot import chatbot_service
+from datetime import datetime
+from huggingface_chatbot import generate_reply
 
 bp = Blueprint('chatbot', __name__)
 
@@ -16,11 +17,12 @@ def process_message():
         if not data or 'message' not in data:
             return jsonify({'error': 'No message provided'}), 400
 
-        result = chatbot_service.process_message(data['message'])
+        response = generate_reply(data['message'])
+        result = {
+            'response': response,
+            'timestamp': datetime.now().isoformat()
+        }
         
-        if 'error' in result:
-            return jsonify(result), 500
-            
         return jsonify(result)
 
     except Exception as e:
