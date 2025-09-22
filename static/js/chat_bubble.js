@@ -52,8 +52,8 @@ class ChatBubble {
         this.addMessage(message, 'user');
 
         try {
-            // Send message to server
-            const response = await fetch('/chatbot/chat', {
+            // Send message to chatbot server
+            const response = await fetch('https://catanduanesconnect.up.railway.app/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -62,15 +62,16 @@ class ChatBubble {
             });
 
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to get response');
             }
 
             const data = await response.json();
             
             // Add bot response to chat
-            if (data.response) {
-                this.addMessage(data.response, 'bot');
-            } else if (data.error) {
+            if (data.reply) {
+                this.addMessage(data.reply, 'bot');
+            } else {
                 this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
             }
         } catch (error) {
