@@ -10,24 +10,12 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 # Configuration
-MEM0_API_URL = os.getenv("MEM0_API_URL", "https://api.mem0.ai")  # Mem0 API URL
-MEM0_API_TOKEN = os.getenv("MEM0_API_TOKEN")  # API token
+MEM0_API_URL = os.getenv("MEM0_API_URL", "https://mem0-chatbot-production.up.railway.app")  # Your Railway URL
+MEM0_API_TOKEN = os.getenv("MEM0_API_TOKEN")  # Optional API token if you have one
 
 # Ensure URL has https:// prefix
 if MEM0_API_URL and not MEM0_API_URL.startswith(('http://', 'https://')):
     MEM0_API_URL = 'https://' + MEM0_API_URL
-import os
-import logging
-import requests
-from typing import Optional
-from mem0 import MemoryClient
-
-# Set up logging
-logger = logging.getLogger(__name__)
-
-# Configuration
-MEM0_API_URL = os.getenv("MEM0_API_URL", "https://mem0-chatbot-production.up.railway.app")  # Your Railway URL
-MEM0_API_TOKEN = os.getenv("MEM0_API_TOKEN")  # Optional API token if you have one
 
 # Ensure URL has https:// prefix
 if MEM0_API_URL and not MEM0_API_URL.startswith(('http://', 'https://')):
