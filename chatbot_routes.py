@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify
 from datetime import datetime
 import logging
-from chatbot import chatbot_service  # Import from the chatbot package
+from chatbot import get_response  # Import the get_response function directly
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ def process_message():
         if not data or 'message' not in data:
             return jsonify({'error': 'No message provided'}), 400
 
-        response = chatbot_service.chatbot_response(data['message'])
+        response = get_response(data['message'])
         result = {
             'response': response,
             'timestamp': datetime.now().isoformat()
