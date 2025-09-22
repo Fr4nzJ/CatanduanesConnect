@@ -17,11 +17,25 @@ def chat():
 def process_message():
     """Process chat messages and return responses."""
     try:
+        # Log request data
         data = request.get_json()
-        if not data or 'message' not in data:
+        logger.info(f"Received chat request: {data}")
+        
+        if not data:
+            logger.error("No JSON data received")
+            return jsonify({'error': 'No data provided'}), 400
+            
+        if 'message' not in data:
+            logger.error("No message field in request data")
             return jsonify({'error': 'No message provided'}), 400
 
-        response = get_response(data['message'])
+        # Get response from chatbot
+        message = data['message']
+        logger.info(f"Sending message to chatbot: {message}")
+        response = get_response(message)
+        logger.info(f"Received response from chatbot: {response}")
+
+        # Format response
         result = {
             'response': response,
             'timestamp': datetime.now().isoformat()
@@ -29,9 +43,9 @@ def process_message():
         
         return jsonify(result)
     except Exception as e:
-        logger.error(f"Error processing message: {str(e)}")
+        logger.exception("Unexpected error in process_message:")
         return jsonify({
-            'error': 'Something went wrong. Please try again later.'
+            'error': f'Error: {str(e)}'
         }), 500
 
 # Remove unused routes since we're using chat bubble overlay
