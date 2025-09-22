@@ -1,17 +1,21 @@
 ﻿"""
-Chatbot implementation using Mem0 AI Python client.
+Chatbot implementation using direct connection to Mem0 AI API.
 """
 import os
 import logging
-from mem0ai import MemoryClient
+import requests
 from typing import Optional
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Initialize Mem0 client
-MEM0_API_KEY = os.getenv("MEM0_API_TOKEN")  # Get API key from environment
-client = MemoryClient(api_key=MEM0_API_KEY)
+# Configuration
+MEM0_API_URL = os.getenv("MEM0_API_URL", "https://api.mem0.ai")  # Mem0 API URL
+MEM0_API_TOKEN = os.getenv("MEM0_API_TOKEN")  # API token
+
+# Ensure URL has https:// prefix
+if MEM0_API_URL and not MEM0_API_URL.startswith(('http://', 'https://')):
+    MEM0_API_URL = 'https://' + MEM0_API_URL
 import os
 import logging
 import requests
@@ -30,7 +34,7 @@ if MEM0_API_URL and not MEM0_API_URL.startswith(('http://', 'https://')):
     MEM0_API_URL = 'https://' + MEM0_API_URL
 
 # Error messages
-ERROR_NO_API_KEY = "⚠️ Mem0 AI API key not configured"
+ERROR_NO_SERVER = "⚠️ Mem0 AI server not configured"
 ERROR_EMPTY_INPUT = "⚠️ Please provide a message"
 ERROR_API_TIMEOUT = "⚠️ Request timed out, please try again"
 ERROR_API_ERROR = "⚠️ Could not generate a response"
@@ -38,38 +42,49 @@ ERROR_MODEL_LOADING = "⚠️ The model is still loading, please try again in a 
 
 def get_response(prompt: str) -> str:
     """
-    Generate a response using Mem0 AI client.
+    Generate a response using Mem0 AI API.
     """
     if not prompt or not prompt.strip():
         logger.warning("Empty prompt received")
         return ERROR_EMPTY_INPUT
     
-    if not MEM0_API_KEY:
-        logger.error("MEM0_API_KEY not configured")
-        return ERROR_NO_API_KEY
+    if not MEM0_API_URL:
+        logger.error("MEM0_API_URL not configured")
+        return ERROR_NO_SERVER
 
-    logger.info("Sending request to Mem0 AI")
+    logger.info(f"Sending request to Mem0 AI: {MEM0_API_URL}")
     try:
-        # Prepare messages
-        messages = [
-            {
-                "role": "system",
-                "content": "You are the CatanduanesConnect Assistant, an AI helper for the CatanduanesConnect platform."
-            },
-            {
-                "role": "user",
-                "content": prompt.strip()
-            }
-        ]
-        logger.info(f"Request messages: {messages}")
+        # Prepare headers
+        headers = {
+            "Content-Type": "application/json"
+        }
+        if MEM0_API_TOKEN:
+            headers["Authorization"] = f"Bearer {MEM0_API_TOKEN}"
 
-        # Make request using Mem0 client
-        response = client.chat.completions.create(
-            messages=messages,
-            temperature=0.7,
-            max_tokens=200
+        # Prepare payload
+        payload = {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are the CatanduanesConnect Assistant, an AI helper for the CatanduanesConnect platform."
+                },
+                {
+                    "role": "user",
+                    "content": prompt.strip()
+                }
+            ],
+            "temperature": 0.7,
+            "max_tokens": 200
+        }
+
+        # Make request to Mem0 API
+        response = requests.post(
+            f"{MEM0_API_URL.rstrip('/')}/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30
         )
-        logger.info("Received response from Mem0 AI")
+        logger.info(f"Response status code: {response.status_code}")
 
         # Extract response content
         if response.choices and len(response.choices) > 0:
