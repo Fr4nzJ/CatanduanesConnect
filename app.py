@@ -24,12 +24,14 @@ from models import (
 )
 from decorators import admin_required
 from admin_routes import admin
+from chatbot_routes import bp as chatbot_bp
 
 # Initialize Flask app
 app = Flask(__name__)
 
 # Register blueprints
 app.register_blueprint(admin)
+app.register_blueprint(chatbot_bp, url_prefix='/chatbot')
 
 # Set up enhanced logging
 if not os.path.exists('logs'):
@@ -105,80 +107,8 @@ if not app.secret_key:
     logger.error("No secret key set! Please set FLASK_SECRET_KEY environment variable.")
     raise ValueError("No secret key set! Please set FLASK_SECRET_KEY environment variable.")
 
-# Custom Chatbot class
-class SimpleBot:
-    def __init__(self):
-        self.responses = {
-            'greetings': [
-                "Hello! 👋 How can I help you today?",
-                "Hi there! Welcome to Catanduanes Connect! What would you like to know?",
-                "Greetings! I'm here to help you navigate Catanduanes Connect."
-            ],
-            'job_search': [
-                "You can find jobs by using our search feature. Would you like me to show you how?",
-                "To find jobs, click on 'Jobs' in the menu and use filters to narrow your search.",
-                "I can help you search for jobs. What type of work are you looking for?"
-            ],
-            'business': [
-                "Our business directory features local companies in Catanduanes. Want to take a look?",
-                "You can browse businesses by category or location. Would you like me to show you?",
-                "Are you interested in finding businesses or creating a business profile?"
-            ],
-            'application': [
-                "To apply for a job: 1️⃣ Create an account 2️⃣ Find a job 3️⃣ Click 'Apply' 4️⃣ Submit your application",
-                "Job applications are easy! Would you like me to guide you through the process?",
-                "I can help you with your job application. Have you found a job you're interested in?"
-            ],
-            'profile': [
-                "You can manage your profile by clicking on your name in the top right corner.",
-                "Need help setting up your profile? I can guide you through the process.",
-                "Your profile is important! Make sure to keep it updated with your latest information."
-            ],
-            'platform_info': [
-                "Welcome to Catanduanes Connect! 👋 We're your one-stop platform for connecting job seekers with local businesses in Catanduanes. Whether you're looking for work or growing your business, we're here to help!",
-                "Catanduanes Connect is a local job and business platform. We help connect talented individuals with great opportunities in Catanduanes.",
-                "We're your local connection to jobs and businesses in Catanduanes! How can we help you today?"
-            ],
-            'services': [
-                "Our services section is perfect for short-term or project-based work! Would you like to explore available opportunities?",
-                "You can find freelance and temporary work in our services section. Want to take a look?",
-                "Whether you need services or want to offer your skills, our services section can help. What are you interested in?"
-            ],
-            'map_help': [
-                "Our interactive map 🗺️ shows businesses and job opportunities across Catanduanes! Want to explore?",
-                "You can use our map to find jobs and businesses near you. Would you like me to show you how?",
-                "Looking for opportunities in a specific area? Our map feature can help you find them!"
-            ],
-            'default': [
-                "I'm not sure about that. Could you rephrase your question?",
-                "I might need more information to help you better. What specifically would you like to know?",
-                "I'm still learning! Could you try asking that in a different way?"
-            ]
-        }
-        
-    def get_response(self, message):
-        message = message.lower()
-        
-        # Check message content and return appropriate response
-        if any(word in message for word in ['hi', 'hello', 'hey', 'greetings']):
-            return random.choice(self.responses['greetings'])
-        elif any(word in message for word in ['job', 'work', 'position', 'career']):
-            return random.choice(self.responses['job_search'])
-        elif any(word in message for word in ['business', 'company', 'employer']):
-            return random.choice(self.responses['business'])
-        elif any(word in message for word in ['apply', 'application', 'submit']):
-            return random.choice(self.responses['application'])
-        elif any(word in message for word in ['profile', 'account', 'settings']):
-            return random.choice(self.responses['profile'])
-        elif any(word in message for word in ['what is', 'about', 'platform']):
-            return random.choice(self.responses['platform_info'])
-        elif any(word in message for word in ['service', 'freelance', 'project']):
-            return random.choice(self.responses['services'])
-        elif any(word in message for word in ['map', 'location', 'area', 'near']):
-            return random.choice(self.responses['map_help'])
-        else:
-            return random.choice(self.responses['default'])
-
+# Import chatbot service
+from chatbot import chatbot_service
 # Load environment variables
 load_dotenv()
 
@@ -258,8 +188,7 @@ try:
 except Exception as e:
     logger.error(f'Error setting up upload directories: {str(e)}')
 
-# Initialize the simple chatbot
-chatbot = SimpleBot()
+
 
 
 def allowed_file(filename, file_type):
