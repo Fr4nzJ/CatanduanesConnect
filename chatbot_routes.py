@@ -1,6 +1,10 @@
 from flask import Blueprint, render_template, request, jsonify
 from datetime import datetime
-from huggingface_chatbot import generate_reply
+import logging
+from chatbot import chatbot_service
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 bp = Blueprint('chatbot', __name__)
 
@@ -17,15 +21,15 @@ def process_message():
         if not data or 'message' not in data:
             return jsonify({'error': 'No message provided'}), 400
 
-        response = generate_reply(data['message'])
+        response = chatbot_service.chatbot_response(data['message'])
         result = {
             'response': response,
             'timestamp': datetime.now().isoformat()
         }
         
         return jsonify(result)
-
     except Exception as e:
+        logger.error(f"Error processing message: {str(e)}")
         return jsonify({
             'error': 'Something went wrong. Please try again later.'
         }), 500
