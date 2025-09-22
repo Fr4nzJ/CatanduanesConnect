@@ -30,17 +30,4 @@ def process_message():
             'error': 'Something went wrong. Please try again later.'
         }), 500
 
-@bp.route('/')
-def chatbot_main():
-    """Render the main chatbot page."""
-    return render_template('chatbot/main.html')
-
-@bp.route('/ai')
-def chatbot_ai():
-    """Render the AI chatbot page."""
-    return render_template('chatbot/ai.html')
-
-@bp.route('/support')
-def chatbot_support():
-    """Render the support chatbot page."""
-    return render_template('chatbot/support.html')
+# Remove unused routes since we're using chat bubble overlay
