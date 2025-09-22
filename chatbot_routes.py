@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify
 from datetime import datetime
 import logging
-from chatbot import chatbot_service
+from chatbot import chatbot_service  # Import from the chatbot package
 
 # Set up logging
 logger = logging.getLogger(__name__)
