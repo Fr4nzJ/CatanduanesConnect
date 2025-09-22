@@ -8,7 +8,7 @@ from neo4j import GraphDatabase, exceptions as neo4j_exceptions
 from flask import jsonify
 from dotenv import load_dotenv
 
-from huggingface_chatbot import generate_reply
+from chatbot import get_response
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -66,7 +66,7 @@ class DatabaseChatService:
 
             # For now, we'll just use the Hugging Face chatbot
             # In the future, we can implement Neo4j queries here
-            response = generate_reply(message)
+            response = get_response(message)
 
             return {
                 'response': response,
