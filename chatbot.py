@@ -5,6 +5,7 @@ import os
 import logging
 from typing import Optional
 from openai import OpenAI
+from openai import OpenAIError
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -14,10 +15,15 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 MODEL_ID = "google/gemma-2-2b-it:nebius"  # A good conversational model
 
 # Initialize OpenAI client with Hugging Face router
-client = OpenAI(
-    base_url="https://router.huggingface.co/v1",
-    api_key=os.getenv("HF_TOKEN"),
-)
+try:
+    client = OpenAI(
+        base_url="https://router.huggingface.co/v1",
+        api_key=os.getenv("HF_TOKEN"),
+        http_client=None  # Disable default proxy handling
+    )
+except Exception as e:
+    logger.error(f"Failed to initialize OpenAI client: {e}")
+    client = None
 
 # Error messages
 ERROR_NO_TOKEN = "⚠️ API token not configured"
@@ -36,8 +42,12 @@ def get_response(prompt: str) -> str:
     if not HF_TOKEN:
         return ERROR_NO_TOKEN
 
+    if client is None:
+        logger.error("OpenAI client not initialized")
+        return ERROR_API_ERROR
+
     try:
-        # Create chat completion
+        # Create chat completion with simplified parameters
         completion = client.chat.completions.create(
             model=MODEL_ID,
             messages=[
@@ -45,10 +55,7 @@ def get_response(prompt: str) -> str:
                     "role": "user",
                     "content": prompt.strip()
                 }
-            ],
-            temperature=0.7,  # Add some creativity
-            max_tokens=150,   # Keep responses concise
-            timeout=30        # Timeout in seconds
+            ]
         )
         
         # Extract response
@@ -56,12 +63,12 @@ def get_response(prompt: str) -> str:
             return completion.choices[0].message.content.strip()
         return ERROR_API_ERROR
 
-    except TimeoutError:
-        logger.error("API request timed out")
-        return ERROR_API_TIMEOUT
-    except Exception as e:
+    except OpenAIError as e:
         if "model is loading" in str(e).lower():
             logger.warning("Model is still loading")
             return ERROR_MODEL_LOADING
+        logger.error(f"OpenAI API error: {str(e)}")
+        return ERROR_API_ERROR
+    except Exception as e:
         logger.error(f"Error generating response: {str(e)}")
         return ERROR_API_ERROR
