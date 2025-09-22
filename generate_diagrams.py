@@ -233,7 +233,7 @@ def create_system_architecture():
         'Frontend\n(HTML5, CSS3, JavaScript, Bootstrap 5)',
         'Backend\n(Flask, Python)',
         'Database\n(PostgreSQL)',
-        'AI Services\n(LangChain, GPT-4)',
+        'AI Services\n(Hugging Face)',
         'Maps\n(Google Maps API, Leaflet.js)',
         'Deployment\n(Docker, AWS/GCP)'
     ]

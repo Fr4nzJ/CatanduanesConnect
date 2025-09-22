@@ -107,8 +107,8 @@ if not app.secret_key:
     logger.error("No secret key set! Please set FLASK_SECRET_KEY environment variable.")
     raise ValueError("No secret key set! Please set FLASK_SECRET_KEY environment variable.")
 
-# Import chatbot service
-from chatbot import chatbot_service
+# Import chatbot services
+from database_chat import database_chat_service as chatbot_service  # This maintains the Neo4j connection but uses HuggingFace for chat
 # Load environment variables
 load_dotenv()
 

@@ -6,19 +6,20 @@ from typing import Dict, Any, Optional
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Model configuration
-MODEL = "facebook/blenderbot-400M-distill"  # Default model
-# Alternative models:
-# MODEL = "distilgpt2"
-# MODEL = "mistralai/Mistral-7B-Instruct"
+# Model configuration - easy to change by updating this variable
+MODEL = "facebook/blenderbot-400M-distill"  # Default model for general chat
+# Switch to these models as needed:
+# MODEL = "distilgpt2"  # Faster responses, simpler outputs
+# MODEL = "mistralai/Mistral-7B-Instruct"  # More advanced, but slower
 
-# API configuration
+# API URL construction
 API_URL = f"https://api-inference.huggingface.co/models/{MODEL}"
 
 # Error messages
-ERROR_NO_TOKEN = "⚠️ Hugging Face API token not configured. Please contact the administrator."
-ERROR_API_GENERIC = "⚠️ An error occurred while processing your request. Please try again later."
-ERROR_MODEL_LOADING = "⚠️ The model is still loading. Please try again in a few moments."
+ERROR_NO_TOKEN = "⚠️ Hugging Face API token not configured."
+ERROR_API_GENERIC = "⚠️ I couldn't generate a reply."
+ERROR_MODEL_LOADING = "⚠️ Model is loading, please try again in a moment."
+ERROR_EMPTY_MESSAGE = "⚠️ Please provide a message."
 
 def query(payload: Dict[str, Any]) -> Optional[Dict]:
     """
@@ -38,7 +39,12 @@ def query(payload: Dict[str, Any]) -> Optional[Dict]:
     headers = {"Authorization": f"Bearer {api_token}"}
     
     try:
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(
+            API_URL, 
+            headers=headers, 
+            json=payload,
+            timeout=30  # 30 second timeout for slower models
+        )
         
         if response.status_code == 200:
             return response.json()
@@ -47,10 +53,16 @@ def query(payload: Dict[str, Any]) -> Optional[Dict]:
             return {"error": ERROR_MODEL_LOADING}
         else:
             logger.error(f"API request failed with status {response.status_code}: {response.text}")
-            return {"error": f"⚠️ Error from Hugging Face: {response.text}"}
+            return {"error": ERROR_API_GENERIC}
             
-    except requests.exceptions.RequestException as e:
+    except requests.Timeout:
+        logger.error("Request timed out")
+        return {"error": "⚠️ Request timed out. Please try again."}
+    except requests.RequestException as e:
         logger.error(f"Request failed: {str(e)}")
+        return {"error": ERROR_API_GENERIC}
+    except Exception as e:
+        logger.error(f"Unexpected error in query: {str(e)}")
         return {"error": ERROR_API_GENERIC}
 
 def generate_reply(message: str) -> str:
@@ -63,8 +75,10 @@ def generate_reply(message: str) -> str:
     Returns:
         str: The model's response or an error message
     """
-    if not message.strip():
-        return "Please provide a message."
+    # Input validation
+    message = message.strip() if message else ""
+    if not message:
+        return ERROR_EMPTY_MESSAGE
         
     # Check for API token
     if not os.getenv("HF_API_KEY"):
@@ -84,9 +98,11 @@ def generate_reply(message: str) -> str:
         # Handle different model response formats
         if isinstance(result, list) and len(result) > 0:
             if isinstance(result[0], dict) and "generated_text" in result[0]:
-                return result[0]["generated_text"]
+                text = result[0]["generated_text"].strip()
+                return text if text else ERROR_API_GENERIC
             elif isinstance(result[0], str):
-                return result[0]
+                text = result[0].strip()
+                return text if text else ERROR_API_GENERIC
                 
         logger.error(f"Unexpected API response format: {result}")
         return ERROR_API_GENERIC
