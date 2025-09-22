@@ -6,11 +6,8 @@ from typing import Dict, Any, Optional
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Model configuration - easy to change by updating this variable
-MODEL = "facebook/blenderbot-400M-distill"  # Default model for general chat
-# Switch to these models as needed:
-# MODEL = "distilgpt2"  # Faster responses, simpler outputs
-# MODEL = "mistralai/Mistral-7B-Instruct"  # More advanced, but slower
+# Model configuration
+MODEL = "distilgpt2"  # Fast and efficient text generation model
 
 # API URL construction
 API_URL = f"https://api-inference.huggingface.co/models/{MODEL}"

@@ -53,7 +53,7 @@ class ChatBubble {
 
         try {
             // Send message to chatbot server
-            const response = await fetch('https://catanduanesconnect.up.railway.app/', {
+            const response = await fetch('/chatbot/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

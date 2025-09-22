@@ -14,6 +14,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
 from flask_bootstrap import Bootstrap
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from neo4j import GraphDatabase, exceptions as neo4j_exceptions
@@ -28,6 +29,9 @@ from chatbot_routes import bp as chatbot_bp
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Enable CORS
+CORS(app)
 
 # Register blueprints
 app.register_blueprint(admin)
