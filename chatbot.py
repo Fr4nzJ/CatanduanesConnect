@@ -3,7 +3,7 @@ Chatbot implementation using Mem0 AI Python client.
 """
 import os
 import logging
-from mem0 import MemoryClient
+from mem0ai import MemoryClient
 from typing import Optional
 
 # Set up logging
