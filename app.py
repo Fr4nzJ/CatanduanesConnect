@@ -11,11 +11,11 @@ from neo4j import GraphDatabase, exceptions as neo4j
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g
 from werkzeug.exceptions import HTTPException
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from flask_bcrypt import Bcrypt
 from flask_mail import Mail, Message
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from neo4j import GraphDatabase, exceptions as neo4j_exceptions
 
@@ -144,7 +144,6 @@ app.config.update(
 )
 
 # Initialize extensions
-bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 bootstrap = Bootstrap(app)
