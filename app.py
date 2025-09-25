@@ -98,29 +98,19 @@ def log_request_info():
 # Load environment variables
 load_dotenv()
 
-# Configure Flask app
-
-
-# Secret key config
-app.secret_key = os.getenv('FLASK_SECRET_KEY')
-if not app.secret_key:
-    app.secret_key = os.urandom(24)
-    logger.warning('No FLASK_SECRET_KEY set. Using random secret key.')
-
-if not app.secret_key:
-    logger.error("No secret key set! Please set FLASK_SECRET_KEY environment variable.")
-    raise ValueError("No secret key set! Please set FLASK_SECRET_KEY environment variable.")
-
-# Import chatbot services
-from database_chat import database_chat_service as chatbot_service  # This maintains the Neo4j connection but uses HuggingFace for chat
-# Load environment variables
-load_dotenv()
-
 # Load required environment variables
 NEO4J_URI = os.getenv("NEO4J_URI")
 NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
 NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
+
+# Configure app
+app.config.update(
+    SECRET_KEY=os.getenv('FLASK_SECRET_KEY', os.urandom(24).hex()),
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax'
+)
 
 if not all([NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD]):
     logger.error("Missing required Neo4j environment variables!")

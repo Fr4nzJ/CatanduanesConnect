@@ -1,7 +1,8 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, current_app
 from datetime import datetime
 import logging
-from chatbot import get_response  # Import the get_response function directly
+from chatbot import get_response, ERROR_PROCESSING, ERROR_EMPTY_INPUT
+import torch
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -15,37 +16,34 @@ def chat():
 
 @bp.route('/chat', methods=['POST'])
 def process_message():
-    """Process chat messages and return responses."""
+    """Process chat messages and return responses using memory-optimized model."""
     try:
-        # Log request data
         data = request.get_json()
-        logger.info(f"Received chat request: {data}")
-        
-        if not data:
-            logger.error("No JSON data received")
-            return jsonify({'error': 'No data provided'}), 400
-            
-        if 'message' not in data:
-            logger.error("No message field in request data")
-            return jsonify({'error': 'No message provided'}), 400
+        if not data or 'message' not in data:
+            logger.error("Invalid request data")
+            return jsonify({'error': ERROR_EMPTY_INPUT}), 400
 
-        # Get response from chatbot
-        message = data['message']
-        logger.info(f"Sending message to chatbot: {message}")
-        response = get_response(message)
-        logger.info(f"Received response from chatbot: {response}")
+        message = data['message'].strip()
+        if not message:
+            return jsonify({'error': ERROR_EMPTY_INPUT}), 400
 
-        # Format response
+        logger.info("Generating response...")
+        with torch.inference_mode():  # Memory optimization
+            response = get_response(message)
+
+        if response in [ERROR_PROCESSING, ERROR_EMPTY_INPUT]:
+            logger.error(f"Error generating response: {response}")
+            return jsonify({'error': response}), 500
+
         result = {
             'response': response,
             'timestamp': datetime.now().isoformat()
         }
         
         return jsonify(result)
+
     except Exception as e:
-        logger.exception("Unexpected error in process_message:")
-        return jsonify({
-            'error': f'Error: {str(e)}'
-        }), 500
+        logger.exception("Error in chat processing")
+        return jsonify({'error': ERROR_PROCESSING}), 500
 
 # Remove unused routes since we're using chat bubble overlay
