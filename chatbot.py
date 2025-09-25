@@ -7,7 +7,6 @@ import logging
 import torch
 from typing import Optional
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-import bitsandbytes as bnb
 from accelerate import init_empty_weights
 
 # Set up logging
