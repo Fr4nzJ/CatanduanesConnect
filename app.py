@@ -11,13 +11,19 @@ from neo4j import GraphDatabase, exceptions as neo4j
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g
 from werkzeug.exceptions import HTTPException
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from flask_mail import Mail, Message
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from neo4j import GraphDatabase, exceptions as neo4j_exceptions
+
+from email_service import (
+    send_verification_email, 
+    send_password_reset_email,
+    send_business_verification_result, 
+    send_application_status_update
+)
 
 from models import (
     User, Business, Job, Application, 
@@ -222,14 +228,6 @@ def secure_upload(file, file_type):
     except Exception as e:
         logger.error(f'Error uploading {file_type}: {str(e)}')
         raise OSError(f"Error saving {file_type} file: {str(e)}")
-
-# Email configuration
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-mail = Mail(app)
 
 # Create necessary directories
 os.makedirs('static/resumes', exist_ok=True)
