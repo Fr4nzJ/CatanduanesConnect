@@ -13,29 +13,34 @@ from accelerate import init_empty_weights
 logger = logging.getLogger(__name__)
 
 # Model configuration
-MODEL_NAME = "google/flan-t5-small"
 MAX_LENGTH = 128
 TEMPERATURE = 0.7
 
+# Get absolute path to model directory
+MODEL_DIR = os.path.join(os.path.dirname(__file__), "model")
+
 # Initialize model with CPU optimization
-logger.info(f"Loading model {MODEL_NAME} with CPU optimization...")
+logger.info("Loading local model from ./model directory...")
 
-# Load tokenizer with local caching
-tokenizer = AutoTokenizer.from_pretrained(
-    MODEL_NAME, 
-    cache_dir="models",
-    local_files_only=True  # Use cached files after first download
-)
+try:
+    # Load tokenizer from local directory
+    tokenizer = AutoTokenizer.from_pretrained(
+        MODEL_DIR,
+        local_files_only=True  # Ensure we only use local files
+    )
 
-# Load model with CPU optimization
-model = AutoModelForSeq2SeqLM.from_pretrained(
-    MODEL_NAME,
-    cache_dir="models",
-    local_files_only=True,  # Use cached files
-    torch_dtype=torch.float32,  # Use float32 for CPU
-    device_map="cpu",  # Force CPU usage
-    low_cpu_mem_usage=True  # Enable memory optimization
-)
+    # Load model with CPU optimization
+    model = AutoModelForSeq2SeqLM.from_pretrained(
+        MODEL_DIR,
+        local_files_only=True,  # Ensure we only use local files
+        torch_dtype=torch.float32,  # Use float32 for CPU
+        device_map="cpu",  # Force CPU usage
+        low_cpu_mem_usage=True  # Enable memory optimization
+    )
+    logger.info("✓ Model loaded successfully")
+except Exception as e:
+    logger.error(f"Failed to load model: {str(e)}")
+    raise
 
 # Error messages
 ERROR_EMPTY_INPUT = "⚠️ Please provide a message"
