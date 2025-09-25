@@ -6,7 +6,7 @@ import os
 import logging
 import torch
 from typing import Optional
-from transformers import AutoModelForSeq2SeqGeneration, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import bitsandbytes as bnb
 from accelerate import init_empty_weights
 
@@ -29,7 +29,7 @@ tokenizer = AutoTokenizer.from_pretrained(
 )
 
 # Load model with CPU optimization
-model = AutoModelForSeq2SeqGeneration.from_pretrained(
+model = AutoModelForSeq2SeqLM.from_pretrained(
     MODEL_NAME,
     cache_dir="models",
     local_files_only=True,  # Use cached files
