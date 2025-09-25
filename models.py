@@ -4,15 +4,11 @@ import uuid
 from datetime import datetime
 from neo4j import GraphDatabase
 from flask_login import UserMixin
-from flask_bcrypt import Bcrypt
+from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
 
 # Set up logging
 logger = logging.getLogger(__name__)
-from neo4j import GraphDatabase
-from flask_login import UserMixin
-from flask_bcrypt import Bcrypt
-from werkzeug.security import generate_password_hash, check_password_hash
-from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()

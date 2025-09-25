@@ -18,18 +18,24 @@ MODEL_NAME = "google/flan-t5-small"
 MAX_LENGTH = 128
 TEMPERATURE = 0.7
 
-# Initialize model with 8-bit quantization
-logger.info(f"Loading model {MODEL_NAME} in 8-bit mode...")
+# Initialize model with CPU optimization
+logger.info(f"Loading model {MODEL_NAME} with CPU optimization...")
 
-# Load tokenizer
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, cache_dir="models")
+# Load tokenizer with local caching
+tokenizer = AutoTokenizer.from_pretrained(
+    MODEL_NAME, 
+    cache_dir="models",
+    local_files_only=True  # Use cached files after first download
+)
 
-# Load model in 8-bit mode
+# Load model with CPU optimization
 model = AutoModelForSeq2SeqGeneration.from_pretrained(
     MODEL_NAME,
-    load_in_8bit=True,
-    device_map="auto",
-    cache_dir="models"  # Cache locally to avoid redownloading
+    cache_dir="models",
+    local_files_only=True,  # Use cached files
+    torch_dtype=torch.float32,  # Use float32 for CPU
+    device_map="cpu",  # Force CPU usage
+    low_cpu_mem_usage=True  # Enable memory optimization
 )
 
 # Error messages

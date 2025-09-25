@@ -1,0 +1,179 @@
+/* Glass Morphism Variables */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  --glass-backdrop: blur(10px) saturate(180%);
+}
+
+/* Glass Card */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--glass-shadow), 0 10px 40px 0 rgba(31, 38, 135, 0.2);
+}
+
+/* Chat UI Glass Style */
+.chat-container {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border-radius: 1rem;
+  padding: 1rem;
+  margin: 2rem auto;
+  max-width: 800px;
+}
+
+.chat-messages {
+  padding: 1rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.message-bubble {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border-radius: 1rem;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  max-width: 80%;
+}
+
+.message-bubble.user {
+  margin-left: auto;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.message-bubble.bot {
+  margin-right: auto;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Input Field Glass Style */
+.glass-input {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  color: inherit;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: var(--glass-shadow), 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+/* Glass Button */
+.glass-button {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  color: inherit;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.glass-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.glass-button:active {
+  transform: translateY(0);
+}
+
+/* Glass Navigation */
+.glass-nav {
+  background: var(--glass-bg);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .chat-container {
+    margin: 1rem;
+    padding: 0.5rem;
+  }
+  
+  .message-bubble {
+    max-width: 90%;
+  }
+}
+
+/* Animation Effects */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Glass Dashboard Cards */
+.dashboard-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin: 1rem;
+  flex: 1 1 300px;
+}
+
+/* Glass Table */
+.glass-table {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  border-radius: 1rem;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.glass-table th,
+.glass-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--glass-border);
+}
