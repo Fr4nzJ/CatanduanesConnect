@@ -1,98 +1,85 @@
 ﻿"""
-Chatbot implementation using direct connection to Mem0 AI API.
+Memory-optimized chatbot implementing Hugging Face transformers.
+Uses 8-bit quantization to reduce memory usage for Railway deployment.
 """
 import os
 import logging
-import requests
+import torch
 from typing import Optional
+from transformers import AutoModelForSeq2SeqGeneration, AutoTokenizer
+import bitsandbytes as bnb
+from accelerate import init_empty_weights
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Configuration
-MEM0_API_URL = os.getenv("MEM0_API_URL", "https://mem0-chatbot-production.up.railway.app")  # Your Railway URL
-MEM0_API_TOKEN = os.getenv("MEM0_API_TOKEN")  # Optional API token if you have one
+# Model configuration
+MODEL_NAME = "google/flan-t5-small"
+MAX_LENGTH = 128
+TEMPERATURE = 0.7
 
-# Ensure URL has https:// prefix
-if MEM0_API_URL and not MEM0_API_URL.startswith(('http://', 'https://')):
-    MEM0_API_URL = 'https://' + MEM0_API_URL
+# Initialize model with 8-bit quantization
+logger.info(f"Loading model {MODEL_NAME} in 8-bit mode...")
 
-# Ensure URL has https:// prefix
-if MEM0_API_URL and not MEM0_API_URL.startswith(('http://', 'https://')):
-    MEM0_API_URL = 'https://' + MEM0_API_URL
+# Load tokenizer
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, cache_dir="models")
+
+# Load model in 8-bit mode
+model = AutoModelForSeq2SeqGeneration.from_pretrained(
+    MODEL_NAME,
+    load_in_8bit=True,
+    device_map="auto",
+    cache_dir="models"  # Cache locally to avoid redownloading
+)
 
 # Error messages
-ERROR_NO_SERVER = "⚠️ Mem0 AI server not configured"
 ERROR_EMPTY_INPUT = "⚠️ Please provide a message"
-ERROR_API_TIMEOUT = "⚠️ Request timed out, please try again"
-ERROR_API_ERROR = "⚠️ Could not generate a response"
+ERROR_PROCESSING = "⚠️ Error processing your request"
 ERROR_MODEL_LOADING = "⚠️ The model is still loading, please try again in a moment"
 
 def get_response(prompt: str) -> str:
     """
-    Generate a response using Mem0 AI API.
+    Generate a response using the local Flan-T5 model.
+    Uses 8-bit quantization for memory efficiency.
     """
     if not prompt or not prompt.strip():
         logger.warning("Empty prompt received")
         return ERROR_EMPTY_INPUT
     
-    if not MEM0_API_URL:
-        logger.error("MEM0_API_URL not configured")
-        return ERROR_NO_SERVER
-
-    logger.info(f"Sending request to Mem0 AI: {MEM0_API_URL}")
     try:
-        # Prepare headers
-        headers = {
-            "Content-Type": "application/json"
-        }
-        if MEM0_API_TOKEN:
-            headers["Authorization"] = f"Bearer {MEM0_API_TOKEN}"
-
-        # Prepare payload
-        payload = {
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are the CatanduanesConnect Assistant, an AI helper for the CatanduanesConnect platform."
-                },
-                {
-                    "role": "user",
-                    "content": prompt.strip()
-                }
-            ],
-            "temperature": 0.7,
-            "max_tokens": 200
-        }
-
-        # Make request to Mem0 API
-        response = requests.post(
-            f"{MEM0_API_URL.rstrip('/')}/v1/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=30
-        )
-        logger.info(f"Response status code: {response.status_code}")
-
-        # Extract response content
-        if response.choices and len(response.choices) > 0:
-            content = response.choices[0].message.content.strip()
-            if content:
-                logger.info(f"Generated response: {content}")
-                return content
-            
-            logger.error("Empty response content")
-            return ERROR_API_ERROR
+        # Format prompt for customer support context
+        formatted_prompt = f"Answer politely as a customer support agent: {prompt.strip()}"
         
-        logger.error("No choices in response")
-        return ERROR_API_ERROR
-
-    except TimeoutError:
-        logger.error("API request timed out")
-        return ERROR_API_TIMEOUT
-    except ConnectionError as e:
-        logger.error(f"Could not connect to Mem0 AI server: {e}")
-        return "⚠️ Could not connect to AI server"
+        # Tokenize input
+        inputs = tokenizer(
+            formatted_prompt,
+            return_tensors="pt",
+            max_length=MAX_LENGTH,
+            truncation=True
+        ).to(model.device)
+        
+        # Generate response
+        with torch.inference_mode():
+            outputs = model.generate(
+                input_ids=inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],
+                max_length=MAX_LENGTH,
+                temperature=TEMPERATURE,
+                do_sample=True,
+                top_p=0.95,
+                num_return_sequences=1
+            )
+        
+        # Decode response
+        response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        
+        if response:
+            logger.info(f"Generated response: {response}")
+            return response.strip()
+        else:
+            logger.error("Empty response generated")
+            return ERROR_PROCESSING
+            
     except Exception as e:
-        logger.exception("Unexpected error while processing response:")
-        return ERROR_API_ERROR
+        logger.exception("Error generating response:")
+        return ERROR_PROCESSING
