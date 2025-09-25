@@ -11,7 +11,6 @@ from neo4j import GraphDatabase, exceptions as neo4j
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g
 from werkzeug.exceptions import HTTPException
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -152,7 +151,6 @@ app.config.update(
 # Initialize extensions
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-bootstrap = Bootstrap(app)
 
 # Initialize CSRF protection
 from flask_wtf.csrf import CSRFProtect
