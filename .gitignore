@@ -5,3 +5,4 @@ instance/
 .venv/
 .idea/
 .vscode/
+/model/*
