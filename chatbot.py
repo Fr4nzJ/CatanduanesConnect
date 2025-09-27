@@ -4,9 +4,24 @@ Falls back to Hugging Face Hub if local ./model is missing or corrupted.
 """
 import os
 import logging
-import torch
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except Exception:
+    torch = None
+    TORCH_AVAILABLE = False
+    logging.getLogger(__name__).warning(
+        "torch is not installed in this environment. Model loading will be skipped until dependencies are installed."
+    )
 from typing import Optional
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+try:
+    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+    TRANSFORMERS_AVAILABLE = True
+except Exception:
+    AutoModelForSeq2SeqLM = None
+    AutoTokenizer = None
+    TRANSFORMERS_AVAILABLE = False
+    logging.getLogger(__name__).warning("transformers library not available. Model/tokenizer loading will be skipped.")
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -20,10 +35,10 @@ DEFAULT_MODEL = "google/flan-t5-small"  # Small, safe fallback model
 tokenizer = None
 model = None
 
-# Error messages
-ERROR_EMPTY_INPUT = "⚠️ Please provide a message"
-ERROR_PROCESSING = "⚠️ Error processing your request"
-ERROR_MODEL_LOADING = "⚠️ The model is still loading, please try again later"
+# Error messages (ASCII-only to avoid console encoding issues)
+ERROR_EMPTY_INPUT = "Please provide a message"
+ERROR_PROCESSING = "Error processing your request"
+ERROR_MODEL_LOADING = "The model is not available right now, please try again later"
 
 def load_model():
     """
@@ -34,32 +49,58 @@ def load_model():
     if tokenizer is not None and model is not None:
         return tokenizer, model
 
+    if not TRANSFORMERS_AVAILABLE:
+        logger.warning("transformers not installed; skipping model/tokenizer load")
+        return None, None
+
     try:
         local_model_path = os.path.join(os.path.dirname(__file__), "model")
         if os.path.isdir(local_model_path):
             logger.info("Attempting to load local model from ./model ...")
+            # Try fast tokenizer first (faster) and fall back to slow tokenizer on error
             try:
-                tokenizer = AutoTokenizer.from_pretrained(local_model_path, use_fast=False)
-                model = AutoModelForSeq2SeqLM.from_pretrained(
-                    local_model_path,
-                    torch_dtype=torch.float32,
-                    device_map="cpu",
-                    low_cpu_mem_usage=True
-                )
-                logger.info("✓ Local model loaded successfully")
+                try:
+                    tokenizer = AutoTokenizer.from_pretrained(local_model_path, use_fast=True)
+                    logger.info("Loaded fast tokenizer from local model")
+                except Exception:
+                    logger.warning("Fast tokenizer failed for local model; retrying with slow tokenizer")
+                    tokenizer = AutoTokenizer.from_pretrained(local_model_path, use_fast=False)
+
+                if TORCH_AVAILABLE and TRANSFORMERS_AVAILABLE:
+                    model = AutoModelForSeq2SeqLM.from_pretrained(
+                        local_model_path,
+                        torch_dtype=torch.float32,
+                        device_map="cpu",
+                        low_cpu_mem_usage=True
+                    )
+                else:
+                    model = None
+
+                logger.info("✓ Local model (or tokenizer) loaded successfully")
                 return tokenizer, model
             except Exception as e:
-                logger.error(f"Local model load failed: {e}. Falling back to Hugging Face Hub...")
+                logger.exception(f"Local model load failed: {e}. Falling back to Hugging Face Hub...")
 
         # Fallback → download from Hugging Face
         logger.info(f"Loading fallback model: {DEFAULT_MODEL}")
-        tokenizer = AutoTokenizer.from_pretrained(DEFAULT_MODEL, use_fast=True)
-        model = AutoModelForSeq2SeqLM.from_pretrained(
-            DEFAULT_MODEL,
-            torch_dtype=torch.float32,
-            device_map="cpu"
-        )
-        logger.info("✓ Fallback model loaded successfully")
+        # Try fast tokenizer from HF, but fall back to slow tokenizer if needed
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(DEFAULT_MODEL, use_fast=True)
+            logger.info("Loaded fast tokenizer from Hugging Face Hub")
+        except Exception:
+            logger.warning("Fast tokenizer from HF failed; retrying with slow tokenizer")
+            tokenizer = AutoTokenizer.from_pretrained(DEFAULT_MODEL, use_fast=False)
+
+        if TORCH_AVAILABLE and TRANSFORMERS_AVAILABLE:
+            model = AutoModelForSeq2SeqLM.from_pretrained(
+                DEFAULT_MODEL,
+                torch_dtype=torch.float32,
+                device_map="cpu"
+            )
+            logger.info("✓ Fallback model loaded successfully")
+        else:
+            model = None
+            logger.warning("Torch or transformers unavailable: skipped fallback model download; tokenizer loaded only.")
     except Exception as e:
         logger.exception("Failed to load any model")
         tokenizer, model = None, None
