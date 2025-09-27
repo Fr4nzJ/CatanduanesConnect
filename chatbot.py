@@ -23,16 +23,9 @@ MODEL_DIR = os.path.join(os.path.dirname(__file__), "model")
 logger.info("Loading local model from ./model directory...")
 
 try:
-    # Determine if local model/tokenizer are present
-    local_tokenizer_path = os.path.join(MODEL_DIR, "tokenizer.json")
-    use_local = os.path.isdir(MODEL_DIR) and os.path.exists(local_tokenizer_path)
-
-    # Load tokenizer from local directory if present, otherwise allow HF to download
-    tokenizer = AutoTokenizer.from_pretrained(
-        MODEL_DIR if use_local else "google/flan-t5-small",
-        use_fast=False,
-        local_files_only=use_local
-    )
+    # Load tokenizer: use local ./model folder if it exists, otherwise fall back to t5-small
+    MODEL_PATH = "./model" if os.path.isdir(os.path.join(os.path.dirname(__file__), "model")) else "t5-small"
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 
     # Load model with CPU optimization
     model = AutoModelForSeq2SeqLM.from_pretrained(
