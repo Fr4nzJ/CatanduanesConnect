@@ -27,8 +27,12 @@ except Exception:
 logger = logging.getLogger(__name__)
 
 # Config
-MAX_LENGTH = 128
-TEMPERATURE = 0.7
+MAX_LENGTH = int(os.getenv('MODEL_MAX_LENGTH', 128))
+# Generation defaults: deterministic (beam search) for stable replies in production
+TEMPERATURE = float(os.getenv('MODEL_TEMPERATURE', 0.0))
+DO_SAMPLE = os.getenv('MODEL_DO_SAMPLE', 'false').lower() in ('1', 'true', 'yes')
+NUM_BEAMS = int(os.getenv('MODEL_NUM_BEAMS', 4))
+TOP_P = float(os.getenv('MODEL_TOP_P', 0.95))
 DEFAULT_MODEL = "google/flan-t5-small"  # Small, safe fallback model
 
 # Globals (lazy loaded)
@@ -120,7 +124,12 @@ def get_response(prompt: str) -> str:
         return ERROR_MODEL_LOADING
 
     try:
-        formatted_prompt = f"Answer politely as a customer support agent: {prompt.strip()}"
+        # Clear system-style instruction to keep responses on-topic and concise
+        formatted_prompt = (
+            "You are a helpful, concise customer support assistant. "
+            "Answer politely and directly, focusing only on information relevant to the user's question.\n\n"
+            f"User: {prompt.strip()}\nAssistant:"
+        )
 
         inputs = tokenizer(
             formatted_prompt,
@@ -130,15 +139,19 @@ def get_response(prompt: str) -> str:
         ).to(model.device)
 
         with torch.inference_mode():
-            outputs = model.generate(
-                input_ids=inputs["input_ids"],
-                attention_mask=inputs["attention_mask"],
-                max_length=MAX_LENGTH,
-                temperature=TEMPERATURE,
-                do_sample=True,
-                top_p=0.95,
-                num_return_sequences=1
-            )
+            gen_kwargs = {
+                'input_ids': inputs['input_ids'],
+                'attention_mask': inputs['attention_mask'],
+                'max_length': MAX_LENGTH,
+                'num_return_sequences': 1
+            }
+            if DO_SAMPLE:
+                gen_kwargs.update({'do_sample': True, 'temperature': TEMPERATURE, 'top_p': TOP_P})
+            else:
+                # Deterministic decoding via beam search
+                gen_kwargs.update({'do_sample': False, 'num_beams': NUM_BEAMS, 'early_stopping': True})
+
+            outputs = model.generate(**gen_kwargs)
 
         response = tokenizer.decode(outputs[0], skip_special_tokens=True)
         return response.strip() if response else ERROR_PROCESSING
