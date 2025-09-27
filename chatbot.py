@@ -125,9 +125,12 @@ def get_response(prompt: str) -> str:
 
     try:
         # Clear system-style instruction to keep responses on-topic and concise
+        # Include an explicit instruction to avoid parroting the user's exact words
         formatted_prompt = (
-            "You are a helpful, concise customer support assistant. "
-            "Answer politely and directly, focusing only on information relevant to the user's question.\n\n"
+            "You are a helpful, concise customer support assistant."
+            " Answer politely and directly, focusing only on information relevant to the user's question."
+            " Do NOT repeat the user's exact phrasing back verbatim; instead, summarize or respond directly."
+            " If the user provides praise or insults, acknowledge briefly but do not echo the phrase.\n\n"
             f"User: {prompt.strip()}\nAssistant:"
         )
 
@@ -145,6 +148,8 @@ def get_response(prompt: str) -> str:
                 'max_length': MAX_LENGTH,
                 'num_return_sequences': 1
             }
+            # Add anti-repetition parameters to reduce parroting and looping
+            gen_kwargs.update({'repetition_penalty': 1.2, 'no_repeat_ngram_size': 3})
             if DO_SAMPLE:
                 gen_kwargs.update({'do_sample': True, 'temperature': TEMPERATURE, 'top_p': TOP_P})
             else:
