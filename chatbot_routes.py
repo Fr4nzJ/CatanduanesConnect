@@ -28,18 +28,26 @@ def process_message():
             return jsonify({'error': ERROR_EMPTY_INPUT}), 400
 
         logger.info("Generating response...")
-        with torch.inference_mode():  # Memory optimization
-            response = get_response(message)
+        try:
+            # Use torch.inference_mode if torch is available and has that context manager
+            if hasattr(torch, 'inference_mode'):
+                with torch.inference_mode():
+                    response = get_response(message)
+            else:
+                response = get_response(message)
+        except Exception as e:
+            logger.exception("Error generating response")
+            return jsonify({'error': ERROR_PROCESSING}), 500
 
         if response in [ERROR_PROCESSING, ERROR_EMPTY_INPUT]:
             logger.error(f"Error generating response: {response}")
             return jsonify({'error': response}), 500
 
         result = {
-            'response': response,
+            'reply': response,
             'timestamp': datetime.now().isoformat()
         }
-        
+
         return jsonify(result)
 
     except Exception as e:

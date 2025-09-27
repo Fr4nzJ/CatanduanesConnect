@@ -63,7 +63,8 @@ class ChatBubble {
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.detail || 'Failed to get response');
+                // Prefer the server-provided error message (error.error), then detail
+                throw new Error(error.error || error.detail || 'Failed to get response');
             }
 
             const data = await response.json();
