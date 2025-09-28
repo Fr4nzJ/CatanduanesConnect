@@ -71,30 +71,40 @@
 
                         <div id="business_owner_fields" class="mb-3 role-specific-fields" style="display: none;">
                             <label for="permit" class="form-label">Business Permit (PDF or Image - Max 5MB)</label>
-                            <input type="file" class="form-control" id="permit" name="permit" accept=".pdf,.png,.jpg,.jpeg" required>
+                            <!-- 'required' removed here; JS will add/remove it based on selected role -->
+                            <input type="file" class="form-control" id="permit" name="permit" accept=".pdf,.png,.jpg,.jpeg">
                             <div class="form-text">Required: Upload your business permit for verification.</div>
                         </div>
 
                         <script>
-                            document.querySelectorAll('input[name="role"]').forEach(radio => {
-                                radio.addEventListener('change', function() {
-                                    // Hide all role-specific fields
-                                    document.querySelectorAll('.role-specific-fields').forEach(el => {
-                                        el.style.display = 'none';
-                                    });
-                                    
-                                    // Show fields for selected role
-                                    if (this.value === 'job_seeker') {
-                                        document.getElementById('job_seeker_fields').style.display = 'block';
-                                        document.getElementById('permit').removeAttribute('required');
-                                    } else if (this.value === 'business_owner') {
-                                        document.getElementById('business_owner_fields').style.display = 'block';
-                                        document.getElementById('permit').setAttribute('required', 'required');
-                                    } else {
-                                        document.getElementById('permit').removeAttribute('required');
-                                    }
+                            // Update visibility and required attributes based on selected role
+                            function updateRoleFields() {
+                                // Hide all role-specific fields
+                                document.querySelectorAll('.role-specific-fields').forEach(el => {
+                                    el.style.display = 'none';
                                 });
+
+                                const selected = document.querySelector('input[name="role"]:checked');
+                                if (!selected) return;
+
+                                if (selected.value === 'job_seeker') {
+                                    document.getElementById('job_seeker_fields').style.display = 'block';
+                                    document.getElementById('permit').removeAttribute('required');
+                                } else if (selected.value === 'business_owner') {
+                                    document.getElementById('business_owner_fields').style.display = 'block';
+                                    document.getElementById('permit').setAttribute('required', 'required');
+                                } else {
+                                    document.getElementById('permit').removeAttribute('required');
+                                }
+                            }
+
+                            // Wire up change listeners
+                            document.querySelectorAll('input[name="role"]').forEach(radio => {
+                                radio.addEventListener('change', updateRoleFields);
                             });
+
+                            // Initialize fields on page load
+                            document.addEventListener('DOMContentLoaded', updateRoleFields);
                         </script>
                         
                         <div class="mb-3 form-check">

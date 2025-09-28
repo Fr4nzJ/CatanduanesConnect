@@ -1,139 +1,105 @@
 ﻿"""
-Memory-optimized chatbot with lazy loading.
-Falls back to Hugging Face Hub if local ./model is missing or corrupted.
+Memory-optimized chatbot for Flask + Hugging Face transformers.
+- Lazy loads model/tokenizer on first request (not at import time).
+- Always tries local ./model first (with use_fast=False).
+- Falls back to Hugging Face "google/flan-t5-small" (with use_fast=True) if local model is missing/incomplete.
+- Returns safe error messages if model loading fails.
+- Optimized for Railway free tier (≤ 3 GB RAM, CPU only).
 """
+
 import os
 import logging
-try:
-    import torch
-    TORCH_AVAILABLE = True
-except Exception:
-    torch = None
-    TORCH_AVAILABLE = False
-    logging.getLogger(__name__).warning(
-        "torch is not installed in this environment. Model loading will be skipped until dependencies are installed."
-    )
-from typing import Optional
-try:
-    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-    TRANSFORMERS_AVAILABLE = True
-except Exception:
-    AutoModelForSeq2SeqLM = None
-    AutoTokenizer = None
-    TRANSFORMERS_AVAILABLE = False
-    logging.getLogger(__name__).warning("transformers library not available. Model/tokenizer loading will be skipped.")
 
-# Set up logging
-logger = logging.getLogger(__name__)
-
-# Config
-MAX_LENGTH = int(os.getenv('MODEL_MAX_LENGTH', 128))
-# Generation defaults: deterministic (beam search) for stable replies in production
-TEMPERATURE = float(os.getenv('MODEL_TEMPERATURE', 0.0))
-DO_SAMPLE = os.getenv('MODEL_DO_SAMPLE', 'false').lower() in ('1', 'true', 'yes')
-NUM_BEAMS = int(os.getenv('MODEL_NUM_BEAMS', 4))
-TOP_P = float(os.getenv('MODEL_TOP_P', 0.95))
-DEFAULT_MODEL = "google/flan-t5-small"  # Small, safe fallback model
-
-# Globals (lazy loaded)
-tokenizer = None
-model = None
-
-# Error messages (ASCII-only to avoid console encoding issues)
+# Error messages
 ERROR_EMPTY_INPUT = "Please provide a message"
 ERROR_PROCESSING = "Error processing your request"
 ERROR_MODEL_LOADING = "The model is not available right now, please try again later"
 
-def load_model():
-    """
-    Lazily load the model and tokenizer.
-    Tries ./model first, otherwise downloads from Hugging Face Hub.
-    """
-    global tokenizer, model
-    if tokenizer is not None and model is not None:
-        return tokenizer, model
+# Model config
+DEFAULT_MODEL = "google/flan-t5-small"
+LOCAL_MODEL_DIR = os.path.join(os.path.dirname(__file__), "model")
+MAX_LENGTH = int(os.getenv("MODEL_MAX_LENGTH", 128))
+TEMPERATURE = float(os.getenv("MODEL_TEMPERATURE", 0.0))
+NUM_BEAMS = int(os.getenv("MODEL_NUM_BEAMS", 4))
+REPETITION_PENALTY = float(os.getenv("MODEL_REPETITION_PENALTY", 1.2))
+NO_REPEAT_NGRAM_SIZE = int(os.getenv("MODEL_NO_REPEAT_NGRAM_SIZE", 3))
 
-    if not TRANSFORMERS_AVAILABLE:
-        logger.warning("transformers not installed; skipping model/tokenizer load")
-        return None, None
+# Globals for lazy loading
+tokenizer = None
+model = None
+load_failed = False
+
+def _is_local_model_available():
+    # Must be a directory and contain spiece.model (for T5 tokenizer)
+    if not isinstance(LOCAL_MODEL_DIR, str):
+        return False
+    if not os.path.isdir(LOCAL_MODEL_DIR):
+        return False
+    if not os.path.isfile(os.path.join(LOCAL_MODEL_DIR, "spiece.model")):
+        return False
+    return True
+
+def _lazy_load():
+    global tokenizer, model, load_failed
+    if tokenizer is not None and model is not None:
+        return True
+    if load_failed:
+        return False
 
     try:
-        local_model_path = os.path.join(os.path.dirname(__file__), "model")
-        if os.path.isdir(local_model_path):
-            logger.info("Attempting to load local model from ./model ...")
-            # Try fast tokenizer first (faster) and fall back to slow tokenizer on error
-            try:
-                try:
-                    tokenizer = AutoTokenizer.from_pretrained(local_model_path, use_fast=True)
-                    logger.info("Loaded fast tokenizer from local model")
-                except Exception:
-                    logger.warning("Fast tokenizer failed for local model; retrying with slow tokenizer")
-                    tokenizer = AutoTokenizer.from_pretrained(local_model_path, use_fast=False)
+        # Import transformers/torch only when needed
+        import torch
+        from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-                if TORCH_AVAILABLE and TRANSFORMERS_AVAILABLE:
-                    model = AutoModelForSeq2SeqLM.from_pretrained(
-                        local_model_path,
-                        torch_dtype=torch.float32,
-                        device_map="cpu",
-                        low_cpu_mem_usage=True
-                    )
-                else:
-                    model = None
-
-                logger.info("✓ Local model (or tokenizer) loaded successfully")
-                return tokenizer, model
-            except Exception as e:
-                logger.exception(f"Local model load failed: {e}. Falling back to Hugging Face Hub...")
-
-        # Fallback → download from Hugging Face
-        logger.info(f"Loading fallback model: {DEFAULT_MODEL}")
-        # Try fast tokenizer from HF, but fall back to slow tokenizer if needed
-        try:
+        if _is_local_model_available():
+            logging.info("Loading local model from ./model (use_fast=False)...")
+            tokenizer = AutoTokenizer.from_pretrained(LOCAL_MODEL_DIR, use_fast=False)
+            model = AutoModelForSeq2SeqLM.from_pretrained(
+                LOCAL_MODEL_DIR,
+                torch_dtype=torch.float32,
+                device_map="cpu",
+                low_cpu_mem_usage=True
+            )
+            logging.info("✓ Local model loaded successfully")
+        else:
+            logging.info("Local model not found or incomplete, falling back to Hugging Face Hub...")
             tokenizer = AutoTokenizer.from_pretrained(DEFAULT_MODEL, use_fast=True)
-            logger.info("Loaded fast tokenizer from Hugging Face Hub")
-        except Exception:
-            logger.warning("Fast tokenizer from HF failed; retrying with slow tokenizer")
-            tokenizer = AutoTokenizer.from_pretrained(DEFAULT_MODEL, use_fast=False)
-
-        if TORCH_AVAILABLE and TRANSFORMERS_AVAILABLE:
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 DEFAULT_MODEL,
                 torch_dtype=torch.float32,
                 device_map="cpu"
             )
-            logger.info("✓ Fallback model loaded successfully")
-        else:
-            model = None
-            logger.warning("Torch or transformers unavailable: skipped fallback model download; tokenizer loaded only.")
+            logging.info("✓ Fallback model loaded successfully")
+        return True
     except Exception as e:
-        logger.exception("Failed to load any model")
+        logging.exception(f"Failed to load model/tokenizer: {e}")
         tokenizer, model = None, None
-
-    return tokenizer, model
+        load_failed = True
+        return False
 
 def get_response(prompt: str) -> str:
     """
     Generate a response using the chatbot model.
+    Returns safe error messages if model/tokenizer are unavailable.
     """
     if not prompt or not prompt.strip():
-        logger.warning("Empty prompt received")
+        logging.warning("Empty prompt received")
         return ERROR_EMPTY_INPUT
 
-    tokenizer, model = load_model()
-    if tokenizer is None or model is None:
+    if not _lazy_load():
         return ERROR_MODEL_LOADING
 
     try:
-        # Clear system-style instruction to keep responses on-topic and concise
-        # Include an explicit instruction to avoid parroting the user's exact words
+        # System prompt: discourage parroting, keep answers concise
         formatted_prompt = (
-            "You are a helpful, concise customer support assistant."
-            " Answer politely and directly, focusing only on information relevant to the user's question."
-            " Do NOT repeat the user's exact phrasing back verbatim; instead, summarize or respond directly."
-            " If the user provides praise or insults, acknowledge briefly but do not echo the phrase.\n\n"
+            "You are a helpful, concise customer support assistant. "
+            "Answer politely and directly, focusing only on information relevant to the user's question. "
+            "Do NOT repeat the user's exact phrasing back verbatim; instead, summarize or respond directly. "
+            "If the user provides praise or insults, acknowledge briefly but do not echo the phrase.\n\n"
             f"User: {prompt.strip()}\nAssistant:"
         )
 
+        import torch
         inputs = tokenizer(
             formatted_prompt,
             return_tensors="pt",
@@ -142,24 +108,31 @@ def get_response(prompt: str) -> str:
         ).to(model.device)
 
         with torch.inference_mode():
-            gen_kwargs = {
-                'input_ids': inputs['input_ids'],
-                'attention_mask': inputs['attention_mask'],
-                'max_length': MAX_LENGTH,
-                'num_return_sequences': 1
-            }
-            # Add anti-repetition parameters to reduce parroting and looping
-            gen_kwargs.update({'repetition_penalty': 1.2, 'no_repeat_ngram_size': 3})
-            if DO_SAMPLE:
-                gen_kwargs.update({'do_sample': True, 'temperature': TEMPERATURE, 'top_p': TOP_P})
-            else:
-                # Deterministic decoding via beam search
-                gen_kwargs.update({'do_sample': False, 'num_beams': NUM_BEAMS, 'early_stopping': True})
-
-            outputs = model.generate(**gen_kwargs)
+            outputs = model.generate(
+                input_ids=inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],
+                max_length=MAX_LENGTH,
+                num_beams=NUM_BEAMS,
+                repetition_penalty=REPETITION_PENALTY,
+                no_repeat_ngram_size=NO_REPEAT_NGRAM_SIZE,
+                early_stopping=True,
+                do_sample=False
+            )
 
         response = tokenizer.decode(outputs[0], skip_special_tokens=True)
         return response.strip() if response else ERROR_PROCESSING
     except Exception as e:
-        logger.exception("Error generating response:")
+        logging.exception("Error generating response:")
         return ERROR_PROCESSING
+
+# Optional: Logging filter to skip empty request bodies
+class SkipEmptyBodyFilter(logging.Filter):
+    def filter(self, record):
+        # Only filter Flask request body logs
+        msg = getattr(record, 'msg', '')
+        if isinstance(msg, str) and 'Body:' in msg and 'Body: b\'\'' in msg:
+            return False
+        return True
+
+# To use the filter, add to your Flask app logger setup:
+# app.logger.addFilter(SkipEmptyBodyFilter())
