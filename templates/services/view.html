@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% from 'macros/forms.html' import csrf %}
+
+{% block title %}{{ service.title }} - Catanduanes Connect{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h1 class="card-title h3">{{ service.title }}</h1>
+                    <p class="text-muted">
+                        Posted by {{ service.client.name }} on {{ service.created_at|datetime }}
+                    </p>
+                    
+                    <hr>
+                    
+                    <h5>Description</h5>
+                    <p>{{ service.description }}</p>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h5>Details</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Category:</strong> {{ service.category|title }}</li>
+                                <li><strong>Location:</strong> {{ service.location }}</li>
+                                <li><strong>Budget:</strong> {{ service.budget }}</li>
+                                <li><strong>Duration:</strong> {{ service.duration }}</li>
+                                <li><strong>Status:</strong> <span class="badge bg-{{ service.status|status_color }}">{{ service.status|title }}</span></li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>Requirements</h5>
+                            <p>{{ service.requirements or 'No specific requirements listed.' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if current_user.is_authenticated and current_user.role == 'job_seeker' and service.status == 'open' %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Submit Your Offer</h5>
+                    <form action="{{ url_for('offer_service', id=service.id) }}" method="POST">
+                        {{ csrf() }}
+                        <div class="mb-3">
+                            <label for="proposal" class="form-label">Your Proposal</label>
+                            <textarea class="form-control" id="proposal" name="proposal" rows="3" required></textarea>
+                            <div class="form-text">Describe how you would handle this service request</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="price" class="form-label">Your Price</label>
+                            <input type="text" class="form-control" id="price" name="price" required>
+                            <div class="form-text">Your asking price for this service</div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Submit Offer</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            {% if service.offers %}
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Offers ({{ service.offers|length }})</h5>
+                    
+                    {% for offer in service.offers %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2">{{ offer.user.name }}</h6>
+                            <p class="card-text">{{ offer.proposal }}</p>
+                            <p class="card-text"><strong>Price:</strong> {{ offer.price }}</p>
+                            
+                            {% if current_user.id == service.client_id and service.status == 'open' %}
+                            <form action="{{ url_for('accept_offer', service_id=service.id, job_seeker_id=offer.user.id) }}" method="POST">
+                                {{ csrf() }}
+                                <button type="submit" class="btn btn-success btn-sm">Accept Offer</button>
+                            </form>
+                            {% endif %}
+                            
+                            {% if offer.status == 'accepted' %}
+                            <span class="badge bg-success">Accepted</span>
+                            {% elif offer.status == 'rejected' %}
+                            <span class="badge bg-danger">Rejected</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

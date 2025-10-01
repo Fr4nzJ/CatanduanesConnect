@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">Notifications</h2>
+            <div class="d-flex justify-content-between mb-3">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary active" data-filter="all">All</button>
+                    <button type="button" class="btn btn-outline-primary" data-filter="unread">Unread</button>
+                </div>
+                <button class="btn btn-link" id="markAllRead">Mark all as read</button>
+            </div>
+            <div class="list-group" id="notificationsList"></div>
+            <div class="text-center mt-4">
+                <button class="btn btn-outline-primary" id="loadMore">Load More</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 0;
+const pageSize = 10;
+let activeFilter = 'all';
+
+function refreshNotifications(append = false) {
+    const unreadOnly = activeFilter === 'unread';
+    const offset = append ? (currentPage * pageSize) : 0;
+    
+    fetch(`/notifications?limit=${pageSize}&unread_only=${unreadOnly}&offset=${offset}`)
+        .then(response => response.json())
+        .then(data => {
+            const notifications = data.notifications;
+            
+            if (!append) {
+                document.getElementById('notificationsList').innerHTML = '';
+                currentPage = 0;
+            }
+            
+            notifications.forEach(notification => {
+                const item = document.createElement('div');
+                item.className = `list-group-item list-group-item-action ${notification.status === 'unread' ? 'active' : ''}`;
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-1">${notification.message}</h6>
+                        <small>${new Date(notification.created_at).toLocaleDateString()}</small>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-${notification.type}">
+                            ${notification.type.charAt(0).toUpperCase() + notification.type.slice(1)}
+                        </small>
+                        <div>
+                            ${notification.status === 'unread' ? 
+                                `<button class="btn btn-sm btn-outline-primary mark-read" data-id="${notification.id}">
+                                    Mark as read
+                                </button>` : ''
+                            }
+                            ${notification.link ? 
+                                `<a href="${notification.link}" class="btn btn-sm btn-link">View</a>` : ''
+                            }
+                        </div>
+                    </div>
+                `;
+                document.getElementById('notificationsList').appendChild(item);
+            });
+            
+            // Show/hide load more button based on results
+            document.getElementById('loadMore').style.display = 
+                notifications.length < pageSize ? 'none' : 'block';
+            
+            if (!append) {
+                window.scrollTo(0, 0);
+            }
+        })
+        .catch(error => console.error('Error loading notifications:', error));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initial load
+    refreshNotifications();
+    
+    // Filter buttons
+    document.querySelectorAll('[data-filter]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            activeFilter = e.target.dataset.filter;
+            refreshNotifications();
+        });
+    });
+    
+    // Mark single notification as read
+    document.getElementById('notificationsList').addEventListener('click', (e) => {
+        if (e.target.classList.contains('mark-read')) {
+            const id = e.target.dataset.id;
+            fetch(`/notifications/read/${id}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(() => {
+                    refreshNotifications();
+                })
+                .catch(error => console.error('Error marking notification as read:', error));
+        }
+    });
+    
+    // Mark all as read
+    document.getElementById('markAllRead').addEventListener('click', () => {
+        fetch('/notifications/read/all', { method: 'POST' })
+            .then(response => response.json())
+            .then(() => {
+                refreshNotifications();
+            })
+            .catch(error => console.error('Error marking all notifications as read:', error));
+    });
+    
+    // Load more
+    document.getElementById('loadMore').addEventListener('click', () => {
+        currentPage++;
+        refreshNotifications(true);
+    });
+    
+    // Set up polling for new notifications
+    setInterval(refreshNotifications, 30000); // Poll every 30 seconds
+});
+</script>
+{% endblock %}

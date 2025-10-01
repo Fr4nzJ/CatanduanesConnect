@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Business Owner Dashboard - Catanduanes Connect{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ current_user.name }}</h5>
+                    <p class="text-muted">{{ current_user.email }}</p>
+                    <a href="{{ url_for('profile', user_id=current_user.id) }}" class="btn btn-outline-primary">Edit Profile</a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Business Profile</h5>
+                    {% if business %}
+                        <div class="mb-3">
+                            <h6>{{ business.name }}</h6>
+                            <p class="text-muted mb-2">{{ business.category }}</p>
+                            <p class="mb-2">{{ business.location }}</p>
+                            <a href="{{ url_for('business_details', business_id=business.id) }}" class="btn btn-sm btn-outline-primary">View Profile</a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No business profile yet.</p>
+                        <a href="{{ url_for('create_business') }}" class="btn btn-primary">Create Business Profile</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Active Job Listings</h5>
+                    <div class="d-flex align-items-center">
+                        <div id="jobsSpinner" class="me-2"></div>
+                        {% if business %}
+                            <a href="{{ url_for('post_job') }}" class="btn btn-primary">Post New Job</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="jobListingsContainer" class="list-group">
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Applications</h5>
+                    <div id="applicationsSpinner"></div>
+                </div>
+                <div class="card-body">
+                    <div id="applicationsContainer" class="list-group">
+                        <div class="text-center py-3">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const jobListingsContainer = document.getElementById('jobListingsContainer');
+    const applicationsContainer = document.getElementById('applicationsContainer');
+    const jobsSpinner = createLoadingSpinner('jobsSpinner');
+    const applicationsSpinner = createLoadingSpinner('applicationsSpinner');
+
+    const dashboard = new DashboardUpdater({
+        endpoints: {
+            businessStats: '/api/dashboard/business-owner'
+        },
+        loadingElements: {
+            businessStats: jobsSpinner
+        },
+        updateCallbacks: {
+            businessStats: (data) => {
+                if (data.error) {
+                    jobListingsContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    applicationsContainer.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    return;
+                }
+
+                // Update job listings with application counts
+                const jobsHtml = data.applications.map(job => `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${job.job_title}</h6>
+                            <span class="badge bg-primary rounded-pill">${
+                                Object.values(job.applications || {}).reduce((a, b) => a + b, 0)
+                            } applications</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div>
+                                <span class="badge bg-warning text-dark me-1">
+                                    ${job.stats.pending || 0} pending
+                                </span>
+                                <span class="badge bg-success me-1">
+                                    ${job.stats.accepted || 0} accepted
+                                </span>
+                                <span class="badge bg-danger">
+                                    ${job.stats.rejected || 0} rejected
+                                </span>
+                            </div>
+                            <a href="/job/${job.job_id}/applications" 
+                               class="btn btn-sm btn-outline-primary">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                `).join('') || '<p class="text-muted text-center">No active job listings.</p>';
+
+                jobListingsContainer.innerHTML = jobsHtml;
+
+                // Update recent applications list
+                const recentApplications = data.applications
+                    .flatMap(job => 
+                        Object.entries(job.applications || {}).map(([status, count]) => ({
+                            jobTitle: job.job_title,
+                            jobId: job.job_id,
+                            status,
+                            count
+                        }))
+                    )
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 5);
+
+                const applicationsHtml = recentApplications.length ? recentApplications.map(app => `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${app.jobTitle}</h6>
+                            <span class="badge bg-${
+                                app.status === 'accepted' ? 'success' : 
+                                app.status === 'rejected' ? 'danger' : 
+                                'warning text-dark'
+                            }">${app.status}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">${app.count} application(s)</small>
+                            <a href="/job/${app.jobId}/applications" 
+                               class="btn btn-sm btn-outline-primary">
+                                View Applications
+                            </a>
+                        </div>
+                    </div>
+                `).join('') : '<p class="text-muted text-center">No applications yet.</p>';
+
+                applicationsContainer.innerHTML = applicationsHtml;
+            }
+        }
+    });
+
+    // Start real-time updates
+    dashboard.startUpdates();
+
+    // Clean up when leaving the page
+    window.addEventListener('beforeunload', () => {
+        dashboard.stopUpdates();
+    });
+});
+</script>
+{% endblock %}

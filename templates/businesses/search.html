@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Business Directory - Catanduanes Connect{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Search Filters -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('businesses') }}">
+                        <!-- Category Filter -->
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" name="category">
+                                <option value="">All Categories</option>
+                                <option value="Technology" {% if request.args.get('category') == 'Technology' %}selected{% endif %}>Technology</option>
+                                <option value="Healthcare" {% if request.args.get('category') == 'Healthcare' %}selected{% endif %}>Healthcare</option>
+                                <option value="Education" {% if request.args.get('category') == 'Education' %}selected{% endif %}>Education</option>
+                                <option value="Retail" {% if request.args.get('category') == 'Retail' %}selected{% endif %}>Retail</option>
+                                <option value="Hospitality" {% if request.args.get('category') == 'Hospitality' %}selected{% endif %}>Hospitality</option>
+                                <option value="Construction" {% if request.args.get('category') == 'Construction' %}selected{% endif %}>Construction</option>
+                                <option value="Agriculture" {% if request.args.get('category') == 'Agriculture' %}selected{% endif %}>Agriculture</option>
+                                <option value="Fishing" {% if request.args.get('category') == 'Fishing' %}selected{% endif %}>Fishing</option>
+                                <option value="Tourism" {% if request.args.get('category') == 'Tourism' %}selected{% endif %}>Tourism</option>
+                            </select>
+                        </div>
+
+                        <!-- Location Filter -->
+                        <div class="mb-3">
+                            <label class="form-label">Location</label>
+                            <select class="form-select" name="location">
+                                <option value="">All Locations</option>
+                                <option value="Virac" {% if request.args.get('location') == 'Virac' %}selected{% endif %}>Virac</option>
+                                <option value="San Andres" {% if request.args.get('location') == 'San Andres' %}selected{% endif %}>San Andres</option>
+                                <option value="Caramoran" {% if request.args.get('location') == 'Caramoran' %}selected{% endif %}>Caramoran</option>
+                                <option value="Pandan" {% if request.args.get('location') == 'Pandan' %}selected{% endif %}>Pandan</option>
+                                <option value="Bagamanoc" {% if request.args.get('location') == 'Bagamanoc' %}selected{% endif %}>Bagamanoc</option>
+                                <option value="Gigmoto" {% if request.args.get('location') == 'Gigmoto' %}selected{% endif %}>Gigmoto</option>
+                                <option value="Baras" {% if request.args.get('location') == 'Baras' %}selected{% endif %}>Baras</option>
+                                <option value="Bato" {% if request.args.get('location') == 'Bato' %}selected{% endif %}>Bato</option>
+                                <option value="San Miguel" {% if request.args.get('location') == 'San Miguel' %}selected{% endif %}>San Miguel</option>
+                                <option value="Viga" {% if request.args.get('location') == 'Viga' %}selected{% endif %}>Viga</option>
+                                <option value="Panganiban" {% if request.args.get('location') == 'Panganiban' %}selected{% endif %}>Panganiban</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Business Listings -->
+        <div class="col-md-9">
+            <!-- Search Bar -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form class="d-flex" method="GET" action="{{ url_for('businesses') }}">
+                        <input type="search" name="q" class="form-control me-2" placeholder="Search businesses..." value="{{ request.args.get('q', '') }}">
+                        <button type="submit" class="btn btn-primary">Search</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Business List -->
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                {% if businesses %}
+                    {% for business in businesses %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ business.name }}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">{{ business.category }}</h6>
+                                <p class="card-text">
+                                    <i class="fas fa-map-marker-alt"></i> {{ business.location }}, Catanduanes<br>
+                                    <i class="fas fa-phone"></i> {{ business.phone }}<br>
+                                    <i class="fas fa-envelope"></i> {{ business.email }}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-primary">{{ business.category }}</span>
+                                    <a href="{{ url_for('business_details', business_id=business.id) }}" class="btn btn-outline-primary">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            No businesses found matching your criteria.
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Pagination -->
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {% if not has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('businesses', page=page-1, **request.args) if has_prev else '#' }}" tabindex="-1">Previous</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('businesses', page=p, **request.args) }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {% if not has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('businesses', page=page+1, **request.args) if has_next else '#' }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+{% endblock %} 

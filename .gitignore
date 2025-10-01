@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+instance/
+.venv/
+.idea/
+.vscode/
+# Ignore potentially stale tokenizer file so HF can re-download a compatible one on deploy
+model/tokenizer.json

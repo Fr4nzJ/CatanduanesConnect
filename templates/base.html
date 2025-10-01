@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}Catanduanes Connect{% endblock %}</title>
+    
+    <!-- Bootstrap 5 (via CDN, lightweight) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/chat_bubble.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/glassmorphism.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <style>
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .btn-light {
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-light:hover {
+            background-color: #f8f9fa;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+    
+    {% from 'macros/forms.html' import csrf, form_start, form_end, form_errors %}
+    {% from 'macros/chat_bubble.html' import render_chat_bubble %}
+    
+    <style>
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6366f1, #3b82f6);
+            color: #fff;
+        }
+        
+        .content-wrapper {
+            min-height: calc(100vh - 70px);
+            padding: 2rem 0;
+        }
+    </style>
+    
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home') }}">Catanduanes Connect</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('jobs') }}">Jobs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('businesses') }}">Businesses</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('map') }}">Map</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('about') }}">About Us</a>
+                    </li>
+
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a href="{{ url_for('view_notifications') }}" class="nav-link position-relative">
+                            <i class="fas fa-bell"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="unreadCount" style="display: none;">
+                                0
+                            </span>
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            {{ current_user.name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}">Profile</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                            {% if current_user.role == 'admin' %}
+                            <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}">Admin Dashboard</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('signup') }}">Sign Up</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light py-4 mt-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-8 text-center">
+                    <p class="mb-2">&copy; 2025 Catanduanes Connect Team</p>
+                    <div class="d-flex flex-column flex-md-row justify-content-center gap-3 mb-2">
+                        <a href="mailto:catanduanesconnect@gmail.com" class="text-muted text-decoration-none">
+                            <i class="fas fa-envelope me-2"></i>catanduanesconnect@gmail.com
+                        </a>
+                        <a href="tel:09952049746" class="text-muted text-decoration-none">
+                            <i class="fas fa-phone me-2"></i>09952049746
+                        </a>
+                    </div>
+                    <div>
+                        <a href="https://www.facebook.com/profile.php?id=61581162686907" 
+                           target="_blank" 
+                           class="text-muted text-decoration-none">
+                            <i class="fab fa-facebook me-2"></i>Follow us
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- CSRF Protection for AJAX requests -->
+    <script>
+        // Get CSRF token from meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Add CSRF token to all AJAX requests
+        function addCSRFToken(xhr) {
+            xhr.setRequestHeader("X-CSRFToken", csrfToken);
+        }
+
+        // Override fetch to include CSRF token
+        const originalFetch = window.fetch;
+        window.fetch = function() {
+            const [resource, config] = arguments;
+            if (config === undefined) {
+                config = {};
+            }
+            if (config.headers === undefined) {
+                config.headers = {};
+            }
+            config.headers['X-CSRFToken'] = csrfToken;
+            return originalFetch.apply(this, [resource, config]);
+        };
+    </script>
+
+    {% if current_user.is_authenticated %}
+    <script>
+        function updateNotificationCount() {
+            fetch('/notifications?unread_only=true')
+                .then(response => response.json())
+                .then(data => {
+                    const unreadCount = data.unread_count;
+                    const badge = document.getElementById('unreadCount');
+                    
+                    if (unreadCount > 0) {
+                        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                        badge.style.display = 'block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Error updating notification count:', error));
+        }
+
+        // Update notification count periodically
+        document.addEventListener('DOMContentLoaded', () => {
+            updateNotificationCount();
+            setInterval(updateNotificationCount, 30000); // Check every 30 seconds
+        });
+    </script>
+    {% endif %}
+    <!-- Chat Bubble -->
+    {{ render_chat_bubble() }}
+    
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Chat Bubble JS -->
+    <script src="{{ url_for('static', filename='js/chat_bubble.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

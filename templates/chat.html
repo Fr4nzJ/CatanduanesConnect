@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}AI Assistant - Catanduanes Connect{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="chat-container glass-card">
+        <h2 class="text-center mb-4">
+            <i class="fas fa-robot me-2"></i>AI Assistant
+        </h2>
+        <div class="chat-messages" id="chatContainer">
+            <div class="message-bubble bot fade-in">
+                Hello! I'm your AI assistant. I can help you with general questions and provide specific information about Catanduanes. How can I assist you today?
+            </div>
+        </div>
+        <form id="messageForm" class="mt-4">
+            <div class="input-group">
+                <input type="text" id="userMessage" class="glass-input" placeholder="Type your message here..." required>
+                <button type="submit" class="glass-button">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add chat.js script -->
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+
+<style>
+    .chat-messages {
+        height: 60vh;
+        overflow-y: auto;
+        padding: 1rem;
+    }
+    
+    .message-bubble {
+        margin-bottom: 1rem;
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { 
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Custom Scrollbar */
+    .chat-messages::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .chat-messages::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+    }
+    
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 3px;
+    }
+    
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
+    }
+</style>
+{% endblock %}
+            <input type="text" id="messageInput" class="form-control" placeholder="Type your message here..." required>
+            <button type="submit" class="btn btn-primary">Send</button>
+        </form>
+    </div>
+
+    <script>
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        const chatContainer = document.getElementById('chatContainer');
+
+        messageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // Add user message to chat
+            addMessage(message, true);
+            messageInput.value = '';
+
+            try {
+                // Show loading indicator
+                const loadingDiv = addMessage('Thinking...', false);
+                
+                // Send message to server
+                const response = await fetch('/chatbot/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                
+                // Remove loading indicator and add bot response
+                loadingDiv.remove();
+                addMessage(data.response, false);
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('Sorry, there was an error processing your request.', false);
+            }
+        });
+
+        function addMessage(text, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            messageDiv.textContent = text;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return messageDiv;
+        }
+    </script>
+</body>
+</html>

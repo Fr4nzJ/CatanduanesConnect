@@ -1,0 +1,27 @@
+// Context Diagram
+digraph {
+	rankdir=LR
+	system [label="Catanduanes
+Connect" shape=rectangle]
+	users [label="Users
+(Job Seekers, Business
+Owners, Admins)" shape=rectangle]
+	users -> system
+	system -> users
+	maps [label="Google Maps
+API" shape=rectangle]
+	maps -> system
+	system -> maps
+	ai [label="AI Chatbot
+Service" shape=rectangle]
+	ai -> system
+	system -> ai
+	email [label="Email
+Service" shape=rectangle]
+	email -> system
+	system -> email
+	payment [label="Payment
+Gateway" shape=rectangle]
+	payment -> system
+	system -> payment
+}

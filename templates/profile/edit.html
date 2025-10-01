@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% from 'macros/forms.html' import csrf %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Profile</h2>
+    <form method="POST" enctype="multipart/form-data">
+        {{ csrf() }}
+        <div class="card">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="phone" class="form-label">Phone</label>
+                    <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone }}">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="address" class="form-label">Address</label>
+                    <textarea class="form-control" id="address" name="address" rows="2">{{ user.address }}</textarea>
+                </div>
+                
+                {% if user.role == 'job_seeker' %}
+                <div class="mb-3">
+                    <label for="skills" class="form-label">Skills (comma-separated)</label>
+                    <input type="text" class="form-control" id="skills" name="skills" value="{{ user.skills|join(', ') }}">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="experience" class="form-label">Experience</label>
+                    <div id="experience-container">
+                        {% for exp in user.experience %}
+                        <div class="experience-item mb-2">
+                            <input type="text" class="form-control mb-1" name="experience_title[]" value="{{ exp.title }}" placeholder="Job Title">
+                            <input type="text" class="form-control mb-1" name="experience_company[]" value="{{ exp.company }}" placeholder="Company">
+                            <input type="text" class="form-control mb-1" name="experience_duration[]" value="{{ exp.duration }}" placeholder="Duration">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addExperience()">Add Experience</button>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="education" class="form-label">Education</label>
+                    <div id="education-container">
+                        {% for edu in user.education %}
+                        <div class="education-item mb-2">
+                            <input type="text" class="form-control mb-1" name="education_degree[]" value="{{ edu.degree }}" placeholder="Degree">
+                            <input type="text" class="form-control mb-1" name="education_school[]" value="{{ edu.school }}" placeholder="School">
+                            <input type="text" class="form-control mb-1" name="education_year[]" value="{{ edu.year }}" placeholder="Year">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="addEducation()">Add Education</button>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="resume" class="form-label">Resume (PDF)</label>
+                    <input type="file" class="form-control" id="resume" name="resume" accept=".pdf">
+                    {% if user.resume_path %}
+                    <small class="text-muted">Current resume: {{ user.resume_path }}</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% if user.role == 'job_seeker' %}
+<script>
+function addExperience() {
+    const container = document.getElementById('experience-container');
+    const div = document.createElement('div');
+    div.className = 'experience-item mb-2';
+    div.innerHTML = `
+        <input type="text" class="form-control mb-1" name="experience_title[]" placeholder="Job Title">
+        <input type="text" class="form-control mb-1" name="experience_company[]" placeholder="Company">
+        <input type="text" class="form-control mb-1" name="experience_duration[]" placeholder="Duration">
+    `;
+    container.appendChild(div);
+}
+
+function addEducation() {
+    const container = document.getElementById('education-container');
+    const div = document.createElement('div');
+    div.className = 'education-item mb-2';
+    div.innerHTML = `
+        <input type="text" class="form-control mb-1" name="education_degree[]" placeholder="Degree">
+        <input type="text" class="form-control mb-1" name="education_school[]" placeholder="School">
+        <input type="text" class="form-control mb-1" name="education_year[]" placeholder="Year">
+    `;
+    container.appendChild(div);
+}
+</script>
+{% endif %}
+{% endblock %} 
