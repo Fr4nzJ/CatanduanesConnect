@@ -42,6 +42,10 @@ CORS(app)
 app.register_blueprint(admin)
 app.register_blueprint(chatbot_bp, url_prefix='/chatbot')
 
+# Import and register auth blueprint
+from auth_routes import auth
+app.register_blueprint(auth)
+
 # Set up enhanced logging
 if not os.path.exists('logs'):
     os.mkdir('logs')
