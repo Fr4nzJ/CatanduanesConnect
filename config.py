@@ -22,6 +22,3 @@ class Config:
     
     # OAuth redirect URI
     GOOGLE_REDIRECT_URI = f"{BASE_URL}/callback/google"
-    
-    # OAuth redirect URI
-    GOOGLE_REDIRECT_URI = f"{BASE_URL}/callback/google"

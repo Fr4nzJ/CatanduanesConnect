@@ -66,14 +66,19 @@ def google_login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     
-    flow = get_google_auth_flow()
-    authorization_url, state = flow.authorization_url(
-        access_type='offline',
-        include_granted_scopes='true'
-    )
-    
-    session['google_state'] = state
-    return redirect(authorization_url)
+    try:
+        flow = get_google_auth_flow()
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true'
+        )
+        
+        session['google_state'] = state
+        return redirect(authorization_url)
+    except Exception as e:
+        current_app.logger.error(f"Error in Google login: {str(e)}")
+        flash('An error occurred during Google login. Please try again.', 'danger')
+        return redirect(url_for('auth.login'))
 
 @auth.route('/callback/google')
 def google_callback():
