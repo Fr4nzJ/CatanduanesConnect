@@ -1,3 +1,7 @@
+import os
+from google_auth_oauthlib.flow import Flow
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 from flask import Blueprint
 auth = Blueprint('auth', __name__)
 auth = Blueprint("auth", __name__)
@@ -83,14 +87,21 @@ def google_login():
         return redirect(url_for("dashboard"))
 
     try:
-        flow = get_google_auth_flow()
-        current_app.logger.info(f"Google OAuth flow initialized: {flow}")
-        authorization_url, state = flow.authorization_url(
-            access_type="offline",
-            include_granted_scopes="true"
+        flow = Flow.from_client_secrets_file(
+            os.path.join(current_app.root_path, 'client_secrets.json'),
+            scopes=[
+                'https://www.googleapis.com/auth/userinfo.email',
+                'https://www.googleapis.com/auth/userinfo.profile',
+                'openid'
+            ],
+            redirect_uri=current_app.config.get('GOOGLE_REDIRECT_URI')
         )
-        current_app.logger.info(f"Google OAuth authorization_url: {authorization_url}, state: {state}")
-        session["google_state"] = state
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true',
+            prompt='consent'
+        )
+        session['google_state'] = state
         return redirect(authorization_url)
     except Exception as e:
         import traceback
@@ -109,47 +120,51 @@ def google_callback():
         flash("Invalid state parameter.", "danger")
         return redirect(url_for("auth.login"))
 
-    flow = get_google_auth_flow()
     try:
-        current_app.logger.info(f"Google callback request args: {request.args}")
+        flow = Flow.from_client_secrets_file(
+            os.path.join(current_app.root_path, 'client_secrets.json'),
+            scopes=[
+                'https://www.googleapis.com/auth/userinfo.email',
+                'https://www.googleapis.com/auth/userinfo.profile',
+                'openid'
+            ],
+            state=session.get('google_state'),
+            redirect_uri=current_app.config.get('GOOGLE_REDIRECT_URI')
+        )
         flow.fetch_token(authorization_response=request.url)
         credentials = flow.credentials
-        current_app.logger.info(f"Google credentials: {credentials}")
+        id_info = id_token.verify_oauth2_token(
+            credentials.id_token,
+            google_requests.Request(),
+            current_app.config.get('GOOGLE_CLIENT_ID')
+        )
+        email = id_info.get('email')
+        name = id_info.get('name')
+        picture = id_info.get('picture')
+        if not email or not name:
+            raise ValueError('Missing email or name from Google response')
 
-        # Fetch user info with id_token if available, else access token
-        user_info = get_google_user_info(credentials.id_token if hasattr(credentials, 'id_token') else credentials.token)
-        current_app.logger.info(f"Google user_info: {user_info}")
-        if not user_info:
-            flash("Failed to get user info from Google.", "danger")
-            return redirect(url_for("auth.login"))
-
-        # Check if user already exists
-        user = User.get_by_email(user_info["email"])
-
+        user = User.get_by_email(email)
         if not user:
-            # New Google user
             user = User(
-                name=user_info["name"],
-                email=user_info["email"],
-                google_id=user_info["google_id"],
-                profile_picture=user_info.get("picture"),
-                password=generate_password_hash(user_info["google_id"]),  # Set a dummy password
-                verification_status='verified'  # Google users are pre-verified
+                name=name,
+                email=email,
+                profile_picture=picture,
+                password=generate_password_hash(email),
+                verification_status='verified'
             )
             user.save()
         else:
-            # Update existing user with Google data
-            user.google_id = user_info["google_id"]
-            user.profile_picture = user_info.get("picture")
+            user.profile_picture = picture
             user.verification_status = 'verified'
             user.save()
 
+        # Set session for Flask-Login
         login_user(user)
-        flash("Successfully logged in with Google!", "success")
-        return redirect(url_for("dashboard"))
-
+        flash('Successfully logged in with Google!', 'success')
+        return redirect(url_for('dashboard'))
     except Exception as e:
         import traceback
         current_app.logger.error(f"Google callback error: {str(e)}\n{traceback.format_exc()}")
-        flash("Failed to log in with Google.", "danger")
-        return redirect(url_for("auth.login"))
+        flash('Failed to log in with Google.', 'danger')
+        return redirect(url_for('auth.login'))
