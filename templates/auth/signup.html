@@ -32,7 +32,7 @@
                         </div>
                     </div>
                     
-                    <form method="POST" action="{{ url_for('signup') }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ url_for('auth.signup') }}" enctype="multipart/form-data">
                         {{ csrf() }}
                         <div class="mb-3">
                             <label for="name" class="form-label">Full Name</label>

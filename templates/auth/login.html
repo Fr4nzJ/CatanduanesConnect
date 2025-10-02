@@ -23,7 +23,7 @@
                     </div>
                     
                     <!-- Regular Login Form -->
-                    <form method="POST" action="{{ url_for('login') }}">
+                    <form method="POST" action="{{ url_for('auth.login') }}">
                         {{ csrf() }}
                         <div class="mb-3">
                             <label for="email" class="form-label">Email address</label>

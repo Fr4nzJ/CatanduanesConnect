@@ -364,8 +364,10 @@ class User(UserMixin):
     ROLES = ['business_owner', 'client', 'job_seeker', 'admin']  # admin is here but not available for signup
     SIGNUP_ROLES = ['business_owner', 'client', 'job_seeker']  # roles available during signup
     
-    def __init__(self, id=None, email=None, password=None, name=None, role=None, phone=None, address=None, skills=None, experience=None, education=None, resume_path=None, permit_path=None, verification_status=None):
-        self.id = id
+    def __init__(self, id=None, email=None, password=None, name=None, role=None, phone=None, 
+                 address=None, skills=None, experience=None, education=None, resume_path=None, 
+                 permit_path=None, verification_status=None, google_id=None, profile_picture=None):
+        self.id = id or str(uuid.uuid4())
         self.email = email
         self.password = password
         self.name = name
@@ -378,6 +380,8 @@ class User(UserMixin):
         self.resume_path = resume_path
         self.permit_path = permit_path
         self.verification_status = verification_status or 'pending'  # pending, verified, rejected
+        self.google_id = google_id  # Added for Google OAuth
+        self.profile_picture = profile_picture  # Added for Google profile picture
 
     def get_id(self):
         return str(self.id)

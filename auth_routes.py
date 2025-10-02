@@ -1,11 +1,15 @@
+auth = Blueprint('auth', __name__)
+auth = Blueprint("auth", __name__)
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User
 from oauth import get_google_auth_flow, get_google_user_info
 import json
+import logging
 
-auth = Blueprint("auth", __name__)
+auth = Blueprint('auth', __name__)
+logger = logging.getLogger(__name__)
 
 # --------------------------
 # Email/Password Login
@@ -20,7 +24,7 @@ def login():
         password = request.form.get("password")
         remember = True if request.form.get("remember") else False
 
-        user = User.query.filter_by(email=email).first()
+        user = User.get_by_email(email)
 
         if not user or not check_password_hash(user.password, password):
             flash("Please check your login details and try again.", "danger")
@@ -46,7 +50,7 @@ def signup():
         name = request.form.get("name")
         password = request.form.get("password")
 
-        user = User.query.filter_by(email=email).first()
+        user = User.get_by_email(email)
         if user:
             flash("Email address already exists", "danger")
             return redirect(url_for("auth.signup"))
@@ -106,14 +110,14 @@ def google_callback():
         flow.fetch_token(authorization_response=request.url)
         credentials = flow.credentials
 
-        # Fetch user info with access token
-        user_info = get_google_user_info(credentials.token)
+        # Fetch user info with id_token if available, else access token
+        user_info = get_google_user_info(credentials.id_token if hasattr(credentials, 'id_token') else credentials.token)
         if not user_info:
             flash("Failed to get user info from Google.", "danger")
             return redirect(url_for("auth.login"))
 
         # Check if user already exists
-        user = User.query.filter_by(email=user_info["email"]).first()
+        user = User.get_by_email(user_info["email"])
 
         if not user:
             # New Google user
@@ -122,15 +126,15 @@ def google_callback():
                 email=user_info["email"],
                 google_id=user_info["google_id"],
                 profile_picture=user_info.get("picture"),
-                password=None,  # No password for Google accounts
-                is_verified=True
+                password=generate_password_hash(user_info["google_id"]),  # Set a dummy password
+                verification_status='verified'  # Google users are pre-verified
             )
             user.save()
         else:
             # Update existing user with Google data
             user.google_id = user_info["google_id"]
             user.profile_picture = user_info.get("picture")
-            user.is_verified = True
+            user.verification_status = 'verified'
             user.save()
 
         login_user(user)
