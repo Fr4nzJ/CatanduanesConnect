@@ -83,14 +83,17 @@ def google_login():
 
     try:
         flow = get_google_auth_flow()
+        current_app.logger.info(f"Google OAuth flow initialized: {flow}")
         authorization_url, state = flow.authorization_url(
             access_type="offline",
             include_granted_scopes="true"
         )
+        current_app.logger.info(f"Google OAuth authorization_url: {authorization_url}, state: {state}")
         session["google_state"] = state
         return redirect(authorization_url)
     except Exception as e:
-        current_app.logger.error(f"Error in Google login: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Error in Google login: {str(e)}\n{traceback.format_exc()}")
         flash("An error occurred during Google login. Please try again.", "danger")
         return redirect(url_for("auth.login"))
 
@@ -107,11 +110,14 @@ def google_callback():
 
     flow = get_google_auth_flow()
     try:
+        current_app.logger.info(f"Google callback request args: {request.args}")
         flow.fetch_token(authorization_response=request.url)
         credentials = flow.credentials
+        current_app.logger.info(f"Google credentials: {credentials}")
 
         # Fetch user info with id_token if available, else access token
         user_info = get_google_user_info(credentials.id_token if hasattr(credentials, 'id_token') else credentials.token)
+        current_app.logger.info(f"Google user_info: {user_info}")
         if not user_info:
             flash("Failed to get user info from Google.", "danger")
             return redirect(url_for("auth.login"))
@@ -142,6 +148,7 @@ def google_callback():
         return redirect(url_for("dashboard"))
 
     except Exception as e:
-        current_app.logger.error(f"Google callback error: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Google callback error: {str(e)}\n{traceback.format_exc()}")
         flash("Failed to log in with Google.", "danger")
         return redirect(url_for("auth.login"))
