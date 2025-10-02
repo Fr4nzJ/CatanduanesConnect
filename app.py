@@ -46,8 +46,9 @@ except Exception:
 # Trust proxy headers so request.url reflects the original https scheme when behind Railway
 try:
     from werkzeug.middleware.proxy_fix import ProxyFix
-    # Respect one proxy (Railway) forwarding proto/host/for
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+    # Increase trusted hops slightly to be resilient to one extra proxy
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=2, x_host=1, x_port=1)
+    logger.info('Applied ProxyFix middleware')
 except Exception:
     logger.warning('Could not apply ProxyFix middleware')
 

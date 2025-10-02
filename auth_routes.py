@@ -162,10 +162,12 @@ def google_callback():
             state=session.get('google_state'),
             redirect_uri=current_app.config.get('GOOGLE_REDIRECT_URI')
         )
-        # Debug: log incoming args and session state (no secrets)
-        current_app.logger.info(f"Google callback request.args: {dict(request.args)}")
-        current_app.logger.info(f"Google callback session keys: {list(session.keys())}")
-        current_app.logger.info(f"Google callback stored state present: {'google_state' in session}")
+    # Debug: log incoming args and session state (no secrets)
+    current_app.logger.info(f"Google callback request.args: {dict(request.args)}")
+    current_app.logger.info(f"Google callback session keys: {list(session.keys())}")
+    current_app.logger.info(f"Google callback stored state present: {'google_state' in session}")
+    # Log what Flask sees as the request scheme
+    current_app.logger.info(f"Flask request.scheme: {request.scheme}, wsgi.url_scheme: {request.environ.get('wsgi.url_scheme')}, request.url: {request.url}")
 
         # Exchange authorization code for tokens
         try:
