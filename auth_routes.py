@@ -1,14 +1,13 @@
 import os
 import json
 import logging
-from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User
-from oauth import get_google_auth_flow, get_google_user_info
+from oauth import get_google_auth_flow_from_config, get_google_user_info
 
 auth = Blueprint('auth', __name__)
 logger = logging.getLogger(__name__)
@@ -84,30 +83,16 @@ def google_login():
         return redirect(url_for("dashboard"))
 
     try:
-        # Validate that OAuth credentials are configured
+        # Validate that OAuth credentials are configured inside request context
         client_id = current_app.config.get('GOOGLE_CLIENT_ID')
         client_secret = current_app.config.get('GOOGLE_CLIENT_SECRET')
         redirect_uri = current_app.config.get('GOOGLE_REDIRECT_URI')
-        if not client_id or not client_secret:
-            current_app.logger.error('Google OAuth credentials not configured (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET).')
-            flash('Google OAuth is not configured on the server. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.', 'danger')
+        if not client_id or not client_secret or not redirect_uri:
+            current_app.logger.error('Google OAuth credentials not configured (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET/GOOGLE_REDIRECT_URI).')
+            flash('Google OAuth is not configured on the server. Please set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI.', 'danger')
             return redirect(url_for('auth.login'))
-        flow = Flow.from_client_config(
-            {
-                "web": {
-                    "client_id": current_app.config.get('GOOGLE_CLIENT_ID'),
-                    "client_secret": current_app.config.get('GOOGLE_CLIENT_SECRET'),
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token"
-                }
-            },
-            scopes=[
-                'https://www.googleapis.com/auth/userinfo.email',
-                'https://www.googleapis.com/auth/userinfo.profile',
-                'openid'
-            ],
-            redirect_uri=current_app.config.get('GOOGLE_REDIRECT_URI')
-        )
+
+        flow = get_google_auth_flow_from_config(client_id, client_secret, redirect_uri)
         authorization_url, state = flow.authorization_url(
             access_type='offline',
             include_granted_scopes='true',
@@ -129,7 +114,7 @@ def google_callback():
 
     state = session.get("google_state")
     if not state or state != request.args.get("state"):
-        flash("Invalid state parameter.", "danger")
+        flash("Invalid or missing state parameter. Please try signing in again.", "danger")
         return redirect(url_for("auth.login"))
     try:
         # Validate that OAuth credentials are configured
@@ -140,24 +125,9 @@ def google_callback():
             current_app.logger.error('Google OAuth credentials not configured (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET) on callback.')
             flash('Google OAuth is not configured on the server. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.', 'danger')
             return redirect(url_for('auth.login'))
-
-        flow = Flow.from_client_config(
-            {
-                "web": {
-                    "client_id": current_app.config.get('GOOGLE_CLIENT_ID'),
-                    "client_secret": current_app.config.get('GOOGLE_CLIENT_SECRET'),
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token"
-                }
-            },
-            scopes=[
-                'https://www.googleapis.com/auth/userinfo.email',
-                'https://www.googleapis.com/auth/userinfo.profile',
-                'openid'
-            ],
-            state=session.get('google_state'),
-            redirect_uri=current_app.config.get('GOOGLE_REDIRECT_URI')
-        )
+        flow = get_google_auth_flow_from_config(client_id, client_secret, redirect_uri)
+        # restore state on the flow
+        flow.state = session.get('google_state')
         # Debug: log incoming args and session state (no secrets)
         current_app.logger.info(f"Google callback request.args: {dict(request.args)}")
         current_app.logger.info(f"Google callback session keys: {list(session.keys())}")
@@ -205,18 +175,38 @@ def google_callback():
         current_app.logger.info(f"Credentials present: has_token={has_token}, has_id_token={has_id_token}")
 
         if not has_id_token:
-            current_app.logger.error('Google credentials missing id_token after fetch_token')
-            flash('Google did not return an ID token. Ensure the "openid" scope is requested and the OAuth client is configured correctly.', 'danger')
+            current_app.logger.warning('Google credentials missing id_token after fetch_token; attempting to fetch userinfo with access token')
+
+        # Prefer to fetch userinfo using the access token (safer in many flows)
+        user_info = None
+        try:
+            access_token = getattr(credentials, 'token', None)
+            if access_token:
+                user_info = get_google_user_info(access_token, logger=current_app.logger)
+        except Exception:
+            current_app.logger.exception('Error while fetching userinfo with access token')
+
+        if not user_info and has_id_token:
+            # Fall back to verifying id_token
+            id_info = id_token.verify_oauth2_token(
+                credentials.id_token,
+                google_requests.Request(),
+                client_id
+            )
+            user_info = {
+                'email': id_info.get('email'),
+                'name': id_info.get('name'),
+                'picture': id_info.get('picture')
+            }
+
+        if not user_info:
+            current_app.logger.error('Could not obtain user profile from Google (access_token or id_token)')
+            flash('Could not retrieve Google profile. Please try again.', 'danger')
             return redirect(url_for('auth.login'))
 
-        id_info = id_token.verify_oauth2_token(
-            credentials.id_token,
-            google_requests.Request(),
-            current_app.config.get('GOOGLE_CLIENT_ID')
-        )
-        email = id_info.get('email')
-        name = id_info.get('name')
-        picture = id_info.get('picture')
+        email = user_info.get('email')
+        name = user_info.get('name')
+        picture = user_info.get('picture')
         if not email or not name:
             raise ValueError('Missing email or name from Google response')
 

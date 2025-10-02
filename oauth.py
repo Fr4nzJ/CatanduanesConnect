@@ -1,19 +1,24 @@
-from flask import current_app
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 import requests
+from typing import Optional
+import logging
 
-def get_google_auth_flow():
-    """
-    Initialize Google OAuth2 flow using app config.
+
+def get_google_auth_flow_from_config(client_id: str, client_secret: str, redirect_uri: str) -> Flow:
+    """Create and return a google-auth-oauthlib Flow using explicit values.
+
+    This avoids accessing Flask's `current_app` at import time. Callers
+    should obtain config values inside a request or app context and pass
+    them in.
     """
     config = {
         "web": {
-            "client_id": current_app.config['GOOGLE_CLIENT_ID'],
-            "client_secret": current_app.config['GOOGLE_CLIENT_SECRET'],
+            "client_id": client_id,
+            "client_secret": client_secret,
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [current_app.config['GOOGLE_REDIRECT_URI']],
+            "redirect_uris": [redirect_uri],
         }
     }
 
@@ -24,13 +29,15 @@ def get_google_auth_flow():
             "https://www.googleapis.com/auth/userinfo.email",
             "https://www.googleapis.com/auth/userinfo.profile",
         ],
-        redirect_uri=current_app.config['GOOGLE_REDIRECT_URI']
+        redirect_uri=redirect_uri
     )
 
 
-def get_google_user_info(access_token):
-    """
-    Fetch user profile info from Google using access token.
+def get_google_user_info(access_token: str, logger: Optional[logging.Logger] = None) -> Optional[dict]:
+    """Fetch user profile info from Google using access token.
+
+    Accepts an optional logger so calling code can provide app.logger when
+    inside an application context.
     """
     try:
         response = requests.get(
@@ -49,8 +56,10 @@ def get_google_user_info(access_token):
                 "locale": data.get("locale"),
             }
         else:
-            current_app.logger.error(f"Failed to fetch Google user info: {response.text}")
+            if logger:
+                logger.error(f"Failed to fetch Google user info: {response.text}")
             return None
     except Exception as e:
-        current_app.logger.error(f"Error in get_google_user_info: {str(e)}")
+        if logger:
+            logger.error(f"Error in get_google_user_info: {str(e)}")
         return None

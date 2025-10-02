@@ -3,6 +3,7 @@ import os
 import uuid
 from datetime import datetime
 from neo4j import GraphDatabase
+from database import get_neo4j_driver, get_database_name
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -13,12 +14,14 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-# Neo4j Configuration from environment variables
-driver = GraphDatabase.driver(
-    os.getenv("NEO4J_URI"),
-    auth=(os.getenv("NEO4J_USERNAME"), os.getenv("NEO4J_PASSWORD"))
-)
-DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
+# Lazy-init Neo4j driver using environment variables with retries
+try:
+    driver = get_neo4j_driver()
+    DATABASE = get_database_name()
+except Exception as e:
+    logger.error(f'Could not initialize Neo4j driver: {str(e)}')
+    driver = None
+    DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
 
 class Activity:
     def __init__(self, id=None, type=None, action=None, user_id=None, target_id=None, 
@@ -34,6 +37,9 @@ class Activity:
     
     def save(self):
         try:
+            if driver is None:
+                logger.error('Driver not initialized when saving activity')
+                return False
             with driver.session(database=DATABASE) as session:
                 # Create Activity label and constraints if they don't exist
                 session.run("CREATE CONSTRAINT activity_id IF NOT EXISTS FOR (a:Activity) REQUIRE a.id IS UNIQUE")
