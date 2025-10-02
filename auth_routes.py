@@ -137,7 +137,25 @@ def google_callback():
 
         # Exchange authorization code for tokens
         try:
-            flow.fetch_token(authorization_response=request.url)
+            # Some platforms (Railway, Heroku, etc.) terminate TLS at the edge
+            # and send X-Forwarded-Proto: https to the backend. If ProxyFix
+            # isn't causing Flask to see request.scheme as 'https', oauthlib
+            # will raise InsecureTransportError. Detect this case and synthesize
+            # an https authorization_response using the forwarded proto header.
+            authorization_response = request.url
+            xf_proto = (request.headers.get('X-Forwarded-Proto') or
+                        request.environ.get('HTTP_X_FORWARDED_PROTO'))
+            if request.scheme != 'https' and xf_proto and xf_proto.lower() == 'https':
+                # Replace only the scheme portion once
+                authorization_response = authorization_response.replace('http://', 'https://', 1)
+                current_app.logger.info('Overriding authorization_response to https based on X-Forwarded-Proto')
+                current_app.logger.info('Original request.scheme=%s, X-Forwarded-Proto=%s, using authorization_response=%s', request.scheme, xf_proto, authorization_response)
+
+            # Ensure flow.redirect_uri matches the configured HTTPS redirect URI
+            if getattr(flow, 'redirect_uri', None) != current_app.config.get('GOOGLE_REDIRECT_URI'):
+                flow.redirect_uri = current_app.config.get('GOOGLE_REDIRECT_URI')
+
+            flow.fetch_token(authorization_response=authorization_response)
         except Exception as fetch_exc:
             # Provide rich diagnostic logs so we can see why the token exchange failed
             try:

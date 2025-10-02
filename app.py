@@ -58,11 +58,27 @@ except Exception:
 # Trust proxy headers so request.url reflects the original https scheme when behind Railway
 try:
     from werkzeug.middleware.proxy_fix import ProxyFix
-    # Increase trusted hops slightly to be resilient to one extra proxy
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=2, x_host=1, x_port=1)
-    logger.info('Applied ProxyFix middleware')
+    # Railway terminates TLS at the edge. Trust a single proxy hop for X-Forwarded headers
+    # (x_for and x_proto = 1). Keep x_host/x_port = 1 as well so host/port forwarded values are trusted.
+    proxy_fix = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+    app.wsgi_app = proxy_fix
+    logger.info('Applied ProxyFix middleware (x_for=1, x_proto=1, x_host=1, x_port=1)')
 except Exception:
     logger.warning('Could not apply ProxyFix middleware')
+
+# Log the ProxyFix configuration so we can verify trusted hop counts at runtime
+if 'proxy_fix' in locals():
+    try:
+        x_for = getattr(proxy_fix, 'x_for', None)
+        x_proto = getattr(proxy_fix, 'x_proto', None)
+        x_host = getattr(proxy_fix, 'x_host', None)
+        x_port = getattr(proxy_fix, 'x_port', None)
+        x_prefix = getattr(proxy_fix, 'x_prefix', None)
+        logger.info('ProxyFix configuration: x_for=%s, x_proto=%s, x_host=%s, x_port=%s, x_prefix=%s', x_for, x_proto, x_host, x_port, x_prefix)
+    except Exception:
+        logger.exception('Could not introspect ProxyFix configuration')
+else:
+    logger.info('ProxyFix not configured')
 
 # Enable CORS
 CORS(app)
@@ -315,6 +331,29 @@ def load_user(user_id):
 @app.route('/')
 def home():
     return render_template('home.html')
+
+
+# Diagnostic probe endpoint to verify how Flask sees the incoming request
+# Use this to check request.scheme, wsgi.url_scheme and X-Forwarded-Proto from the proxy
+@app.route('/_probe')
+def probe():
+    try:
+        info = {
+            'request_scheme': request.scheme,
+            'wsgi_url_scheme': request.environ.get('wsgi.url_scheme'),
+            'x_forwarded_proto': request.headers.get('X-Forwarded-Proto') or request.environ.get('HTTP_X_FORWARDED_PROTO'),
+            'host': request.host,
+            'url': request.url,
+            'headers_sample': {
+                'X-Forwarded-Proto': request.headers.get('X-Forwarded-Proto'),
+                'X-Forwarded-For': request.headers.get('X-Forwarded-For')
+            }
+        }
+        app.logger.info('Probe endpoint hit: %s', info)
+        return jsonify(info), 200
+    except Exception as e:
+        app.logger.exception('Error in probe endpoint')
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
