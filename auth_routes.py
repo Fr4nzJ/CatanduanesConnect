@@ -169,7 +169,28 @@ def google_callback():
         try:
             flow.fetch_token(authorization_response=request.url)
         except Exception as fetch_exc:
-            current_app.logger.error(f"Failed to fetch token from Google: {str(fetch_exc)}", exc_info=True)
+            # Provide rich diagnostic logs so we can see why the token exchange failed
+            try:
+                exc_type = type(fetch_exc).__name__
+            except Exception:
+                exc_type = 'UnknownException'
+
+            current_app.logger.error(
+                "Failed to fetch token from Google: %s -- exception_type=%s -- flow_redirect_uri=%s -- configured_redirect_uri=%s -- request_url=%s -- request_scheme=%s",
+                str(fetch_exc),
+                exc_type,
+                getattr(flow, 'redirect_uri', None),
+                current_app.config.get('GOOGLE_REDIRECT_URI'),
+                request.url,
+                request.scheme,
+                exc_info=True
+            )
+
+            # Special-case insecure transport errors from oauthlib for clarity
+            from oauthlib.oauth2.rfc6749.errors import InsecureTransportError
+            if exc_type == 'InsecureTransportError' or isinstance(fetch_exc, InsecureTransportError):
+                current_app.logger.error('OAuthlib raised InsecureTransportError: OAuth 2 requires HTTPS. Check that ProxyFix is applied and request.scheme is https.')
+
             flash('Failed to obtain tokens from Google. See server logs for details.', 'danger')
             return redirect(url_for('auth.login'))
 

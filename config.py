@@ -21,4 +21,5 @@ class Config:
     GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
     
     # OAuth redirect URI
-    GOOGLE_REDIRECT_URI = f"{BASE_URL}/callback/google"
+    # Allow explicit override via environment (useful on hosting platforms)
+    GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI') or f"{BASE_URL}/callback/google"
