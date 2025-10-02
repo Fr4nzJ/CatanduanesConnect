@@ -162,8 +162,34 @@ def google_callback():
             state=session.get('google_state'),
             redirect_uri=current_app.config.get('GOOGLE_REDIRECT_URI')
         )
-        flow.fetch_token(authorization_response=request.url)
+        # Debug: log incoming args and session state (no secrets)
+        current_app.logger.info(f"Google callback request.args: {dict(request.args)}")
+        current_app.logger.info(f"Google callback session keys: {list(session.keys())}")
+        current_app.logger.info(f"Google callback stored state present: {'google_state' in session}")
+
+        # Exchange authorization code for tokens
+        try:
+            flow.fetch_token(authorization_response=request.url)
+        except Exception as fetch_exc:
+            current_app.logger.error(f"Failed to fetch token from Google: {str(fetch_exc)}", exc_info=True)
+            flash('Failed to obtain tokens from Google. See server logs for details.', 'danger')
+            return redirect(url_for('auth.login'))
+
         credentials = flow.credentials
+        # Log presence of tokens (do NOT log token values)
+        try:
+            has_token = hasattr(credentials, 'token')
+            has_id_token = bool(getattr(credentials, 'id_token', None))
+        except Exception:
+            has_token = False
+            has_id_token = False
+        current_app.logger.info(f"Credentials present: has_token={has_token}, has_id_token={has_id_token}")
+
+        if not has_id_token:
+            current_app.logger.error('Google credentials missing id_token after fetch_token')
+            flash('Google did not return an ID token. Ensure the "openid" scope is requested and the OAuth client is configured correctly.', 'danger')
+            return redirect(url_for('auth.login'))
+
         id_info = id_token.verify_oauth2_token(
             credentials.id_token,
             google_requests.Request(),
