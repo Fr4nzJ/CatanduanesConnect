@@ -87,6 +87,14 @@ def google_login():
         return redirect(url_for("dashboard"))
 
     try:
+        # Validate that OAuth credentials are configured
+        client_id = current_app.config.get('GOOGLE_CLIENT_ID')
+        client_secret = current_app.config.get('GOOGLE_CLIENT_SECRET')
+        redirect_uri = current_app.config.get('GOOGLE_REDIRECT_URI')
+        if not client_id or not client_secret:
+            current_app.logger.error('Google OAuth credentials not configured (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET).')
+            flash('Google OAuth is not configured on the server. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.', 'danger')
+            return redirect(url_for('auth.login'))
         flow = Flow.from_client_config(
             {
                 "web": {
@@ -128,6 +136,15 @@ def google_callback():
         return redirect(url_for("auth.login"))
 
     try:
+        # Validate that OAuth credentials are configured
+        client_id = current_app.config.get('GOOGLE_CLIENT_ID')
+        client_secret = current_app.config.get('GOOGLE_CLIENT_SECRET')
+        redirect_uri = current_app.config.get('GOOGLE_REDIRECT_URI')
+        if not client_id or not client_secret:
+            current_app.logger.error('Google OAuth credentials not configured (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET) on callback.')
+            flash('Google OAuth is not configured on the server. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.', 'danger')
+            return redirect(url_for('auth.login'))
+
         flow = Flow.from_client_config(
             {
                 "web": {
