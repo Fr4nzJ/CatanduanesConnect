@@ -35,6 +35,14 @@ from chatbot_routes import bp as chatbot_bp
 # Initialize Flask app
 app = Flask(__name__)
 
+# Load application configuration from config.py (reads environment variables)
+try:
+    from config import Config
+    app.config.from_object(Config)
+except Exception:
+    # If config import fails, continue with existing config and rely on os.environ
+    logger.warning('Could not import Config from config.py; falling back to environment variables')
+
 # Enable CORS
 CORS(app)
 
