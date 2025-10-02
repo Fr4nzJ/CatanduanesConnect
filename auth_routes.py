@@ -1,17 +1,14 @@
 import os
+import json
+import logging
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-from flask import Blueprint
-auth = Blueprint('auth', __name__)
-auth = Blueprint("auth", __name__)
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User
 from oauth import get_google_auth_flow, get_google_user_info
-import json
-import logging
 
 auth = Blueprint('auth', __name__)
 logger = logging.getLogger(__name__)
@@ -134,7 +131,6 @@ def google_callback():
     if not state or state != request.args.get("state"):
         flash("Invalid state parameter.", "danger")
         return redirect(url_for("auth.login"))
-
     try:
         # Validate that OAuth credentials are configured
         client_id = current_app.config.get('GOOGLE_CLIENT_ID')
@@ -162,12 +158,12 @@ def google_callback():
             state=session.get('google_state'),
             redirect_uri=current_app.config.get('GOOGLE_REDIRECT_URI')
         )
-    # Debug: log incoming args and session state (no secrets)
-    current_app.logger.info(f"Google callback request.args: {dict(request.args)}")
-    current_app.logger.info(f"Google callback session keys: {list(session.keys())}")
-    current_app.logger.info(f"Google callback stored state present: {'google_state' in session}")
-    # Log what Flask sees as the request scheme
-    current_app.logger.info(f"Flask request.scheme: {request.scheme}, wsgi.url_scheme: {request.environ.get('wsgi.url_scheme')}, request.url: {request.url}")
+        # Debug: log incoming args and session state (no secrets)
+        current_app.logger.info(f"Google callback request.args: {dict(request.args)}")
+        current_app.logger.info(f"Google callback session keys: {list(session.keys())}")
+        current_app.logger.info(f"Google callback stored state present: {'google_state' in session}")
+        # Log what Flask sees as the request scheme
+        current_app.logger.info(f"Flask request.scheme: {request.scheme}, wsgi.url_scheme: {request.environ.get('wsgi.url_scheme')}, request.url: {request.url}")
 
         # Exchange authorization code for tokens
         try:

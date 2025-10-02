@@ -35,6 +35,18 @@ from chatbot_routes import bp as chatbot_bp
 # Initialize Flask app
 app = Flask(__name__)
 
+# Initialize a simple module logger early so startup code can log before
+# the full logging configuration is applied later in this file. This
+# prevents NameError when early startup code (like ProxyFix or config
+# import handling) needs to emit logs.
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
 # Load application configuration from config.py (reads environment variables)
 try:
     from config import Config
