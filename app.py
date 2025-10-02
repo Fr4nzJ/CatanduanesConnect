@@ -43,6 +43,14 @@ except Exception:
     # If config import fails, continue with existing config and rely on os.environ
     logger.warning('Could not import Config from config.py; falling back to environment variables')
 
+# Trust proxy headers so request.url reflects the original https scheme when behind Railway
+try:
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    # Respect one proxy (Railway) forwarding proto/host/for
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+except Exception:
+    logger.warning('Could not apply ProxyFix middleware')
+
 # Enable CORS
 CORS(app)
 
