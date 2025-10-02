@@ -87,8 +87,15 @@ def google_login():
         return redirect(url_for("dashboard"))
 
     try:
-        flow = Flow.from_client_secrets_file(
-            os.path.join(current_app.root_path, 'client_secrets.json'),
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": current_app.config.get('GOOGLE_CLIENT_ID'),
+                    "client_secret": current_app.config.get('GOOGLE_CLIENT_SECRET'),
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token"
+                }
+            },
             scopes=[
                 'https://www.googleapis.com/auth/userinfo.email',
                 'https://www.googleapis.com/auth/userinfo.profile',
@@ -121,8 +128,15 @@ def google_callback():
         return redirect(url_for("auth.login"))
 
     try:
-        flow = Flow.from_client_secrets_file(
-            os.path.join(current_app.root_path, 'client_secrets.json'),
+        flow = Flow.from_client_config(
+            {
+                "web": {
+                    "client_id": current_app.config.get('GOOGLE_CLIENT_ID'),
+                    "client_secret": current_app.config.get('GOOGLE_CLIENT_SECRET'),
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token"
+                }
+            },
             scopes=[
                 'https://www.googleapis.com/auth/userinfo.email',
                 'https://www.googleapis.com/auth/userinfo.profile',
