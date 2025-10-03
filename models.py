@@ -82,7 +82,21 @@ class Activity:
                     LIMIT $limit
                     WITH a
                     OPTIONAL MATCH (u:User {id: a.user_id})
-                    WITH a, COALESCE(u.first_name + ' ' + COALESCE(u.middle_name + ' ', '') + u.last_name + COALESCE(' ' + u.suffix, ''), 'Unknown User') as user_name
+                    WITH a, 
+                    CASE
+                        WHEN u IS NOT NULL THEN
+                            CASE
+                                WHEN u.middle_name IS NOT NULL AND u.suffix IS NOT NULL THEN
+                                    u.first_name + ' ' + u.middle_name + ' ' + u.last_name + ' ' + u.suffix
+                                WHEN u.middle_name IS NOT NULL THEN
+                                    u.first_name + ' ' + u.middle_name + ' ' + u.last_name
+                                WHEN u.suffix IS NOT NULL THEN
+                                    u.first_name + ' ' + u.last_name + ' ' + u.suffix
+                                ELSE
+                                    u.first_name + ' ' + u.last_name
+                            END
+                        ELSE 'Unknown User'
+                    END as user_name
                     RETURN a, user_name
                 """, {"limit": limit})
                 

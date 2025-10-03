@@ -8,13 +8,16 @@
 }
 
 .admin-dashboard .btn-outline-primary {
-    color: #ffffff;
-    border-color: #ffffff;
+    color: #000000;
+    border-color: #000000;
+    background-color: transparent;
+    transition: all 0.3s ease;
 }
 
 .admin-dashboard .btn-outline-primary:hover {
-    color: #000000;
-    background-color: #ffffff;
+    color: #ffffff;
+    background-color: #000000;
+    border-color: #000000;
 }
 
 .admin-dashboard .badge {
