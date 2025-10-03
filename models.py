@@ -82,7 +82,7 @@ class Activity:
                     LIMIT $limit
                     WITH a
                     OPTIONAL MATCH (u:User {id: a.user_id})
-                    WITH a, u.name as user_name
+                    WITH a, COALESCE(u.first_name + ' ' + COALESCE(u.middle_name + ' ', '') + u.last_name + COALESCE(' ' + u.suffix, ''), 'Unknown User') as user_name
                     RETURN a, user_name
                 """, {"limit": limit})
                 
@@ -377,7 +377,6 @@ class User(UserMixin):
         self.id = id or str(uuid.uuid4())
         self.email = email
         self.password = password
-        self.name = name
         self.role = role if role in self.ROLES else 'job_seeker'
         self.phone = phone
         self.address = address
@@ -397,7 +396,10 @@ class User(UserMixin):
         return {
             'id': self.id,
             'email': self.email,
-            'name': self.name,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'middle_name': self.middle_name,
+            'suffix': self.suffix,
             'role': self.role,
             'phone': self.phone,
             'address': self.address,
@@ -477,7 +479,10 @@ class User(UserMixin):
                     id=user["id"],
                     email=user["email"],
                     password=user["password"],
-                    name=user["name"],
+                    first_name=user.get("first_name"),
+                    last_name=user.get("last_name"),
+                    middle_name=user.get("middle_name"),
+                    suffix=user.get("suffix"),
                     role=user["role"],
                     phone=user.get("phone"),
                     address=user.get("address"),
@@ -504,7 +509,10 @@ class User(UserMixin):
                     id=user["id"],
                     email=user["email"],
                     password=user["password"],
-                    name=user["name"],
+                    first_name=user.get("first_name"),
+                    last_name=user.get("last_name"),
+                    middle_name=user.get("middle_name"),
+                    suffix=user.get("suffix"),
                     role=user["role"],
                     phone=user.get("phone"),
                     address=user.get("address"),
@@ -1249,7 +1257,10 @@ class Review:
                     user=User(
                         id=user["id"],
                         email=user["email"],
-                        name=user["name"],
+                        first_name=user.get("first_name"),
+                        last_name=user.get("last_name"),
+                        middle_name=user.get("middle_name"),
+                        suffix=user.get("suffix"),
                         role=user["role"]
                     )
                 ))
