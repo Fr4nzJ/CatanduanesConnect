@@ -18,58 +18,7 @@
         position: absolute;
         top: 50%;
         left: 50%;
-        transform: tra<!-- Initialize dashboard -->
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize tooltips
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
-    
-    // Load initial data
-    loadUsersTable();
-    loadPendingDocuments();
-    updateDashboard();
-    
-    // Set up refresh intervals
-    setInterval(loadUsersTable, 30000); // Refresh every 30 seconds
-    setInterval(loadPendingDocuments, 30000);
-    setInterval(updateDashboard, 30000);
-});
-</script>
-
-<!-- Document Review Modal -->
-<div class="modal fade" id="documentReviewModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Review Documents</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Document Review Table -->
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>User</th>
-                                <th>Document Type</th>
-                                <th>Submitted Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="pending-docs-table-body">
-                            <tr><td colspan="4" class="text-center">Loading...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
-{% endblock %}0%, -50%);
+        transform: translate(-50%, -50%);
         padding: 1rem;
         background: rgba(255, 255, 255, 0.9);
         border-radius: 4px;
@@ -447,7 +396,9 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
