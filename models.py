@@ -86,11 +86,11 @@ class Activity:
                     CASE
                         WHEN u IS NOT NULL THEN
                             CASE
-                                WHEN u.middle_name IS NOT NULL AND u.suffix IS NOT NULL THEN
+                                WHEN exists(u.middle_name) AND exists(u.suffix) THEN
                                     u.first_name + ' ' + u.middle_name + ' ' + u.last_name + ' ' + u.suffix
-                                WHEN u.middle_name IS NOT NULL THEN
+                                WHEN exists(u.middle_name) THEN
                                     u.first_name + ' ' + u.middle_name + ' ' + u.last_name
-                                WHEN u.suffix IS NOT NULL THEN
+                                WHEN exists(u.suffix) THEN
                                     u.first_name + ' ' + u.last_name + ' ' + u.suffix
                                 ELSE
                                     u.first_name + ' ' + u.last_name
