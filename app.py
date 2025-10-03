@@ -83,6 +83,33 @@ else:
 # Enable CORS
 CORS(app)
 
+# Custom template filters
+@app.template_filter('datetime')
+def format_datetime(value):
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        except ValueError:
+            return value
+    
+    now = datetime.now()
+    diff = now - value
+    
+    if diff.days == 0:
+        if diff.seconds < 60:
+            return 'just now'
+        if diff.seconds < 3600:
+            minutes = diff.seconds // 60
+            return f'{minutes} minute{"s" if minutes != 1 else ""} ago'
+        if diff.seconds < 86400:
+            hours = diff.seconds // 3600
+            return f'{hours} hour{"s" if hours != 1 else ""} ago'
+    if diff.days == 1:
+        return 'yesterday'
+    if diff.days < 7:
+        return f'{diff.days} days ago'
+    return value.strftime('%B %d, %Y')
+
 # Register blueprints
 app.register_blueprint(admin)
 app.register_blueprint(chatbot_bp, url_prefix='/chatbot')

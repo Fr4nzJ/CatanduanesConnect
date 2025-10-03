@@ -31,7 +31,7 @@
                             <div class="card bg-primary text-white">
                                 <div class="card-body">
                                     <h6>Total Users</h6>
-                                    <h3>1,234</h3>
+                                    <h3>{{ total_counts.users }}</h3>
                                 </div>
                             </div>
                         </div>
@@ -39,7 +39,7 @@
                             <div class="card bg-success text-white">
                                 <div class="card-body">
                                     <h6>Active Jobs</h6>
-                                    <h3>56</h3>
+                                    <h3>{{ total_counts.jobs }}</h3>
                                 </div>
                             </div>
                         </div>
@@ -47,7 +47,7 @@
                             <div class="card bg-info text-white">
                                 <div class="card-body">
                                     <h6>Businesses</h6>
-                                    <h3>89</h3>
+                                    <h3>{{ total_counts.businesses }}</h3>
                                 </div>
                             </div>
                         </div>
@@ -55,7 +55,7 @@
                             <div class="card bg-warning text-white">
                                 <div class="card-body">
                                     <h6>Applications</h6>
-                                    <h3>234</h3>
+                                    <h3>{{ total_counts.applications }}</h3>
                                 </div>
                             </div>
                         </div>
@@ -70,22 +70,25 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group">
-                        <!-- Sample activities -->
+                        {% for activity in recent_activities %}
                         <div class="list-group-item">
                             <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">New Business Registration</h6>
-                                <small>3 mins ago</small>
+                                <h6 class="mb-1">{{ activity.action|title }} {{ activity.target_type|title }}</h6>
+                                <small>{{ activity.timestamp|datetime }}</small>
                             </div>
-                            <p class="mb-1">ABC Company registered as a new business</p>
+                            <p class="mb-1">
+                                {% if activity.details %}
+                                    {{ activity.details|tojson|safe }}
+                                {% else %}
+                                    {{ activity.type|title }} action performed
+                                {% endif %}
+                            </p>
                         </div>
+                        {% else %}
                         <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">New Job Posted</h6>
-                                <small>1 hour ago</small>
-                            </div>
-                            <p class="mb-1">XYZ Corp posted a new job: Software Developer</p>
+                            <p class="mb-1 text-center">No recent activities</p>
                         </div>
-                        <!-- Add more activities here -->
+                        {% endfor %}
                     </div>
                 </div>
             </div>
