@@ -373,7 +373,15 @@ class User(UserMixin):
     def __init__(self, id=None, email=None, password=None, first_name=None, last_name=None, middle_name=None,
                  suffix=None, role=None, phone=None, address=None, skills=None, experience=None,
                  education=None, resume_path=None, permit_path=None, verification_status=None,
-                 google_id=None, profile_picture=None):
+                 google_id=None, profile_picture=None, name=None):
+        # Handle legacy name field
+        if name and not any([first_name, last_name]):
+            name_parts = name.split()
+            if len(name_parts) >= 2:
+                first_name = name_parts[0]
+                last_name = name_parts[-1]
+                if len(name_parts) > 2:
+                    middle_name = ' '.join(name_parts[1:-1])
         self.id = id or str(uuid.uuid4())
         self.email = email
         self.password = password
@@ -392,6 +400,31 @@ class User(UserMixin):
         self.verification_status = verification_status or 'pending'  # pending, verified, rejected
         self.google_id = google_id  # Added for Google OAuth
         self.profile_picture = profile_picture  # Added for Google profile picture
+
+    @property
+    def names(self):
+        """Return a dict containing all name components"""
+        return {
+            'first_name': self.first_name,
+            'middle_name': self.middle_name,
+            'last_name': self.last_name,
+            'suffix': self.suffix,
+            'full_name': self.name
+        }
+
+    @property
+    def name(self):
+        """Return the full name as a string"""
+        name_parts = []
+        if self.first_name:
+            name_parts.append(self.first_name)
+        if self.middle_name:
+            name_parts.append(self.middle_name)
+        if self.last_name:
+            name_parts.append(self.last_name)
+        if self.suffix:
+            name_parts.append(self.suffix)
+        return ' '.join(name_parts) if name_parts else None
 
     def get_id(self):
         return str(self.id)
@@ -708,8 +741,12 @@ class Business:
                     owner=User(
                         id=owner["id"],
                         email=owner["email"],
-                        name=owner["name"],
-                        role=owner["role"]
+                        first_name=owner.get("first_name"),
+                        last_name=owner.get("last_name"),
+                        middle_name=owner.get("middle_name"),
+                        suffix=owner.get("suffix"),
+                        role=owner["role"],
+                        name=owner.get("name")  # Fallback for legacy data
                     )
                 ))
             return businesses
@@ -764,8 +801,12 @@ class Business:
                     owner=User(
                         id=owner["id"],
                         email=owner["email"],
-                        name=owner["name"],
-                        role=owner["role"]
+                        first_name=owner.get("first_name"),
+                        last_name=owner.get("last_name"),
+                        middle_name=owner.get("middle_name"),
+                        suffix=owner.get("suffix"),
+                        role=owner["role"],
+                        name=owner.get("name")  # Fallback for legacy data
                     )
                 ))
             return businesses

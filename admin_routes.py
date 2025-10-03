@@ -8,24 +8,11 @@ from neo4j import GraphDatabase
 import uuid
 import logging
 
-# Initialize Neo4j driver
-import os
-from dotenv import load_dotenv
+from database import get_neo4j_driver, get_database_name
 
-load_dotenv()
-
-NEO4J_URI = os.getenv("NEO4J_URI")
-NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
-DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
-
-if not all([NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD]):
-    raise ValueError("Missing required Neo4j environment variables!")
-
-driver = GraphDatabase.driver(
-    NEO4J_URI,
-    auth=(NEO4J_USERNAME, NEO4J_PASSWORD)
-)
+# Get shared Neo4j driver and database name
+driver = get_neo4j_driver()
+DATABASE = get_database_name()
 
 logger = logging.getLogger(__name__)
 
