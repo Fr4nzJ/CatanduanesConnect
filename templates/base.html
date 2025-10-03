@@ -96,7 +96,7 @@
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            {{ current_user.name }}
+                            {{ current_user.first_name }} {{ current_user.last_name }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
@@ -231,9 +231,6 @@
     {% endif %}
     <!-- Chat Bubble -->
     {{ render_chat_bubble() }}
-    
-    <!-- Bootstrap 5 Bundle JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Chat Bubble JS -->
     <script src="{{ url_for('static', filename='js/chat_bubble.js') }}"></script>
