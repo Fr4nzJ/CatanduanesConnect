@@ -49,12 +49,73 @@
         body {
             min-height: 100vh;
             background: linear-gradient(135deg, #6366f1, #3b82f6);
-            color: #fff;
+            color: var(--text-light);
         }
         
         .content-wrapper {
             min-height: calc(100vh - 70px);
             padding: 2rem 0;
+        }
+
+        /* Override Bootstrap default text colors */
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        .card {
+            color: var(--text-light);
+        }
+
+        .modal-content {
+            background-color: rgba(33, 37, 41, 0.95);
+            color: var(--text-light);
+        }
+
+        .modal-header, .modal-footer {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .table {
+            color: var(--text-light);
+        }
+
+        .dropdown-menu {
+            background-color: rgba(33, 37, 41, 0.95);
+        }
+
+        .dropdown-item {
+            color: var(--text-light);
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+        }
+
+        .nav-link {
+            color: var(--text-light);
+        }
+
+        .nav-link:hover {
+            color: var(--text-muted);
+        }
+
+        /* Form label colors */
+        label {
+            color: var(--text-light);
+        }
+
+        /* List group items */
+        .list-group-item {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-light);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Alert customization */
+        .alert {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
         }
     </style>
     
