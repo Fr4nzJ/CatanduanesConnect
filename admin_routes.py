@@ -179,16 +179,27 @@ def dashboard_data():
 def users_list():
     """API endpoint for getting user list."""
     try:
+        # Test Neo4j connection first
+        try:
+            driver.verify_connectivity()
+        except Exception as e:
+            logger.error(f"Neo4j connection test failed: {str(e)}")
+            return jsonify({"error": "Database connection error"}), 500
+
         with driver.session(database=DATABASE) as session:
             result = session.run("""
                 MATCH (u:User)
-                RETURN u
+                OPTIONAL MATCH (u)-[:OWNS]->(b:Business)
+                WITH u, collect(b.name) as businesses
+                RETURN u, businesses
                 ORDER BY u.role, u.last_name
             """)
             
             users = []
             for record in result:
                 user_data = dict(record["u"])
+                businesses = record["businesses"]
+                
                 # Create User object to ensure proper name formatting
                 user = User(
                     id=user_data.get('id'),
@@ -204,13 +215,16 @@ def users_list():
                     resume_path=user_data.get('resume_path'),
                     permit_path=user_data.get('permit_path')
                 )
-                users.append(user.to_dict())
+                
+                user_dict = user.to_dict()
+                user_dict['businesses'] = businesses
+                users.append(user_dict)
             
             return jsonify(users)
             
     except Exception as e:
         logger.error(f"Error fetching users: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Error fetching users: {str(e)}"}), 500
 
 @admin.route('/users/<user_id>', methods=['DELETE'])
 @login_required

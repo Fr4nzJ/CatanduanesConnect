@@ -550,7 +550,7 @@ function fetchWithCSRF(url, options = {}) {
 }
 
 // Error handling
-function handleError(error, message = 'An error occurred') {
+function handleError(error, message = 'An error occurred', tableId = null) {
     console.error(error);
     const toast = `
         <div class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -564,6 +564,21 @@ function handleError(error, message = 'An error occurred') {
     const toastElement = document.querySelector('.toast:last-child');
     const bsToast = new bootstrap.Toast(toastElement);
     bsToast.show();
+
+    // Update table to show error state if a table ID is provided
+    if (tableId) {
+        const tableBody = document.getElementById(tableId);
+        if (tableBody) {
+            const colSpan = tableBody.closest('table').querySelectorAll('th').length || 1;
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="${colSpan}" class="text-center text-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>${message}
+                    </td>
+                </tr>
+            `;
+        }
+    }
 }
 
 // Update dashboard data
@@ -624,19 +639,32 @@ function updateDashboard() {
 // Management Functions
 async function loadUsers() {
     try {
-        const response = await fetchWithCSRF('/admin/users');
+        const response = await fetchWithCSRF('/admin/users/list');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
         const data = await response.json();
         if (data.error) throw new Error(data.error);
         
-        const userRows = data.users.map(user => `
+        if (!Array.isArray(data) || data.length === 0) {
+            document.getElementById('users-table-body').innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center">No users found</td>
+                </tr>
+            `;
+            return;
+        }
+        
+        const userRows = data.map(user => `
             <tr>
-                <td>${user.name}</td>
+                <td>${user.full_name || user.email}</td>
                 <td>${user.email}</td>
                 <td>${user.role}</td>
-                <td>${user.is_active ? 'Active' : 'Inactive'}</td>
+                <td>${user.resume_path ? '<a href="/download/resume/' + user.id + '">View</a>' : 'N/A'}</td>
+                <td>${user.permit_path ? '<a href="/download/permit/' + user.id + '">View</a>' : 'N/A'}</td>
+                <td>${user.verification_status || 'N/A'}</td>
                 <td>
                     <button class="btn btn-sm btn-warning" onclick="manageUser('deactivate', '${user.id}')">
-                        ${user.is_active ? 'Deactivate' : 'Activate'}
+                        ${user.verification_status === 'active' ? 'Deactivate' : 'Activate'}
                     </button>
                     <button class="btn btn-sm btn-danger" onclick="manageUser('delete', '${user.id}')">
                         Delete
@@ -645,25 +673,36 @@ async function loadUsers() {
             </tr>
         `).join('');
         
-        document.getElementById('users-table').innerHTML = userRows;
+        document.getElementById('users-table-body').innerHTML = userRows;
     } catch (error) {
-        handleError(error, 'Error loading users');
+        handleError(error, 'Error loading users', 'users-table-body');
     }
 }
 
 async function loadBusinesses() {
     try {
-        const response = await fetchWithCSRF('/admin/businesses');
+        const response = await fetchWithCSRF('/admin/businesses/list');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
         const data = await response.json();
         if (data.error) throw new Error(data.error);
         
-        const businessRows = data.businesses.map(business => `
+        if (!Array.isArray(data) || data.length === 0) {
+            document.getElementById('businesses-table').innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center">No businesses found</td>
+                </tr>
+            `;
+            return;
+        }
+        
+        const businessRows = data.map(business => `
             <tr>
                 <td>${business.name}</td>
-                <td>${business.owner_name}</td>
-                <td>${business.is_verified ? 'Verified' : 'Pending'}</td>
+                <td>${business.owner_name || 'N/A'}</td>
+                <td>${business.verification_status || 'Pending'}</td>
                 <td>
-                    ${!business.is_verified ? `
+                    ${business.verification_status !== 'verified' ? `
                         <button class="btn btn-sm btn-success" onclick="manageBusiness('approve', '${business.id}')">
                             Approve
                         </button>
@@ -677,7 +716,7 @@ async function loadBusinesses() {
         
         document.getElementById('businesses-table').innerHTML = businessRows;
     } catch (error) {
-        handleError(error, 'Error loading businesses');
+        handleError(error, 'Error loading businesses', 'businesses-table');
     }
 }
 
@@ -797,8 +836,16 @@ async function manageContent(action, contentType, contentId) {
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
     updateDashboard();
+    loadUsers();
+    loadBusinesses();
+    loadContent();
     // Update every 30 seconds
-    setInterval(updateDashboard, 30000);
+    setInterval(() => {
+        updateDashboard();
+        loadUsers();
+        loadBusinesses();
+        loadContent();
+    }, 30000);
 });
 </script>
 {% endblock %}
