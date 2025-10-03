@@ -2,6 +2,10 @@ import os
 import logging
 import time
 from neo4j import GraphDatabase, exceptions as neo4j_exceptions
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 

@@ -35,7 +35,9 @@ def dashboard():
     try:
         # Test Neo4j connection first
         try:
+            logger.info("Testing Neo4j connection...")
             driver.verify_connectivity()
+            logger.info("Neo4j connection verified successfully")
         except Exception as e:
             logger.error(f"Neo4j connection test failed: {str(e)}")
             flash("Database connection error. Please check database configuration.", "error")
@@ -43,13 +45,16 @@ def dashboard():
 
         with driver.session(database=DATABASE) as session:
             try:
+                logger.info("Starting to fetch dashboard data...")
                 # Get user statistics with OPTIONAL MATCH
+                logger.info("Fetching user statistics...")
                 user_stats = session.run("""
                     OPTIONAL MATCH (u:User)
                     WITH u.role as role, count(u) as count
                     WHERE role IS NOT NULL
                     RETURN collect({role: role, count: count}) as roles
                 """).single()['roles']
+                logger.info(f"User statistics fetched: {user_stats}")
                 
                 # Get total counts with OPTIONAL MATCH for resilience
                 total_counts = session.run("""
@@ -81,13 +86,18 @@ def dashboard():
                 """).single()['statuses']
                 
                 # Get recent activities
+                logger.info("Fetching recent activities...")
                 recent_activities = Activity.get_recent(10)
+                logger.info(f"Total counts: {total_counts}")
+                logger.info(f"User stats: {user_stats}")
+                logger.info(f"App stats: {app_stats}")
+                logger.info(f"Recent activities: {recent_activities}")
                 
                 return render_template('admin/dashboard.html',
-                                    user_stats=user_stats,
-                                    total_counts=total_counts,
-                                    app_stats=app_stats,
-                                    recent_activities=recent_activities)
+                                    user_stats=user_stats or [],
+                                    total_counts=total_counts or {},
+                                    app_stats=app_stats or [],
+                                    recent_activities=recent_activities or [])
             except Exception as e:
                 logger.error(f"Error executing Neo4j queries: {str(e)}")
                 flash("Error retrieving dashboard data. Please try again.", "error")
