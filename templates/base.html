@@ -46,10 +46,11 @@
     {% from 'macros/chat_bubble.html' import render_chat_bubble %}
     
     <style>
+        /* Basic layout */
         body {
             min-height: 100vh;
-            background: linear-gradient(135deg, #6366f1, #3b82f6);
-            color: var(--text-light);
+            background: var(--bg-gradient);
+            color: var(--text-on-dark);
         }
         
         .content-wrapper {
@@ -57,65 +58,119 @@
             padding: 2rem 0;
         }
 
-        /* Override Bootstrap default text colors */
-        .text-muted {
-            color: var(--text-muted) !important;
-        }
-
+        /* Card styles */
         .card {
-            color: var(--text-light);
+            background-color: var(--bg-light);
+            color: var(--text-on-light);
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         }
 
+        .card-header {
+            background-color: var(--bg-light);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+        }
+
+        /* Modal styles */
         .modal-content {
-            background-color: rgba(33, 37, 41, 0.95);
-            color: var(--text-light);
+            background-color: var(--bg-light);
+            color: var(--text-on-light);
         }
 
         .modal-header, .modal-footer {
-            border-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(0, 0, 0, 0.125);
         }
 
+        /* Table styles */
         .table {
-            color: var(--text-light);
+            color: var(--text-on-light);
         }
 
+        /* Dropdown styles */
         .dropdown-menu {
-            background-color: rgba(33, 37, 41, 0.95);
+            background-color: var(--bg-light);
+            border: 1px solid rgba(0, 0, 0, 0.15);
         }
 
         .dropdown-item {
-            color: var(--text-light);
+            color: var(--text-on-light);
         }
 
         .dropdown-item:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: var(--text-light);
+            background-color: rgba(0, 0, 0, 0.05);
+            color: var(--text-on-light);
         }
 
-        .nav-link {
-            color: var(--text-light);
+        /* Navigation */
+        .navbar {
+            background-color: var(--bg-light);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .nav-link:hover {
-            color: var(--text-muted);
+        .navbar-light .navbar-nav .nav-link {
+            color: var(--text-on-light);
         }
 
-        /* Form label colors */
+        .navbar-light .navbar-nav .nav-link:hover {
+            color: var(--text-muted-light);
+        }
+
+        /* Form elements */
         label {
-            color: var(--text-light);
+            color: inherit;
         }
 
-        /* List group items */
+        .form-control {
+            background-color: var(--bg-light);
+            color: var(--text-on-light);
+            border: 1px solid #ced4da;
+        }
+
+        .form-control:focus {
+            background-color: var(--bg-light);
+            color: var(--text-on-light);
+        }
+
+        /* List groups */
         .list-group-item {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: var(--text-light);
-            border-color: rgba(255, 255, 255, 0.2);
+            background-color: var(--bg-light);
+            color: var(--text-on-light);
+            border-color: rgba(0, 0, 0, 0.125);
         }
 
-        /* Alert customization */
+        /* Alerts */
         .alert {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
+            color: var(--text-on-light);
+        }
+
+        /* Text utilities */
+        .text-muted {
+            color: var(--text-muted-light) !important;
+        }
+
+        /* Dark mode text overrides for specific backgrounds */
+        .bg-primary, .bg-secondary, .bg-success, .bg-danger, .bg-warning, .bg-info, .bg-dark {
+            color: var(--text-on-dark) !important;
+        }
+
+        .bg-primary .text-muted,
+        .bg-secondary .text-muted,
+        .bg-success .text-muted,
+        .bg-danger .text-muted,
+        .bg-warning .text-muted,
+        .bg-info .text-muted,
+        .bg-dark .text-muted {
+            color: var(--text-muted-dark) !important;
+        }
+
+        /* Specific component text colors */
+        .toast {
+            background-color: var(--bg-light);
+            color: var(--text-on-light);
+        }
+
+        .badge {
+            color: var(--text-on-dark);
         }
     </style>
     

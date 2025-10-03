@@ -1,5 +1,6 @@
 /* Global Styles */
 :root {
+    /* Core Colors */
     --primary-color: #007bff;
     --secondary-color: #6c757d;
     --success-color: #28a745;
@@ -8,9 +9,17 @@
     --info-color: #17a2b8;
     --light-color: #f8f9fa;
     --dark-color: #343a40;
-    --text-light: #f8f9fa;
-    --text-dark: #212529;
-    --text-muted: rgba(255, 255, 255, 0.75);
+    
+    /* Text Colors for Different Backgrounds */
+    --text-on-light: #212529;  /* Dark text for light backgrounds */
+    --text-on-dark: #f8f9fa;   /* Light text for dark backgrounds */
+    --text-muted-light: #6c757d;  /* Muted text for light backgrounds */
+    --text-muted-dark: rgba(255, 255, 255, 0.75);  /* Muted text for dark backgrounds */
+    
+    /* Background Colors */
+    --bg-light: #ffffff;
+    --bg-dark: #343a40;
+    --bg-gradient: linear-gradient(135deg, #6366f1, #3b82f6);
 }
 
 body {
@@ -51,8 +60,8 @@ body {
     margin-bottom: 1rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
-    background-color: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+    background-color: var(--bg-light);
+    color: var(--text-on-light);
 }
 
 .card:hover {
@@ -98,10 +107,10 @@ body {
 .form-control {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid #ced4da;
     border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--text-light);
+    background-color: var(--bg-light);
+    color: var(--text-on-light);
 }
 
 .form-control::placeholder {
