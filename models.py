@@ -377,6 +377,10 @@ class User(UserMixin):
         self.id = id or str(uuid.uuid4())
         self.email = email
         self.password = password
+        self.first_name = first_name
+        self.last_name = last_name
+        self.middle_name = middle_name
+        self.suffix = suffix
         self.role = role if role in self.ROLES else 'job_seeker'
         self.phone = phone
         self.address = address
@@ -393,6 +397,13 @@ class User(UserMixin):
         return str(self.id)
 
     def to_dict(self):
+        name_parts = [self.first_name]
+        if self.middle_name:
+            name_parts.append(self.middle_name)
+        name_parts.append(self.last_name)
+        if self.suffix:
+            name_parts.append(self.suffix)
+            
         return {
             'id': self.id,
             'email': self.email,
@@ -400,13 +411,16 @@ class User(UserMixin):
             'last_name': self.last_name,
             'middle_name': self.middle_name,
             'suffix': self.suffix,
+            'name': ' '.join(name_parts),
             'role': self.role,
             'phone': self.phone,
             'address': self.address,
             'skills': self.skills,
             'experience': self.experience,
             'education': self.education,
-            'verification_status': self.verification_status
+            'verification_status': self.verification_status,
+            'resume_path': self.resume_path,
+            'permit_path': self.permit_path
         }
 
     def set_password(self, password):

@@ -1,5 +1,19 @@
 // Admin Dashboard JavaScript
 
+// Loading state management
+function setLoadingState(tableId, isLoading) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    
+    if (isLoading) {
+        table.classList.add('table-loading');
+    } else {
+        table.classList.remove('table-loading');
+    }
+}
+
+// Load users data table
+
 // Load users data table
 function loadUsersTable() {
     fetch('/admin/users/list')

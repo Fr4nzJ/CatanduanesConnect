@@ -4,6 +4,79 @@
 
 {% block head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+<meta name="csrf-token" content="{{ csrf_token() }}" />
+<style>
+    .table-loading {
+        position: relative;
+        min-height: 200px;
+    }
+    
+    .table-loading::after {
+        content: 'Loading...';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: tra<!-- Initialize dashboard -->
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize tooltips
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+    
+    // Load initial data
+    loadUsersTable();
+    loadPendingDocuments();
+    updateDashboard();
+    
+    // Set up refresh intervals
+    setInterval(loadUsersTable, 30000); // Refresh every 30 seconds
+    setInterval(loadPendingDocuments, 30000);
+    setInterval(updateDashboard, 30000);
+});
+</script>
+
+<!-- Document Review Modal -->
+<div class="modal fade" id="documentReviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Review Documents</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Document Review Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Document Type</th>
+                                <th>Submitted Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-docs-table-body">
+                            <tr><td colspan="4" class="text-center">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
+{% endblock %}0%, -50%);
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        z-index: 1;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -27,12 +100,14 @@
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Role</th>
+                                <th>Resume</th>
+                                <th>Permit</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="users-table">
-                            <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                        <tbody id="users-table-body">
+                            <tr><td colspan="7" class="text-center">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -132,7 +207,7 @@
 </div>
 
 <!-- Main Dashboard Content -->
-<div class="container-fluid py-4">
+<div class="container-fluid py-4 admin-dashboard">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Admin Dashboard</h1>
         <div class="btn-group">
@@ -145,7 +220,7 @@
             <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#contentManagementModal" onclick="loadContent()">
                 <i class="bi bi-file-text"></i> Manage Content
             </button>
-            <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#documentReviewModal">
+            <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#documentReviewModal" onclick="loadPendingDocuments()">
                 <i class="bi bi-file-earmark-check"></i> Review Documents
             </button>
         </div>

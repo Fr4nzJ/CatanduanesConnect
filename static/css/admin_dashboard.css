@@ -1,0 +1,71 @@
+/* Admin Dashboard Specific Styles */
+.admin-dashboard .card {
+    background-color: var(--bg-light);
+}
+
+.admin-dashboard .table {
+    color: var(--text-on-light);
+}
+
+.admin-dashboard .btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.admin-dashboard .btn-outline-primary:hover {
+    color: var(--text-on-dark);
+    background-color: var(--primary-color);
+}
+
+.admin-dashboard .badge {
+    color: var(--text-on-dark);
+}
+
+.admin-dashboard .modal-content {
+    background-color: var(--bg-light);
+    color: var(--text-on-light);
+}
+
+/* Management Tables */
+.management-table {
+    background-color: var(--bg-light);
+    color: var(--text-on-light) !important;
+}
+
+.management-table th {
+    background-color: var(--light-color);
+    color: var(--text-on-light);
+}
+
+.management-table td {
+    color: var(--text-on-light) !important;
+}
+
+/* Table Loading State */
+.table-loading {
+    position: relative;
+    min-height: 200px;
+}
+
+.table-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.table-loading::before {
+    content: 'Loading...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    color: var(--text-on-light);
+}

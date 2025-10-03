@@ -186,6 +186,266 @@ def dashboard_data():
         logger.error(f'Error fetching admin dashboard data: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
+@admin.route('/users/list')
+@login_required
+@admin_required
+def users_list():
+    """API endpoint for getting user list."""
+    try:
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (u:User)
+                RETURN u
+                ORDER BY u.role, u.last_name
+            """)
+            
+            users = []
+            for record in result:
+                user_data = dict(record["u"])
+                # Create User object to ensure proper name formatting
+                user = User(
+                    id=user_data.get('id'),
+                    email=user_data.get('email'),
+                    first_name=user_data.get('first_name'),
+                    last_name=user_data.get('last_name'),
+                    middle_name=user_data.get('middle_name'),
+                    suffix=user_data.get('suffix'),
+                    role=user_data.get('role'),
+                    phone=user_data.get('phone'),
+                    address=user_data.get('address'),
+                    verification_status=user_data.get('verification_status'),
+                    resume_path=user_data.get('resume_path'),
+                    permit_path=user_data.get('permit_path')
+                )
+                users.append(user.to_dict())
+            
+            return jsonify(users)
+            
+    except Exception as e:
+        logger.error(f"Error fetching users: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@admin.route('/users/<user_id>', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_user(user_id):
+    """Delete a user."""
+    try:
+        if user_id == current_user.id:
+            return jsonify({"error": "You cannot delete your own account"}), 400
+            
+        with driver.session(database=DATABASE) as session:
+            # First check if user exists
+            result = session.run("""
+                MATCH (u:User {id: $user_id})
+                RETURN u.role as role
+            """, {"user_id": user_id})
+            
+            user = result.single()
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+                
+            if user["role"] == "admin":
+                return jsonify({"error": "Cannot delete admin users"}), 403
+                
+            # Delete all relationships first
+            session.run("""
+                MATCH (u:User {id: $user_id})
+                OPTIONAL MATCH (u)-[r]-()
+                DELETE r
+            """, {"user_id": user_id})
+            
+            # Then delete the user node
+            session.run("""
+                MATCH (u:User {id: $user_id})
+                DELETE u
+            """, {"user_id": user_id})
+            
+            # Log the activity
+            activity = Activity(
+                type="user_management",
+                action="delete",
+                user_id=current_user.id,
+                target_id=user_id,
+                target_type="User",
+                details={"message": f"User {user_id} deleted by admin"}
+            )
+            activity.save()
+            
+            return jsonify({"success": True, "message": "User deleted successfully"})
+            
+    except Exception as e:
+        logger.error(f"Error deleting user: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@admin.route('/documents/pending')
+@login_required
+@admin_required
+def get_pending_documents():
+    """Get all pending documents (resumes and permits)."""
+    try:
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (u:User)
+                WHERE (u.resume_path IS NOT NULL OR u.permit_path IS NOT NULL)
+                  AND u.verification_status = 'pending'
+                RETURN u
+                ORDER BY u.role, u.last_name
+            """)
+            
+            documents = []
+            for record in result:
+                user_data = dict(record["u"])
+                user = User(
+                    id=user_data.get('id'),
+                    email=user_data.get('email'),
+                    first_name=user_data.get('first_name'),
+                    last_name=user_data.get('last_name'),
+                    middle_name=user_data.get('middle_name'),
+                    suffix=user_data.get('suffix'),
+                    role=user_data.get('role'),
+                    resume_path=user_data.get('resume_path'),
+                    permit_path=user_data.get('permit_path'),
+                    verification_status=user_data.get('verification_status')
+                )
+                user_dict = user.to_dict()
+                
+                if user.resume_path:
+                    documents.append({
+                        "id": f"{user.id}_resume",
+                        "user_id": user.id,
+                        "user_name": user_dict['name'],
+                        "type": "Resume",
+                        "path": user.resume_path,
+                        "submitted_date": user_data.get('resume_submitted_date', datetime.now().isoformat())
+                    })
+                    
+                if user.permit_path:
+                    documents.append({
+                        "id": f"{user.id}_permit",
+                        "user_id": user.id,
+                        "user_name": user_dict['name'],
+                        "type": "Business Permit",
+                        "path": user.permit_path,
+                        "submitted_date": user_data.get('permit_submitted_date', datetime.now().isoformat())
+                    })
+            
+            return jsonify(documents)
+            
+    except Exception as e:
+        logger.error(f"Error fetching pending documents: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@admin.route('/documents/<doc_id>/view')
+@login_required
+@admin_required
+def view_document(doc_id):
+    """View a document."""
+    try:
+        user_id, doc_type = doc_id.rsplit('_', 1)
+        
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (u:User {id: $user_id})
+                RETURN u.resume_path as resume_path, u.permit_path as permit_path
+            """, {"user_id": user_id})
+            
+            record = result.single()
+            if not record:
+                return jsonify({"error": "User not found"}), 404
+            
+            file_path = record['resume_path'] if doc_type == 'resume' else record['permit_path']
+            if not file_path:
+                return jsonify({"error": "Document not found"}), 404
+            
+            # Check if file exists
+            if not os.path.isfile(file_path):
+                return jsonify({"error": "Document file not found"}), 404
+                
+            return send_file(file_path)
+            
+    except Exception as e:
+        logger.error(f"Error viewing document: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@admin.route('/documents/<doc_id>/approve', methods=['POST'])
+@login_required
+@admin_required
+def approve_document(doc_id):
+    """Approve a document."""
+    try:
+        user_id, doc_type = doc_id.rsplit('_', 1)
+        
+        with driver.session(database=DATABASE) as session:
+            # Update user's verification status
+            session.run("""
+                MATCH (u:User {id: $user_id})
+                SET u.verification_status = 'verified'
+                RETURN u
+            """, {"user_id": user_id})
+            
+            # Log the activity
+            activity = Activity(
+                type="user_management",
+                action="verify",
+                user_id=current_user.id,
+                target_id=user_id,
+                target_type="User",
+                details={
+                    "message": f"Document ({doc_type}) approved for user {user_id}",
+                    "document_type": doc_type
+                }
+            )
+            activity.save()
+            
+            return jsonify({"success": True, "message": "Document approved successfully"})
+            
+    except Exception as e:
+        logger.error(f"Error approving document: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@admin.route('/documents/<doc_id>/reject', methods=['POST'])
+@login_required
+@admin_required
+def reject_document(doc_id):
+    """Reject a document."""
+    try:
+        data = request.get_json()
+        if not data or 'reason' not in data:
+            return jsonify({"error": "Rejection reason is required"}), 400
+            
+        user_id, doc_type = doc_id.rsplit('_', 1)
+        
+        with driver.session(database=DATABASE) as session:
+            # Update user's verification status
+            session.run("""
+                MATCH (u:User {id: $user_id})
+                SET u.verification_status = 'rejected'
+                SET u.rejection_reason = $reason
+                RETURN u
+            """, {"user_id": user_id, "reason": data['reason']})
+            
+            # Log the activity
+            activity = Activity(
+                type="user_management",
+                action="reject",
+                user_id=current_user.id,
+                target_id=user_id,
+                target_type="User",
+                details={
+                    "message": f"Document ({doc_type}) rejected for user {user_id}",
+                    "document_type": doc_type,
+                    "reason": data['reason']
+                }
+            )
+            activity.save()
+            
+            return jsonify({"success": True, "message": "Document rejected successfully"})
+            
+    except Exception as e:
+        logger.error(f"Error rejecting document: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 @admin.route('/users', methods=['GET', 'POST'])
 @login_required
 @admin_required
