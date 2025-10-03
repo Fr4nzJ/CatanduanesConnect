@@ -48,7 +48,10 @@ def signup():
 
     if request.method == "POST":
         email = request.form.get("email")
-        name = request.form.get("name")
+        first_name = request.form.get("first_name")
+        last_name = request.form.get("last_name")
+        middle_name = request.form.get("middle_name")
+        suffix = request.form.get("suffix")
         password = request.form.get("password")
 
         user = User.get_by_email(email)
@@ -58,7 +61,10 @@ def signup():
 
         new_user = User(
             email=email,
-            name=name,
+            first_name=first_name,
+            last_name=last_name,
+            middle_name=middle_name or None,
+            suffix=suffix or None,
             password=generate_password_hash(password, method="sha256")
         )
 
@@ -213,7 +219,8 @@ def google_callback():
             )
             user_info = {
                 'email': id_info.get('email'),
-                'name': id_info.get('name'),
+                'given_name': id_info.get('given_name'),
+                'family_name': id_info.get('family_name'),
                 'picture': id_info.get('picture')
             }
 
@@ -223,15 +230,17 @@ def google_callback():
             return redirect(url_for('auth.login'))
 
         email = user_info.get('email')
-        name = user_info.get('name')
+        given_name = user_info.get('given_name')
+        family_name = user_info.get('family_name')
         picture = user_info.get('picture')
-        if not email or not name:
-            raise ValueError('Missing email or name from Google response')
+        if not email or not given_name or not family_name:
+            raise ValueError('Missing email or name components from Google response')
 
         user = User.get_by_email(email)
         if not user:
             user = User(
-                name=name,
+                first_name=given_name,
+                last_name=family_name,
                 email=email,
                 profile_picture=picture,
                 password=generate_password_hash(email),

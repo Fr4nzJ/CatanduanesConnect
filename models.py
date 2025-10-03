@@ -370,9 +370,10 @@ class User(UserMixin):
     ROLES = ['business_owner', 'client', 'job_seeker', 'admin']  # admin is here but not available for signup
     SIGNUP_ROLES = ['business_owner', 'client', 'job_seeker']  # roles available during signup
     
-    def __init__(self, id=None, email=None, password=None, name=None, role=None, phone=None, 
-                 address=None, skills=None, experience=None, education=None, resume_path=None, 
-                 permit_path=None, verification_status=None, google_id=None, profile_picture=None):
+    def __init__(self, id=None, email=None, password=None, first_name=None, last_name=None, middle_name=None,
+                 suffix=None, role=None, phone=None, address=None, skills=None, experience=None,
+                 education=None, resume_path=None, permit_path=None, verification_status=None,
+                 google_id=None, profile_picture=None):
         self.id = id or str(uuid.uuid4())
         self.email = email
         self.password = password
@@ -431,7 +432,10 @@ class User(UserMixin):
             user_data = {
                 'id': self.id,
                 'email': self.email,
-                'name': self.name,
+                'first_name': self.first_name,
+                'last_name': self.last_name,
+                'middle_name': self.middle_name,
+                'suffix': self.suffix,
                 'role': self.role,
                 'phone': self.phone,
                 'address': self.address,
@@ -523,7 +527,10 @@ class User(UserMixin):
                 users.append(User(
                     id=user["id"],
                     email=user["email"],
-                    name=user["name"],
+                    first_name=user.get("first_name"),
+                    last_name=user.get("last_name"),
+                    middle_name=user.get("middle_name"),
+                    suffix=user.get("suffix"),
                     role=user["role"],
                     phone=user.get("phone"),
                     address=user.get("address"),
