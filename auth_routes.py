@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 @auth.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
+        if current_user.role == 'admin':
+            return redirect(url_for("admin.dashboard"))
         return redirect(url_for("dashboard"))
 
     if request.method == "POST":
@@ -33,6 +35,8 @@ def login():
 
         login_user(user, remember=remember)
         next_page = request.args.get("next")
+        if user.role == 'admin':
+            return redirect(next_page or url_for("admin.dashboard"))
         return redirect(next_page or url_for("dashboard"))
 
     return render_template("auth/login.html")
@@ -44,6 +48,8 @@ def login():
 @auth.route("/signup", methods=["GET", "POST"])
 def signup():
     if current_user.is_authenticated:
+        if current_user.role == 'admin':
+            return redirect(url_for("admin.dashboard"))
         return redirect(url_for("dashboard"))
 
     if request.method == "POST":
@@ -116,6 +122,8 @@ def google_login():
 @auth.route("/callback/google")
 def google_callback():
     if current_user.is_authenticated:
+        if current_user.role == 'admin':
+            return redirect(url_for("admin.dashboard"))
         return redirect(url_for("dashboard"))
 
     state = session.get("google_state")

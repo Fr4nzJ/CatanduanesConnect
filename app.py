@@ -622,7 +622,9 @@ def admin_dashboard_data():
 @login_required
 def dashboard():
     try:
-        if current_user.role == 'job_seeker':
+        if current_user.role == 'admin':
+            return redirect(url_for('admin.dashboard'))
+        elif current_user.role == 'job_seeker':
             try:
                 job_applications = Application.get_by_applicant_id(current_user.id)
                 service_offers = Service.get_offers_by_job_seeker(current_user.id)
