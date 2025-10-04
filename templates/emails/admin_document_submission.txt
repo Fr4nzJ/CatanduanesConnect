@@ -1,0 +1,22 @@
+New Document Submission
+
+Hi Admin,
+
+A new document has been submitted for verification.
+
+User Details:
+- Name: {{ user.name }}
+- Email: {{ user.email }}
+- Role: {{ user.role }}
+- Submitted: {{ user.created_at.strftime('%B %d, %Y at %I:%M %p') }}
+
+{% if user.document_url %}
+Document Link: {{ request.host_url }}uploads/{{ user.document_url }}
+{% endif %}
+
+Please review this submission in the admin dashboard:
+{{ request.host_url }}admin/verification
+
+---
+This is an automated message from {{ app_name }}.
+© {{ year }} {{ app_name }}. All rights reserved.

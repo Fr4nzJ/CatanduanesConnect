@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 from neo4j import GraphDatabase, exceptions as neo4j
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, g, send_file
 from werkzeug.exceptions import HTTPException
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_cors import CORS
@@ -31,6 +31,7 @@ from models import (
 from decorators import admin_required
 from admin_routes import admin
 from chatbot_routes import bp as chatbot_bp
+from dashboard_routes import dashboard
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -82,6 +83,11 @@ else:
 
 # Enable CORS
 CORS(app)
+
+# Register blueprints
+app.register_blueprint(admin)
+app.register_blueprint(chatbot_bp)
+app.register_blueprint(dashboard)
 
 # Custom template filters
 @app.template_filter('datetime')

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            margin-bottom: 20px;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .reason-box {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Verification Failed</h2>
+        </div>
+        <div class="content">
+            <p>Hi {{ user.name }},</p>
+            
+            <p>Unfortunately, your submitted document was not approved.</p>
+            
+            <div class="reason-box">
+                <strong>Reason:</strong><br>
+                {{ reason }}
+            </div>
+            
+            <p>Please re-upload a valid document through your dashboard to continue the verification process.</p>
+            
+            {% if user.role == 'job_seeker' %}
+            <p>Requirements for resume:</p>
+            <ul>
+                <li>PDF, DOC, or DOCX format</li>
+                <li>Complete employment history</li>
+                <li>Updated contact information</li>
+                <li>File size under 5MB</li>
+            </ul>
+            {% elif user.role == 'business_owner' %}
+            <p>Requirements for business permit:</p>
+            <ul>
+                <li>PDF, JPG, or PNG format</li>
+                <li>Clearly legible text</li>
+                <li>Valid and not expired</li>
+                <li>File size under 5MB</li>
+            </ul>
+            {% endif %}
+            
+            <a href="{{ url_for('dashboard.index', _external=True) }}" class="btn">
+                Go to Dashboard
+            </a>
+            
+            <p>If you need assistance, please don't hesitate to contact our support team.</p>
+        </div>
+        <div class="footer">
+            <p>Need help? Contact us at {{ support_email }}</p>
+            <p>&copy; {{ year }} {{ app_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

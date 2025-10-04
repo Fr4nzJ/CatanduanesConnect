@@ -1,6 +1,8 @@
 import os
 import json
 import logging
+import uuid
+from datetime import datetime
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
@@ -10,6 +12,9 @@ from models import User
 from werkzeug.utils import secure_filename
 from oauth import get_google_auth_flow_from_config, get_google_user_info
 from pathlib import Path
+from database import driver, DATABASE
+from utils.email_utils import notify_admins_new_submission, send_document_received_email
+from utils.email_utils import notify_admins_new_submission, send_document_received_email
 
 auth = Blueprint('auth', __name__)
 
@@ -20,6 +25,11 @@ ALLOWED_EXTENSIONS = {
     'business_owner': {'pdf', 'png', 'jpg', 'jpeg'}
 }
 
+@auth.route('/restricted_access')
+def restricted_access():
+    """Show restricted access page for unverified users."""
+    return render_template('auth/restricted_access.html')
+
 @auth.route('/complete_registration', methods=['GET', 'POST'])
 def complete_registration():
     # Check if we have Google user data in session
@@ -29,14 +39,14 @@ def complete_registration():
         return redirect(url_for('auth.login'))
 
     if request.method == 'POST':
-        user_type = request.form.get('user_type')
-        if not user_type or user_type not in User.SIGNUP_ROLES:
-            flash('Please select a valid account type.', 'danger')
+        role = request.form.get('role')
+        if not role or role not in ['job_seeker', 'business_owner', 'client']:
+            flash('Please select a valid role.', 'danger')
             return redirect(url_for('auth.complete_registration'))
 
         # Handle file upload for job seekers and business owners
-        file_path = None
-        if user_type in ['job_seeker', 'business_owner']:
+        document_path = None
+        if role in ['job_seeker', 'business_owner']:
             if 'document' not in request.files:
                 flash('Please upload the required document.', 'danger')
                 return redirect(url_for('auth.complete_registration'))
@@ -46,47 +56,79 @@ def complete_registration():
                 flash('No file selected.', 'danger')
                 return redirect(url_for('auth.complete_registration'))
 
-            # Validate file extension
-            ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
-            if ext not in ALLOWED_EXTENSIONS[user_type]:
-                flash(f'Invalid file type. Allowed types for {user_type}: {", ".join(ALLOWED_EXTENSIONS[user_type])}', 'danger')
+            # Validate file extension and size
+            if not file.filename.lower().endswith(tuple(ALLOWED_EXTENSIONS[role])):
+                flash(f'Invalid file type. Allowed types for {role}: {", ".join(ALLOWED_EXTENSIONS[role])}', 'danger')
+                return redirect(url_for('auth.complete_registration'))
+                
+            # Check file size (5MB limit)
+            file.seek(0, os.SEEK_END)
+            size = file.tell()
+            file.seek(0)
+            if size > 5 * 1024 * 1024:  # 5MB
+                flash('File size must be less than 5MB.', 'danger')
                 return redirect(url_for('auth.complete_registration'))
 
-            # Save file
-            filename = secure_filename(f"{google_user['email']}_{file.filename}")
-            upload_dir = UPLOAD_FOLDER / ('resumes' if user_type == 'job_seeker' else 'permits')
+            # Save file securely
+            filename = secure_filename(file.filename)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"{role}_{timestamp}_{filename}"
+            
+            # Create directories if they don't exist
+            upload_dir = UPLOAD_FOLDER / role
             upload_dir.mkdir(parents=True, exist_ok=True)
-            file_path = str(upload_dir / filename)
+            
+            file_path = upload_dir / filename
             file.save(file_path)
+            
+            # Send notifications
+            notify_admins_new_submission(user)
+            send_document_received_email(user)
+            document_path = str(file_path)
 
-        # Create user
         try:
-            user = User(
-                first_name=google_user['given_name'],
-                last_name=google_user['family_name'],
-                email=google_user['email'],
-                profile_picture=google_user['picture'],
-                password=generate_password_hash(google_user['email']),  # Random password since using OAuth
-                role=user_type,
-                verification_status='pending_verification',
-                resume_path=file_path if user_type == 'job_seeker' else None,
-                permit_path=file_path if user_type == 'business_owner' else None
-            )
-            user.save()
-
-            # Clear session data
-            session.pop('google_user', None)
-
-            # Log in the user
-            login_user(user)
-            flash('Registration completed! Your account is pending verification by an admin.', 'info')
-            return redirect(url_for('dashboard'))
-
+            # Create user in Neo4j
+            with driver.session(database=DATABASE) as session:
+                result = session.run("""
+                    CREATE (u:User {
+                        id: $id,
+                        email: $email,
+                        name: $name,
+                        google_id: $google_id,
+                        role: $role,
+                        document_path: $document_path,
+                        verification_status: 'pending_verification',
+                        created_at: datetime(),
+                        is_active: true
+                    })
+                    RETURN u
+                """, {
+                    'id': str(uuid.uuid4()),
+                    'email': google_user['email'],
+                    'name': google_user['name'],
+                    'google_id': google_user['sub'],
+                    'role': role,
+                    'document_path': document_path
+                })
+                
+                new_user = result.single()
+                if new_user:
+                    # Clear Google user data from session
+                    session.pop('google_user', None)
+                    
+                    # Create User object and log them in
+                    user = User.from_neo4j(new_user['u'])
+                    login_user(user)
+                    
+                    flash('Registration completed successfully. Your account is pending verification.', 'success')
+                    return redirect(url_for('auth.restricted_access'))
+                    
         except Exception as e:
             logger.error(f'Error creating user: {str(e)}')
-            flash('Error creating account. Please try again.', 'danger')
+            flash('An error occurred during registration. Please try again.', 'danger')
             return redirect(url_for('auth.complete_registration'))
 
+    return render_template('auth/complete_registration.html', google_user=google_user)
     return render_template('auth/complete_registration.html')
 logger = logging.getLogger(__name__)
 

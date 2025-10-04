@@ -1,0 +1,23 @@
+Hi {{ user.name }},
+
+Congratulations! Your account has been verified and you now have full access to our services.
+
+{% if user.role == 'job_seeker' %}
+You can now:
+- Apply for jobs
+- Track your applications
+- Connect with employers
+{% elif user.role == 'business_owner' %}
+You can now:
+- Post job listings
+- Manage your business profile
+- Review applications
+{% endif %}
+
+Visit your dashboard: {{ url_for('dashboard.index', _external=True) }}
+
+Welcome to the {{ app_name }} community!
+
+Need help? Contact us at {{ support_email }}
+
+© {{ year }} {{ app_name }}. All rights reserved.

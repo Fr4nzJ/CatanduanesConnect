@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Restricted Access{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphism.css') }}">
+<style>
+    .restricted-message {
+        max-width: 600px;
+        margin: 3rem auto;
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .status-icon {
+        font-size: 4rem;
+        color: #ffc107;
+        margin-bottom: 1rem;
+    }
+    
+    .status-message {
+        margin-bottom: 2rem;
+    }
+    
+    .feature-list {
+        text-align: left;
+        margin: 2rem auto;
+        max-width: 400px;
+    }
+    
+    .feature-list li {
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="glassmorphism restricted-message">
+        <div class="status-icon">
+            <i class="bi bi-shield-lock"></i>
+        </div>
+        
+        <h2>Account Pending Verification</h2>
+        
+        <div class="status-message">
+            <p>Your account is currently pending verification by our administrators.</p>
+            <p>While you wait, you can still browse and view content on our platform.</p>
+        </div>
+
+        <div class="feature-list">
+            <h5>Available Features:</h5>
+            <ul>
+                <li>View job listings</li>
+                <li>Browse business directory</li>
+                <li>Read service descriptions</li>
+                <li>View public profiles</li>
+            </ul>
+
+            <h5>Features Requiring Verification:</h5>
+            <ul>
+                <li>Apply for jobs</li>
+                <li>Post job listings</li>
+                <li>Create business profiles</li>
+                <li>Contact other users</li>
+            </ul>
+        </div>
+
+        <div class="mt-4">
+            <p class="text-muted">We typically process verifications within 24-48 hours.</p>
+            <a href="{{ url_for('home') }}" class="btn btn-primary">Return to Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

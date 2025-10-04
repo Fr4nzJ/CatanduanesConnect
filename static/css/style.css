@@ -45,6 +45,79 @@ body {
     background-color: #fff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     padding: 1rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Verification Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-left: 1rem;
+}
+
+.status-badge::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+}
+
+.badge-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.badge-success::before {
+    background-color: #fff;
+}
+
+.badge-warning {
+    background-color: var(--warning-color);
+    color: var(--text-on-light);
+}
+
+.badge-warning::before {
+    background-color: var(--text-on-light);
+}
+
+.badge-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.badge-danger::before {
+    background-color: #fff;
+}
+
+/* Tooltip styles */
+.status-badge[data-tooltip] {
+    position: relative;
+    cursor: help;
+}
+
+.status-badge[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.5rem;
+    background-color: var(--dark-color);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 10;
+    margin-bottom: 5px;
 }
 
 .navbar-brand {

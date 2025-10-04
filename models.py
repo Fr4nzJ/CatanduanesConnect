@@ -386,8 +386,9 @@ class User(UserMixin):
     
     def __init__(self, id=None, email=None, password=None, first_name=None, last_name=None, middle_name=None,
                  suffix=None, role=None, phone=None, address=None, skills=None, experience=None,
-                 education=None, resume_path=None, permit_path=None, verification_status=None,
-                 google_id=None, profile_picture=None, name=None):
+                 education=None, resume_path=None, permit_path=None, verification_status='pending_verification',
+                 google_id=None, profile_picture=None, name=None, verification_notes=None, 
+                 verified_by=None, verified_at=None, is_admin=False):
         # Handle legacy name field
         if name and not any([first_name, last_name]):
             name_parts = name.split()
@@ -411,7 +412,11 @@ class User(UserMixin):
         self.education = education or []
         self.resume_path = resume_path
         self.permit_path = permit_path
-        self.verification_status = verification_status or 'pending'  # pending, verified, rejected
+        self.verification_status = verification_status or 'pending_verification'  # pending_verification, verified, rejected
+        self.verification_notes = verification_notes
+        self.verified_by = verified_by
+        self.verified_at = verified_at
+        self.is_admin = is_admin
         self.google_id = google_id  # Added for Google OAuth
         self.profile_picture = profile_picture  # Added for Google profile picture
 
@@ -442,6 +447,79 @@ class User(UserMixin):
 
     def get_id(self):
         return str(self.id)
+
+    @property
+    def is_verified(self):
+        return self.verification_status == 'verified'
+
+    def verify(self, admin_email, notes=None):
+        try:
+            with driver.session(database=DATABASE) as session:
+                result = session.run("""
+                    MATCH (u:User {id: $user_id})
+                    SET u.verification_status = 'verified',
+                        u.verification_notes = $notes,
+                        u.verified_by = $admin_email,
+                        u.verified_at = datetime()
+                    RETURN u
+                """, {
+                    'user_id': self.id,
+                    'notes': notes,
+                    'admin_email': admin_email
+                })
+                user_data = result.single()
+                if user_data:
+                    self.verification_status = 'verified'
+                    self.verification_notes = notes
+                    self.verified_by = admin_email
+                    self.verified_at = datetime.now().isoformat()
+                    return True
+            return False
+        except Exception as e:
+            logger.error(f'Error verifying user: {str(e)}')
+            return False
+
+    def reject(self, admin_email, notes):
+        try:
+            with driver.session(database=DATABASE) as session:
+                result = session.run("""
+                    MATCH (u:User {id: $user_id})
+                    SET u.verification_status = 'rejected',
+                        u.verification_notes = $notes,
+                        u.verified_by = $admin_email,
+                        u.verified_at = datetime()
+                    RETURN u
+                """, {
+                    'user_id': self.id,
+                    'notes': notes,
+                    'admin_email': admin_email
+                })
+                user_data = result.single()
+                if user_data:
+                    self.verification_status = 'rejected'
+                    self.verification_notes = notes
+                    self.verified_by = admin_email
+                    self.verified_at = datetime.now().isoformat()
+                    return True
+            return False
+        except Exception as e:
+            logger.error(f'Error rejecting user: {str(e)}')
+            return False
+
+    @staticmethod
+    def get_pending_verifications():
+        try:
+            with driver.session(database=DATABASE) as session:
+                result = session.run("""
+                    MATCH (u:User)
+                    WHERE u.verification_status = 'pending_verification'
+                    RETURN u
+                    ORDER BY u.created_at DESC
+                """)
+                return [User.from_neo4j(record['u']) for record in result]
+        except Exception as e:
+            logger.error(f'Error getting pending verifications: {str(e)}')
+            return []
 
     def to_dict(self):
         name_parts = [self.first_name]

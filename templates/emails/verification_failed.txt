@@ -1,0 +1,30 @@
+Hi {{ user.name }},
+
+Unfortunately, your submitted document was not approved.
+
+Reason:
+{{ reason }}
+
+Please re-upload a valid document through your dashboard to continue the verification process.
+
+{% if user.role == 'job_seeker' %}
+Requirements for resume:
+- PDF, DOC, or DOCX format
+- Complete employment history
+- Updated contact information
+- File size under 5MB
+{% elif user.role == 'business_owner' %}
+Requirements for business permit:
+- PDF, JPG, or PNG format
+- Clearly legible text
+- Valid and not expired
+- File size under 5MB
+{% endif %}
+
+Go to your dashboard: {{ url_for('dashboard.index', _external=True) }}
+
+If you need assistance, please don't hesitate to contact our support team.
+
+Need help? Contact us at {{ support_email }}
+
+© {{ year }} {{ app_name }}. All rights reserved.

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Document Submission</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #1a73e8;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        .content {
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .user-info {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #1a73e8;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>New Document Submission</h2>
+    </div>
+    
+    <div class="content">
+        <p>Hi Admin,</p>
+        
+        <div class="user-info">
+            <p><strong>User Details:</strong></p>
+            <ul>
+                <li>Name: {{ user.name }}</li>
+                <li>Email: {{ user.email }}</li>
+                <li>Role: {{ user.role }}</li>
+                <li>Submitted: {{ user.created_at.strftime('%B %d, %Y at %I:%M %p') }}</li>
+            </ul>
+            
+            {% if user.document_url %}
+            <p><a href="{{ request.host_url }}uploads/{{ user.document_url }}" class="button">View Document</a></p>
+            {% endif %}
+        </div>
+        
+        <p>Please review this submission in the admin dashboard:</p>
+        <p><a href="{{ request.host_url }}admin/verification" class="button">Go to Admin Dashboard</a></p>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated message from {{ app_name }}.</p>
+        <p>© {{ year }} {{ app_name }}. All rights reserved.</p>
+    </div>
+</body>
+</html>

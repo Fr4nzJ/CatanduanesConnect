@@ -23,3 +23,17 @@ class Config:
     # OAuth redirect URI
     # Allow explicit override via environment (useful on hosting platforms)
     GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI') or f"{BASE_URL}/callback/google"
+    
+    # Email Configuration
+    MAIL_SERVER = 'smtp.gmail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = os.getenv('GMAIL_USER')
+    MAIL_PASSWORD = os.getenv('GMAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER = ('Catanduanes Connect', os.getenv('GMAIL_USER'))
+    
+    # Admin notification emails (comma-separated)
+    ADMIN_EMAILS = os.getenv('ADMIN_EMAILS', '').split(',')
+    
+    # Support email for user contact
+    SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', 'support@catanduanesconnect.com')

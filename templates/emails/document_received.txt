@@ -1,0 +1,13 @@
+Hi {{ user.name }},
+
+We've received your document for account verification. Our team will review it soon.
+
+You'll receive an update once your account is approved or rejected.
+
+In the meantime, you can browse our platform but some features will be restricted until verification is complete.
+
+Thank you for choosing {{ app_name }}!
+
+Need help? Contact us at {{ support_email }}
+
+© {{ year }} {{ app_name }}. All rights reserved.

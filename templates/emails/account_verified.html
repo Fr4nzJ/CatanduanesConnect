@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            margin-bottom: 20px;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success-icon {
+            font-size: 48px;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="success-icon">✓</div>
+            <h2>Account Verified!</h2>
+        </div>
+        <div class="content">
+            <p>Hi {{ user.name }},</p>
+            
+            <p>Congratulations! Your account has been verified and you now have full access to our services.</p>
+            
+            {% if user.role == 'job_seeker' %}
+            <p>You can now:</p>
+            <ul>
+                <li>Apply for jobs</li>
+                <li>Track your applications</li>
+                <li>Connect with employers</li>
+            </ul>
+            {% elif user.role == 'business_owner' %}
+            <p>You can now:</p>
+            <ul>
+                <li>Post job listings</li>
+                <li>Manage your business profile</li>
+                <li>Review applications</li>
+            </ul>
+            {% endif %}
+            
+            <a href="{{ url_for('dashboard.index', _external=True) }}" class="btn">
+                Go to Dashboard
+            </a>
+            
+            <p>Welcome to the {{ app_name }} community!</p>
+        </div>
+        <div class="footer">
+            <p>Need help? Contact us at {{ support_email }}</p>
+            <p>&copy; {{ year }} {{ app_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
