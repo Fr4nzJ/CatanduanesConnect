@@ -7,9 +7,87 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User
+from werkzeug.utils import secure_filename
 from oauth import get_google_auth_flow_from_config, get_google_user_info
+from pathlib import Path
 
 auth = Blueprint('auth', __name__)
+
+# File upload configuration
+UPLOAD_FOLDER = Path('uploads')
+ALLOWED_EXTENSIONS = {
+    'job_seeker': {'pdf', 'doc', 'docx'},
+    'business_owner': {'pdf', 'png', 'jpg', 'jpeg'}
+}
+
+@auth.route('/complete_registration', methods=['GET', 'POST'])
+def complete_registration():
+    # Check if we have Google user data in session
+    google_user = session.get('google_user')
+    if not google_user:
+        flash('Please sign up with Google first.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    if request.method == 'POST':
+        user_type = request.form.get('user_type')
+        if not user_type or user_type not in User.SIGNUP_ROLES:
+            flash('Please select a valid account type.', 'danger')
+            return redirect(url_for('auth.complete_registration'))
+
+        # Handle file upload for job seekers and business owners
+        file_path = None
+        if user_type in ['job_seeker', 'business_owner']:
+            if 'document' not in request.files:
+                flash('Please upload the required document.', 'danger')
+                return redirect(url_for('auth.complete_registration'))
+
+            file = request.files['document']
+            if file.filename == '':
+                flash('No file selected.', 'danger')
+                return redirect(url_for('auth.complete_registration'))
+
+            # Validate file extension
+            ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+            if ext not in ALLOWED_EXTENSIONS[user_type]:
+                flash(f'Invalid file type. Allowed types for {user_type}: {", ".join(ALLOWED_EXTENSIONS[user_type])}', 'danger')
+                return redirect(url_for('auth.complete_registration'))
+
+            # Save file
+            filename = secure_filename(f"{google_user['email']}_{file.filename}")
+            upload_dir = UPLOAD_FOLDER / ('resumes' if user_type == 'job_seeker' else 'permits')
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            file_path = str(upload_dir / filename)
+            file.save(file_path)
+
+        # Create user
+        try:
+            user = User(
+                first_name=google_user['given_name'],
+                last_name=google_user['family_name'],
+                email=google_user['email'],
+                profile_picture=google_user['picture'],
+                password=generate_password_hash(google_user['email']),  # Random password since using OAuth
+                role=user_type,
+                verification_status='pending_verification',
+                resume_path=file_path if user_type == 'job_seeker' else None,
+                permit_path=file_path if user_type == 'business_owner' else None
+            )
+            user.save()
+
+            # Clear session data
+            session.pop('google_user', None)
+
+            # Log in the user
+            login_user(user)
+            flash('Registration completed! Your account is pending verification by an admin.', 'info')
+            return redirect(url_for('dashboard'))
+
+        except Exception as e:
+            logger.error(f'Error creating user: {str(e)}')
+            flash('Error creating account. Please try again.', 'danger')
+            return redirect(url_for('auth.complete_registration'))
+
+    return render_template('auth/complete_registration.html')
 logger = logging.getLogger(__name__)
 
 # --------------------------
@@ -245,25 +323,20 @@ def google_callback():
             raise ValueError('Missing email or name components from Google response')
 
         user = User.get_by_email(email)
-        if not user:
-            user = User(
-                first_name=given_name,
-                last_name=family_name,
-                email=email,
-                profile_picture=picture,
-                password=generate_password_hash(email),
-                verification_status='verified'
-            )
-            user.save()
+        if user:
+            # Existing user can login directly
+            login_user(user)
+            flash('Successfully logged in with Google!', 'success')
+            return redirect(url_for('dashboard'))
         else:
-            user.profile_picture = picture
-            user.verification_status = 'verified'
-            user.save()
-
-        # Set session for Flask-Login
-        login_user(user)
-        flash('Successfully logged in with Google!', 'success')
-        return redirect(url_for('dashboard'))
+            # Store Google data in session and redirect to complete registration
+            session['google_user'] = {
+                'email': email,
+                'given_name': given_name,
+                'family_name': family_name,
+                'picture': picture
+            }
+            return redirect(url_for('auth.complete_registration'))
     except Exception as e:
         import traceback
         current_app.logger.error(f"Google callback error: {str(e)}\n{traceback.format_exc()}")

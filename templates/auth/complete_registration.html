@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Complete Registration{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h2 class="text-center mb-0">Complete Your Registration</h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p>Welcome, {{ session['google_user']['name'] }}! Please complete your registration below.</p>
+                        <small>* Required for verification and account setup</small>
+                    </div>
+
+                    <form action="{{ url_for('auth.complete_registration') }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="mb-3">
+                            <label for="user_type" class="form-label">Select Account Type *</label>
+                            <select class="form-select" name="user_type" id="user_type" required onchange="toggleUploadField()">
+                                <option value="">-- Choose Type --</option>
+                                <option value="job_seeker">Job Seeker</option>
+                                <option value="business_owner">Business Owner</option>
+                                <option value="client">Client</option>
+                            </select>
+                            <div class="invalid-feedback">Please select an account type.</div>
+                        </div>
+
+                        <div id="upload_field" class="mb-3" style="display: none;">
+                            <label class="form-label">Required Document *</label>
+                            <input type="file" class="form-control" name="document" id="document" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+                            <div class="form-text" id="document_help">
+                                Job Seeker: Resume (PDF/DOC/DOCX)<br>
+                                Business Owner: Business Permit (PDF/Image)
+                            </div>
+                            <div class="invalid-feedback">Please upload the required document.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Complete Registration</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleUploadField() {
+    const userType = document.getElementById('user_type').value;
+    const uploadField = document.getElementById('upload_field');
+    const documentInput = document.getElementById('document');
+    
+    if (userType === 'job_seeker' || userType === 'business_owner') {
+        uploadField.style.display = 'block';
+        documentInput.required = true;
+        
+        // Update accepted file types based on user type
+        if (userType === 'job_seeker') {
+            documentInput.accept = '.pdf,.doc,.docx';
+        } else if (userType === 'business_owner') {
+            documentInput.accept = '.pdf,.png,.jpg,.jpeg';
+        }
+    } else {
+        uploadField.style.display = 'none';
+        documentInput.required = false;
+    }
+}
+
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %}

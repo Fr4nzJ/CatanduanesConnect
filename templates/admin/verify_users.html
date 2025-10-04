@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}User Verification{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h2>Pending User Verifications</h2>
+        </div>
+        <div class="card-body">
+            {% if pending_users %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Type</th>
+                            <th>Document</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in pending_users %}
+                        <tr>
+                            <td>{{ user.name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.role|title }}</td>
+                            <td>
+                                {% if user.resume_path %}
+                                <a href="{{ url_for('download_resume', user_id=user.id) }}" target="_blank">View Resume</a>
+                                {% elif user.permit_path %}
+                                <a href="{{ url_for('download_permit', user_id=user.id) }}" target="_blank">View Permit</a>
+                                {% else %}
+                                N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-warning">{{ user.verification_status }}</span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" name="action" value="verify" class="btn btn-sm btn-success">
+                                            <i class="bi bi-check-circle"></i> Verify
+                                        </button>
+                                    </form>
+                                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="POST" class="d-inline ms-2">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-x-circle"></i> Reject
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                No pending user verifications.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

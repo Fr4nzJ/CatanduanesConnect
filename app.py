@@ -532,6 +532,48 @@ def logout():
     logout_user()
     return redirect(url_for('home'))
 
+@app.route('/download/resume/<user_id>')
+@login_required
+@admin_required
+def download_resume(user_id):
+    """Download a user's resume."""
+    try:
+        user = User.get_by_id(user_id)
+        if not user or not user.resume_path:
+            flash('Resume not found.', 'danger')
+            return redirect(url_for('admin.verify_users_list'))
+            
+        return send_file(
+            user.resume_path,
+            as_attachment=True,
+            download_name=f"{user.name}_resume.{user.resume_path.split('.')[-1]}"
+        )
+    except Exception as e:
+        logger.error(f"Error downloading resume: {str(e)}")
+        flash('Error downloading resume.', 'danger')
+        return redirect(url_for('admin.verify_users_list'))
+
+@app.route('/download/permit/<user_id>')
+@login_required
+@admin_required
+def download_permit(user_id):
+    """Download a user's business permit."""
+    try:
+        user = User.get_by_id(user_id)
+        if not user or not user.permit_path:
+            flash('Business permit not found.', 'danger')
+            return redirect(url_for('admin.verify_users_list'))
+            
+        return send_file(
+            user.permit_path,
+            as_attachment=True,
+            download_name=f"{user.name}_permit.{user.permit_path.split('.')[-1]}"
+        )
+    except Exception as e:
+        logger.error(f"Error downloading permit: {str(e)}")
+        flash('Error downloading permit.', 'danger')
+        return redirect(url_for('admin.verify_users_list'))
+
 @app.route('/notifications')
 @login_required
 def view_notifications():

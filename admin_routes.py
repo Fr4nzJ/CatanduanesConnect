@@ -183,6 +183,70 @@ def dashboard_data():
         logger.error(f'Error fetching admin dashboard data: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
+@admin.route('/verify-users')
+@login_required
+@admin_required
+def verify_users_list():
+    """Show list of users pending verification."""
+    try:
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (u:User)
+                WHERE u.verification_status = 'pending_verification'
+                RETURN u
+                ORDER BY u.role, u.last_name
+            """)
+            
+            pending_users = [User(**record["u"]) for record in result]
+            return render_template('admin/verify_users.html', pending_users=pending_users)
+            
+    except Exception as e:
+        logger.error(f"Error fetching pending users: {str(e)}")
+        flash("Error loading pending verifications.", "danger")
+        return redirect(url_for('admin.dashboard'))
+
+@admin.route('/verify-user/<user_id>', methods=['POST'])
+@login_required
+@admin_required
+def verify_user(user_id):
+    """Handle user verification actions."""
+    try:
+        action = request.form.get('action')
+        if action not in ['verify', 'reject']:
+            flash('Invalid action.', 'danger')
+            return redirect(url_for('admin.verify_users_list'))
+
+        new_status = 'verified' if action == 'verify' else 'rejected'
+        
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (u:User {id: $user_id})
+                SET u.verification_status = $status
+                RETURN u
+            """, user_id=user_id, status=new_status)
+            
+            if not result.single():
+                flash('User not found.', 'danger')
+                return redirect(url_for('admin.verify_users_list'))
+
+            # Log the activity
+            Activity(
+                type='user_management',
+                action=f'user_{action}',
+                user_id=current_user.id,
+                target_id=user_id,
+                target_type='user',
+                details={'new_status': new_status}
+            ).save()
+
+            flash(f'User {action}ed successfully.', 'success')
+            return redirect(url_for('admin.verify_users_list'))
+
+    except Exception as e:
+        logger.error(f"Error verifying user: {str(e)}")
+        flash("Error processing verification.", "danger")
+        return redirect(url_for('admin.verify_users_list'))
+
 @admin.route('/users/list')
 @login_required
 @admin_required
