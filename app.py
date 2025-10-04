@@ -85,7 +85,7 @@ else:
 CORS(app)
 
 # Register blueprints
-app.register_blueprint(admin)
+app.register_blueprint(admin, name='admin_blueprint')
 app.register_blueprint(chatbot_bp)
 app.register_blueprint(dashboard)
 
@@ -115,10 +115,6 @@ def format_datetime(value):
     if diff.days < 7:
         return f'{diff.days} days ago'
     return value.strftime('%B %d, %Y')
-
-# Register blueprints
-app.register_blueprint(admin)
-app.register_blueprint(chatbot_bp, url_prefix='/chatbot')
 
 # Import and register auth blueprint
 from auth_routes import auth
