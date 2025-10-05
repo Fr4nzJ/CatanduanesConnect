@@ -29,7 +29,7 @@
 
       const matchesQ = !q || name.includes(q) || desc.includes(q);
       const matchesCat = !cat || category === cat;
-      const matchesLoc = !loc || location.includes(loc);
+      const matchesLoc = !loc || location === loc; // exact city/province match
 
       const show = matchesQ && matchesCat && matchesLoc;
       card.style.display = show ? '' : 'none';
@@ -45,7 +45,7 @@
     if (locationSelect) locationSelect.addEventListener('change', filterCards);
   }
 
-  function openMap({ name, desc, lat, lng }) {
+  function openMap({ name, desc, category, location, lat, lng }) {
     if (!mapModal) return;
     mapModal.classList.add('open');
     if (mapTitle) mapTitle.textContent = name || 'Location';
@@ -68,7 +68,13 @@
         currentMarker.remove();
       }
       currentMarker = L.marker([latNum, lngNum]).addTo(leafletMap);
-      currentMarker.bindPopup(`<strong>${name || ''}</strong><br/>${desc || ''}`).openPopup();
+      const lines = [
+        `<strong>${name || ''}</strong>`,
+        desc ? `${desc}` : '',
+        category ? `<em>Category:</em> ${category}` : '',
+        location ? `<em>Location:</em> ${location}` : '',
+      ].filter(Boolean);
+      currentMarker.bindPopup(lines.join('<br/>')).openPopup();
       leafletMap.invalidateSize();
     }, 0);
   }
@@ -83,11 +89,14 @@
     cards.addEventListener('click', (e) => {
       const btn = e.target.closest('.view-map');
       if (!btn) return;
+      const card = btn.closest('.business-card');
       const lat = btn.dataset.lat;
       const lng = btn.dataset.lng;
       const name = btn.dataset.name;
       const desc = btn.dataset.desc;
-      openMap({ name, desc, lat, lng });
+      const category = card ? (card.dataset.category || '') : '';
+      const location = card ? (card.dataset.location || '') : '';
+      openMap({ name, desc, category, location, lat, lng });
     });
     if (closeMapBtn) closeMapBtn.addEventListener('click', closeMap);
     if (mapModal) mapModal.addEventListener('click', (e) => {
