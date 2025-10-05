@@ -1,0 +1,21 @@
+2025-10-06 01:43:23,423 - app - INFO - Successfully connected to Neo4j database
+2025-10-06 01:43:23,443 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
+2025-10-06 01:43:23,443 - app - INFO - models.User has get_by_email: False
+2025-10-06 01:43:23,516 - app - ERROR - Error creating default admin: type object 'User' has no attribute 'get_by_email'
+2025-10-06 01:43:23,516 - app - INFO - Admin check completed at startup (no changes)
+2025-10-06 01:43:24,123 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-06 01:43:24,126 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-06 01:45:55,789 - app - INFO - Successfully connected to Neo4j database
+2025-10-06 01:45:55,790 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
+2025-10-06 01:45:55,790 - app - INFO - models.User has get_by_email: True
+2025-10-06 01:45:55,895 - app - ERROR - Error creating default admin: 'classmethod' object is not callable
+2025-10-06 01:45:55,895 - app - INFO - Admin check completed at startup (no changes)
+2025-10-06 01:45:56,086 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-06 01:45:56,089 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-06 01:47:37,282 - app - INFO - Successfully connected to Neo4j database
+2025-10-06 01:47:37,283 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
+2025-10-06 01:47:37,284 - app - INFO - models.User has get_by_email: True
+2025-10-06 01:47:37,950 - app - INFO - Existing admin account verified
+2025-10-06 01:47:37,952 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
+2025-10-06 01:47:38,180 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-06 01:47:38,182 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
