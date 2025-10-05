@@ -679,45 +679,8 @@ class User(UserMixin):
             logger.error(f'Error getting user by id: {str(e)}')
             return None
 
-    @staticmethod
-    def get_by_email(email):
-        try:
-            if driver is None:
-                logger.error('Driver not initialized when getting user by email')
-                return None
-            with driver.session(database=DATABASE) as session:
-                result = session.run(
-                    "MATCH (u:User {email: $email}) RETURN u",
-                    email=email
-                )
-                record = result.single()
-                if record:
-                    user = record["u"]
-                    return User(
-                        id=user["id"],
-                        email=user["email"],
-                        password=user.get("password"),
-                        first_name=user.get("first_name"),
-                        last_name=user.get("last_name"),
-                        middle_name=user.get("middle_name"),
-                        suffix=user.get("suffix"),
-                        role=user.get("role", "job_seeker"),
-                        phone=user.get("phone"),
-                        address=user.get("address"),
-                        skills=user.get("skills", []),
-                        experience=user.get("experience", []),
-                        education=user.get("education", []),
-                        resume_path=user.get("resume_path"),
-                        permit_path=user.get("permit_path"),
-                        verification_status=user.get("verification_status", "pending_verification"),
-                        google_id=user.get("google_id"),
-                        profile_picture=user.get("profile_picture"),
-                        verification_notes=user.get("verification_notes"),
-                        verified_by=user.get("verified_by"),
-                        verified_at=user.get("verified_at"),
-                        is_admin=user.get("is_admin", False)
-                    )
-                return None
+    # Use the classmethod `get_by_email` defined earlier. The duplicate staticmethod was removed
+    # to prevent confusion and accidental shadowing of the class-level method.
         except Exception as e:
             logger.error(f'Error getting user by email: {str(e)}')
             return None
@@ -1011,11 +974,13 @@ class Business:
             return 0.0
 
 class Job:
-    def __init__(self, id=None, title=None, description=None, requirements=None, location=None, job_type=None, salary=None, business=None, created_at=None, latitude=None, longitude=None):
-        self.id = id
+    def __init__(self, id=None, title=None, description=None, requirements=None, 
+                    location=None, job_type=None, salary=None, business=None,
+                    created_at=None, latitude=None, longitude=None):
+        self.id = id or str(uuid.uuid4())
         self.title = title
         self.description = description
-        self.requirements = requirements or []
+        self.requirements = requirements
         self.location = location
         self.job_type = job_type
         self.salary = salary
@@ -1025,9 +990,8 @@ class Job:
         self.longitude = longitude
 
     def save(self):
-        with driver.session() as session:
-            result = session.run(
-                """
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
                 CREATE (j:Job {
                     id: $id,
                     title: $title,
