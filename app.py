@@ -147,6 +147,16 @@ def about():
     """Render the about us page."""
     return render_template('about.html')
 
+
+@app.route('/map', endpoint='map')
+def map_view():
+    """Render the standalone map page. Kept for backward compatibility with templates linking to 'map'.
+
+    Note: interactive maps are used inline and in modals across the site, but some templates
+    still link to a dedicated map page. This route renders templates/map.html.
+    """
+    return render_template('map.html')
+
 # Error handlers
 @app.errorhandler(HTTPException)
 def handle_http_error(e):
