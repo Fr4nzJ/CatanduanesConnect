@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-3">Reports</h1>
+  <div class="row g-3">
+    <div class="col-12 col-md-6"><div class="card"><div class="card-body"><h6>Verified Users</h6><div class="h3 mb-0">{{ data.verified_users }}</div></div></div></div>
+    <div class="col-12 col-md-6"><div class="card"><div class="card-body"><h6>Pending Users</h6><div class="h3 mb-0">{{ data.pending_users }}</div></div></div></div>
+    <div class="col-12 col-md-6"><div class="card"><div class="card-body"><h6>Active Jobs</h6><div class="h3 mb-0">{{ data.active_jobs }}</div></div></div></div>
+    <div class="col-12 col-md-6"><div class="card"><div class="card-body"><h6>Active Services</h6><div class="h3 mb-0">{{ data.active_services }}</div></div></div></div>
+  </div>
+</div>
+{% endblock %}
+
+

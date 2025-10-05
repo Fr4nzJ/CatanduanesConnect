@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Manage Jobs{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-3">Job Offers</h1>
+  <div class="table-responsive">
+    <table class="table table-striped align-middle">
+      <thead><tr><th>Title</th><th>Category</th><th>Location</th><th>Poster</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for j in jobs %}
+        <tr>
+          <td>{{ j.title }}</td>
+          <td>{{ j.category }}</td>
+          <td>{{ j.location }}</td>
+          <td>{{ j.poster.email }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger" disabled>Remove</button>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+

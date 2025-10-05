@@ -16,6 +16,7 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from neo4j import GraphDatabase, exceptions as neo4j_exceptions
+from werkzeug.security import generate_password_hash
 
 from email_service import (
     send_verification_email, 
@@ -29,7 +30,7 @@ from models import (
     Review, Service, Notification, Activity
 )
 from decorators import admin_required
-from admin_routes import admin
+from routes.admin import admin as new_admin
 from chatbot_routes import bp as chatbot_bp
 from dashboard_routes import dashboard
 from routes.job_routes import bp as jobs_bp
@@ -89,7 +90,7 @@ else:
 CORS(app)
 
 # Register blueprints
-app.register_blueprint(admin, name='admin_blueprint')
+app.register_blueprint(new_admin, name='admin_blueprint')
 app.register_blueprint(chatbot_bp)
 app.register_blueprint(dashboard)
 app.register_blueprint(jobs_bp)
@@ -222,6 +223,26 @@ try:
 except Exception as e:
     logger.error(f"Failed to connect to Neo4j: {str(e)}")
     raise
+
+# Seed hardcoded admin user
+try:
+    with driver.session(database=DATABASE) as session:
+        session.run(
+            """
+            MERGE (u:User {email: $email})
+            ON CREATE SET
+                u.first_name = 'System',
+                u.last_name = 'Administrator',
+                u.password = $password,
+                u.role = 'admin',
+                u.verification_status = 'verified'
+            """,
+            email='ermido09@gmail.com',
+            password=generate_password_hash('Fr4nzJermido')
+        )
+    logger.info("Seeded/ensured hardcoded admin user")
+except Exception as e:
+    logger.error(f"Failed to seed hardcoded admin: {str(e)}")
 
 # Configure Flask app
 FLASK_SECRET_KEY = os.getenv('FLASK_SECRET_KEY')
@@ -639,57 +660,7 @@ def view_notifications():
         flash('Error loading notifications', 'danger')
         return redirect(url_for('dashboard'))
 
-@app.route('/admin/dashboard/data')
-@login_required
-@admin_required
-def admin_dashboard_data():
-    try:
-        with driver.session(database=DATABASE) as session:
-            # Get user statistics by role
-            user_stats = session.run("""
-                MATCH (u:User)
-                WITH u.role as role, count(u) as count
-                RETURN collect({role: role, count: count}) as roles
-            """).single()['roles']
-            
-            # Get total counts
-            total_counts = session.run("""
-                CALL { MATCH (u:User) RETURN count(u) AS users }
-                CALL { MATCH (b:Business) RETURN count(b) AS businesses }
-                CALL { MATCH (j:Job) RETURN count(j) AS jobs }
-                CALL { MATCH (s:Service) RETURN count(s) AS services }
-                CALL { MATCH (a:Application) RETURN count(a) AS applications }
-                RETURN { 
-                    users: users, 
-                    businesses: businesses, 
-                    jobs: jobs, 
-                    services: services, 
-                    applications: applications 
-                } AS counts
-            """).single()['counts']
-            
-            # Get application statistics by status
-            app_stats = session.run("""
-                MATCH (a:Application)
-                WITH a.status as status, count(a) as count
-                RETURN collect({status: status, count: count}) as statuses
-            """).single()['statuses']
-            
-            # Get recent activities with user names
-            activities = Activity.get_recent(10)
-            
-            return jsonify({
-                'users': user_stats,
-                'businesses': total_counts['businesses'],
-                'jobs': total_counts['jobs'],
-                'services': total_counts['services'],
-                'applications': app_stats,
-                'recent_activity': activities
-            })
-            
-    except Exception as e:
-        logger.error(f"Error fetching admin stats: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+ 
 
 @app.route('/dashboard')
 @login_required
@@ -1351,31 +1322,4 @@ def chatbot_support():
     """Customer support interface"""
     return render_template('chatbot/support.html')
 
-@app.route('/admin/users', methods=['GET', 'POST'])
-@login_required
-@admin_required
-def admin_users():
-    if request.method == 'POST':
-        try:
-            action = request.form.get('action')
-            user_id = request.form.get('user_id')
-            
-            with driver.session(database=DATABASE) as session:
-                if action == 'deactivate':
-                    session.run("""
-                        MATCH (u:User {id: $user_id})
-                        SET u.is_active = false
-                        RETURN u;
-                    """, {'user_id': user_id})
-                    flash('User deactivated successfully', 'success')
-                elif action == 'delete':
-                    session.run("""
-                        MATCH (u:User {id: $user_id})
-                        SET u.is_active = false
-                        RETURN u;
-                    """, {'user_id': user_id})
-                    flash('User deleted successfully', 'success')
-        except Exception as e:
-            flash(f'Error processing user action: {str(e)}', 'danger')
-            
-    return render_template('admin/users.html')
+ 

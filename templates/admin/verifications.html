@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Verifications{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-3">Pending Verifications</h1>
+  <div class="table-responsive">
+    <table class="table table-striped align-middle">
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Documents</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for u in users %}
+        <tr>
+          <td>{{ (u.first_name or '') }} {{ (u.last_name or '') }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.role }}</td>
+          <td>
+            {% if u.role == 'job_seeker' and u.resume_path %}
+              <a href="/{{ u.resume_path }}" target="_blank" class="btn btn-sm btn-outline-secondary">View Resume</a>
+            {% elif u.role == 'business_owner' and u.permit_path %}
+              <a href="/{{ u.permit_path }}" target="_blank" class="btn btn-sm btn-outline-secondary">View Permit</a>
+            {% elif u.role == 'client' and (u.id_front_path or u.id_back_path) %}
+              {% if u.id_front_path %}<a href="/{{ u.id_front_path }}" target="_blank" class="btn btn-sm btn-outline-secondary">ID Front</a>{% endif %}
+              {% if u.id_back_path %}<a href="/{{ u.id_back_path }}" target="_blank" class="btn btn-sm btn-outline-secondary ms-1">ID Back</a>{% endif %}
+            {% else %}
+              <span class="text-muted">No files</span>
+            {% endif %}
+          </td>
+          <td class="d-flex gap-2">
+            <form method="post">
+              <input type="hidden" name="email" value="{{ u.email }}"/>
+              <input type="hidden" name="action" value="approve"/>
+              <button class="btn btn-sm btn-success">Approve</button>
+            </form>
+            <form method="post">
+              <input type="hidden" name="email" value="{{ u.email }}"/>
+              <input type="hidden" name="action" value="reject"/>
+              <button class="btn btn-sm btn-warning">Reject</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Manage Users{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-3">Users</h1>
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-sm-4"><input class="form-control" type="text" name="q" placeholder="Search name or email" value="{{ q or '' }}"></div>
+    <div class="col-sm-3">
+      <select class="form-select" name="role">
+        <option value="">All roles</option>
+        <option value="job_seeker" {% if role=='job_seeker' %}selected{% endif %}>Job Seeker</option>
+        <option value="business_owner" {% if role=='business_owner' %}selected{% endif %}>Business Owner</option>
+        <option value="client" {% if role=='client' %}selected{% endif %}>Client</option>
+        <option value="admin" {% if role=='admin' %}selected{% endif %}>Admin</option>
+      </select>
+    </div>
+    <div class="col-sm-3">
+      <select class="form-select" name="status">
+        <option value="">All statuses</option>
+        <option value="verified" {% if status=='verified' %}selected{% endif %}>Verified</option>
+        <option value="pending_verification" {% if status=='pending_verification' %}selected{% endif %}>Pending</option>
+        <option value="rejected" {% if status=='rejected' %}selected{% endif %}>Rejected</option>
+      </select>
+    </div>
+    <div class="col-sm-2"><button class="btn btn-primary w-100">Filter</button></div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-striped align-middle">
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for u in users %}
+        <tr>
+          <td>{{ (u.first_name or '') }} {{ (u.last_name or '') }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.role }}</td>
+          <td>{{ u.verification_status or 'n/a' }}</td>
+          <td class="d-flex gap-2">
+            <form method="post" action="{{ url_for('admin.verifications') }}">
+              <input type="hidden" name="email" value="{{ u.email }}"/>
+              <input type="hidden" name="action" value="approve"/>
+              <button class="btn btn-sm btn-success">Verify</button>
+            </form>
+            <form method="post" action="{{ url_for('admin.verifications') }}">
+              <input type="hidden" name="email" value="{{ u.email }}"/>
+              <input type="hidden" name="action" value="reject"/>
+              <button class="btn btn-sm btn-warning">Reject</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+

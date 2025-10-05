@@ -1,3 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-4">Admin Dashboard</h1>
+  <div class="row g-3">
+    <div class="col-6 col-md-3"><div class="card"><div class="card-body"><h6>Total Users</h6><div class="h3 mb-0">{{ stats.total_users }}</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card"><div class="card-body"><h6>Job Seekers</h6><div class="h3 mb-0">{{ stats.job_seekers }}</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card"><div class="card-body"><h6>Business Owners</h6><div class="h3 mb-0">{{ stats.business_owners }}</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card"><div class="card-body"><h6>Clients</h6><div class="h3 mb-0">{{ stats.clients }}</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card"><div class="card-body"><h6>Pending Verifications</h6><div class="h3 mb-0">{{ stats.pending_verifications }}</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card"><div class="card-body"><h6>Active Jobs</h6><div class="h3 mb-0">{{ stats.active_jobs }}</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card"><div class="card-body"><h6>Active Services</h6><div class="h3 mb-0">{{ stats.active_services }}</div></div></div></div>
+  </div>
+</div>
+{% endblock %}
+
 {% extends "base.html" %}
 
 {% block title %}Admin Dashboard{% endblock %}
