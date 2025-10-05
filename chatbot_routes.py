@@ -1,8 +1,23 @@
 from flask import Blueprint, render_template, request, jsonify, current_app
 from datetime import datetime
 import logging
-from chatbot import get_response, ERROR_PROCESSING, ERROR_EMPTY_INPUT
-import torch
+
+# Lazy import model-heavy libraries to avoid breaking app startup when optional
+# dependencies (like torch) aren't installed in lightweight environments.
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except Exception:
+    torch = None
+    TORCH_AVAILABLE = False
+
+# chatbot module may import heavy ML libs; import it lazily inside the route
+try:
+    # attempt a light import to get error constants if available
+    from chatbot import ERROR_PROCESSING, ERROR_EMPTY_INPUT
+except Exception:
+    ERROR_PROCESSING = 'error_processing'
+    ERROR_EMPTY_INPUT = 'error_empty_input'
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -28,14 +43,22 @@ def process_message():
             return jsonify({'error': ERROR_EMPTY_INPUT}), 400
 
         logger.info("Generating response...")
+        # Ensure chatbot functionality is available
+        if not TORCH_AVAILABLE:
+            logger.warning('Torch not available; chatbot functionality is disabled')
+            return jsonify({'error': 'chatbot_unavailable'}), 503
+
         try:
-            # Use torch.inference_mode if torch is available and has that context manager
+            # Lazy import to avoid import-time dependency on heavy modules
+            from chatbot import get_response
+
+            # Use torch.inference_mode if available
             if hasattr(torch, 'inference_mode'):
                 with torch.inference_mode():
                     response = get_response(message)
             else:
                 response = get_response(message)
-        except Exception as e:
+        except Exception:
             logger.exception("Error generating response")
             return jsonify({'error': ERROR_PROCESSING}), 500
 
