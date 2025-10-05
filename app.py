@@ -626,6 +626,48 @@ def download_permit(user_id):
         flash('Error downloading permit.', 'danger')
         return redirect(url_for('admin_blueprint.verifications'))
 
+@app.route('/download/id-front/<user_id>')
+@login_required
+@admin_required
+def download_id_front(user_id):
+    """Download a user's ID front image."""
+    try:
+        user = User.get_by_id(user_id)
+        if not user or not user.id_front_path:
+            flash('ID front image not found.', 'danger')
+            return redirect(url_for('admin_blueprint.verifications'))
+            
+        return send_file(
+            user.id_front_path,
+            as_attachment=True,
+            download_name=f"{user.name}_id_front.{user.id_front_path.split('.')[-1]}"
+        )
+    except Exception as e:
+        logger.error(f"Error downloading ID front: {str(e)}")
+        flash('Error downloading ID front.', 'danger')
+        return redirect(url_for('admin_blueprint.verifications'))
+
+@app.route('/download/id-back/<user_id>')
+@login_required
+@admin_required
+def download_id_back(user_id):
+    """Download a user's ID back image."""
+    try:
+        user = User.get_by_id(user_id)
+        if not user or not user.id_back_path:
+            flash('ID back image not found.', 'danger')
+            return redirect(url_for('admin_blueprint.verifications'))
+            
+        return send_file(
+            user.id_back_path,
+            as_attachment=True,
+            download_name=f"{user.name}_id_back.{user.id_back_path.split('.')[-1]}"
+        )
+    except Exception as e:
+        logger.error(f"Error downloading ID back: {str(e)}")
+        flash('Error downloading ID back.', 'danger')
+        return redirect(url_for('admin_blueprint.verifications'))
+
 @app.route('/notifications')
 @login_required
 def view_notifications():

@@ -50,11 +50,13 @@
           <td>{{ u.verification_status or 'n/a' }}</td>
           <td class="d-flex gap-2">
             <form method="post" action="{{ url_for('admin_blueprint.verifications') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <input type="hidden" name="email" value="{{ u.email }}"/>
               <input type="hidden" name="action" value="approve"/>
               <button class="btn btn-sm btn-success">Verify</button>
             </form>
             <form method="post" action="{{ url_for('admin_blueprint.verifications') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <input type="hidden" name="email" value="{{ u.email }}"/>
               <input type="hidden" name="action" value="reject"/>
               <button class="btn btn-sm btn-warning">Reject</button>
