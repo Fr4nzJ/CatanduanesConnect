@@ -447,23 +447,27 @@ class User(UserMixin):
         return self.verification_status == 'verified'
 
     @classmethod
+    @classmethod
     def get_by_email(cls, email):
+        """Retrieve a user by their email address"""
         try:
             if driver is None:
                 logger.error('Driver not initialized when getting user by email')
                 return None
+
             with driver.session(database=DATABASE) as session:
                 result = session.run("""
-                    MATCH (u:User {email: $email})
+                    MATCH (u:User {email: $email}) 
                     RETURN u
                 """, email=email)
+                
                 record = result.single()
-                if record:
-                    properties = dict(record['u'])
-                    return cls(**properties)
+                if record and record['u']:
+                    return cls(**dict(record['u']))
                 return None
+
         except Exception as e:
-            logger.error(f'Error getting user by email: {str(e)}')
+            logger.error(f'Error retrieving user by email: {str(e)}')
             return None
 
     def verify(self, admin_email, notes=None):
