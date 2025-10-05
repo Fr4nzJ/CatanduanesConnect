@@ -231,6 +231,15 @@ app.config.update(
     SESSION_COOKIE_SAMESITE='Lax'
 )
 
+# Startup diagnostics: log Google OAuth config and ensure User model has expected method
+try:
+    logger.info("Google OAuth configured? client_id=%s redirect_uri=%s",
+                bool(app.config.get('GOOGLE_CLIENT_ID')), app.config.get('GOOGLE_REDIRECT_URI'))
+    # Check that User model exposes get_by_email
+    logger.info("models.User has get_by_email: %s", hasattr(User, 'get_by_email'))
+except Exception:
+    logger.exception('Error logging startup diagnostics')
+
 # Initialize extensions
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
