@@ -111,13 +111,16 @@
                                         <i class="fas fa-tag"></i> {{ job.category }}
                                     </h6>
                                 </div>
-                                <button class="btn btn-outline-primary btn-sm view-on-map"
-                                        data-job-id="{{ job.id }}"
-                                        data-lat="{{ job.lat }}"
-                                        data-lng="{{ job.lng }}"
-                                        data-title="{{ job.title }}">
-                                    <i class="fas fa-map-marked-alt"></i> View on Map
-                                </button>
+                                                <button class="btn btn-outline-primary btn-sm view-on-map"
+                                                        data-job-id="{{ job.id }}"
+                                                        data-lat="{{ job.lat }}"
+                                                        data-lng="{{ job.lng }}"
+                                                        data-title="{{ job.title }}"
+                                                        data-owner="{{ job.business.name if job.business else job.owner.name }}"
+                                                        data-desc="{{ job.description|e }}"
+                                                        data-category="{{ job.category }}">
+                                                    <i class="fas fa-map-marked-alt"></i> View on Map
+                                                </button>
                             </div>
                             <p class="card-text">{{ job.description }}</p>
                             <div class="d-flex justify-content-between align-items-center">
@@ -313,25 +316,27 @@
         {% endif %}
 
         // Handle view on map clicks
-        document.querySelectorAll('.view-on-map').forEach(button => {
-            button.addEventListener('click', function() {
-                const lat = parseFloat(this.dataset.lat);
-                const lng = parseFloat(this.dataset.lng);
-                const title = this.dataset.title;
+        // Use event delegation for view-on-map buttons
+        document.body.addEventListener('click', function(e) {
+            const btn = e.target.closest('.view-on-map');
+            if (!btn) return;
+            const lat = parseFloat(btn.dataset.lat);
+            const lng = parseFloat(btn.dataset.lng);
+            const title = btn.dataset.title;
+            const owner = btn.dataset.owner || '';
+            const desc = btn.dataset.desc || '';
+            const category = btn.dataset.category || '';
 
-                // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('mapModal'));
-                modal.show();
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('mapModal'));
+            modal.show();
 
-                // Add marker after modal is shown
-                modal._element.addEventListener('shown.bs.modal', function() {
-                    viewJobMap.setView([lat, lng], 13);
-                    L.marker([lat, lng])
-                        .bindPopup(title)
-                        .addTo(viewJobMap)
-                        .openPopup();
-                }, { once: true });
-            });
+            modal._element.addEventListener('shown.bs.modal', function() {
+                viewJobMap.setView([lat, lng], 13);
+                const marker = L.marker([lat, lng]).addTo(viewJobMap);
+                const popup = `<b>${title}</b><br>${desc}<br><small>Category: ${category}</small><br><small>Posted by: ${owner}</small>`;
+                marker.bindPopup(popup).openPopup();
+            }, { once: true });
         });
 
         // Handle job application clicks

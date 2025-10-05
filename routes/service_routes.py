@@ -1,10 +1,12 @@
 from flask import Blueprint, render_template, request, jsonify, current_app, flash, redirect, url_for
 from flask_login import login_required, current_user
 from database import get_neo4j_driver, DATABASE
+from decorators import role_required
 
 bp = Blueprint('services', __name__)
 
 @bp.route('/service_needed')
+@role_required('job_seeker')
 def index():
     driver = get_neo4j_driver()
     with driver.session(database=DATABASE) as session:

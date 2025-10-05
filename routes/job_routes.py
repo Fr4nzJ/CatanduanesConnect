@@ -29,6 +29,7 @@ def index():
                          categories=categories,
                          locations=locations)
 
+
 @bp.route('/job_offers/create', methods=['GET', 'POST'])
 @login_required
 def create():

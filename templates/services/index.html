@@ -134,7 +134,10 @@
                                         data-service-id="{{ service.id }}"
                                         data-lat="{{ service.lat }}"
                                         data-lng="{{ service.lng }}"
-                                        data-type="{{ service.service_type }}">
+                                        data-title="{{ service.service_type if service.service_type else service.title }}"
+                                        data-owner="{{ service.client.name if service.client else (service.client_name if service.client_name else '') }}"
+                                        data-desc="{{ service.description|e }}"
+                                        data-category="{{ service.category }}">
                                     <i class="fas fa-map-marked-alt"></i> View on Map
                                 </button>
                             </div>
@@ -335,26 +338,26 @@
         });
         {% endif %}
 
-        // Handle view on map clicks
-        document.querySelectorAll('.view-on-map').forEach(button => {
-            button.addEventListener('click', function() {
-                const lat = parseFloat(this.dataset.lat);
-                const lng = parseFloat(this.dataset.lng);
-                const type = this.dataset.type;
+        // Event delegation for view-on-map
+        document.body.addEventListener('click', function(e) {
+            const btn = e.target.closest('.view-on-map');
+            if (!btn) return;
+            const lat = parseFloat(btn.dataset.lat);
+            const lng = parseFloat(btn.dataset.lng);
+            const title = btn.dataset.title;
+            const owner = btn.dataset.owner || '';
+            const desc = btn.dataset.desc || '';
+            const category = btn.dataset.category || '';
 
-                // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('mapModal'));
-                modal.show();
+            const modal = new bootstrap.Modal(document.getElementById('mapModal'));
+            modal.show();
 
-                // Add marker after modal is shown
-                modal._element.addEventListener('shown.bs.modal', function() {
-                    viewServiceMap.setView([lat, lng], 13);
-                    L.marker([lat, lng])
-                        .bindPopup(type)
-                        .addTo(viewServiceMap)
-                        .openPopup();
-                }, { once: true });
-            });
+            modal._element.addEventListener('shown.bs.modal', function() {
+                viewServiceMap.setView([lat, lng], 13);
+                const marker = L.marker([lat, lng]).addTo(viewServiceMap);
+                const popup = `<b>${title}</b><br>${desc}<br><small>Category: ${category}</small><br><small>Posted by: ${owner}</small>`;
+                marker.bindPopup(popup).openPopup();
+            }, { once: true });
         });
 
         // Handle offer service clicks
