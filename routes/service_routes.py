@@ -8,25 +8,26 @@ bp = Blueprint('services', __name__)
 def index():
     driver = get_neo4j_driver()
     with driver.session(database=DATABASE) as session:
-        # Get unique categories
-        result = session.run("MATCH (s:Service) RETURN DISTINCT s.category as category")
-        categories = [record['category'] for record in result if record['category']]
+        # Collect categories and locations from service request nodes
+        result = session.run("MATCH (s:ServiceRequest) RETURN DISTINCT s.category as category, s.location as location")
+        categories = set()
+        locations = set()
+        for record in result:
+            if record.get('category'):
+                categories.add(record['category'])
+            if record.get('location'):
+                locations.add(record['location'])
+        categories = sorted(list(categories))
+        locations = sorted(list(locations))
 
-        # Get unique locations
-        result = session.run("MATCH (s:Service) RETURN DISTINCT s.location as location")
-        locations = [record['location'] for record in result if record['location']]
-
-        # Get unique categories
-        result = session.run("MATCH (s:ServiceRequest) RETURN DISTINCT s.category as category")
-        categories = [record['category'] for record in result if record['category']]
-
-        # Get unique locations
-        result = session.run("MATCH (s:ServiceRequest) RETURN DISTINCT s.location as location")
-        locations = [record['location'] for record in result if record['location']]
-
-        # Get all services
-        result = session.run("MATCH (s:ServiceRequest) RETURN s ORDER BY s.created_at DESC")
-        services = [dict(record['s']) for record in result]
+        # Get all service requests with requester info and lat/lng
+        result = session.run("""
+            MATCH (s:ServiceRequest)
+            OPTIONAL MATCH (s)<-[:REQUESTED]-(u:User)
+            RETURN s { .*, lat: s.latitude, lng: s.longitude, client: u { .* } } as service
+            ORDER BY s.created_at DESC
+        """)
+        services = [dict(record['service']) for record in result]
 
     return render_template('services/index.html',
                          services=services,

@@ -6,18 +6,24 @@ import logging
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('jobs', __name__)
+from decorators import role_required
 
 @bp.route('/job_offers')
+@role_required('job_seeker')
 def index():
     driver = get_neo4j_driver()
     with driver.session(database=DATABASE) as session:
-        # Get unique categories
-        result = session.run("MATCH (j:Job) RETURN DISTINCT j.category as category")
-        categories = [record['category'] for record in result if record['category']]
-
-        # Get unique locations
-        result = session.run("MATCH (j:Job) RETURN DISTINCT j.location as location")
-        locations = [record['location'] for record in result if record['location']]
+        # Get unique categories and locations from Job nodes
+        result = session.run("MATCH (j:Job) RETURN DISTINCT j.category as category, j.location as location")
+        categories = set()
+        locations = set()
+        for record in result:
+            if record.get('category'):
+                categories.add(record['category'])
+            if record.get('location'):
+                locations.add(record['location'])
+        categories = sorted(list(categories))
+        locations = sorted(list(locations))
 
     return render_template('jobs/index.html',
                          categories=categories,
@@ -131,6 +137,8 @@ def search_jobs():
             OPTIONAL MATCH (j)<-[:POSTED]-(b:Business)
             RETURN j {{
                 .*,
+                lat: j.latitude,
+                lng: j.longitude,
                 business: b {{ .* }}
             }} as job
             ORDER BY j.created_at DESC

@@ -936,38 +936,7 @@ def businesses():
         flash(f'Error loading businesses: {str(e)}', 'danger')
         return redirect(url_for('home'))
 
-@app.route('/map')
-def map():
-    try:
-        # Get all businesses and jobs for the map
-        businesses = Business.get_all() or []
-        jobs = Job.get_all() or []
-        
-        # Add default coordinates for businesses and jobs that don't have them
-        for business in businesses:
-            if not hasattr(business, 'latitude') or not hasattr(business, 'longitude'):
-                # Default coordinates for Catanduanes
-                business.latitude = 13.5
-                business.longitude = 124.3
-        
-        for job in jobs:
-            if not hasattr(job, 'latitude') or not hasattr(job, 'longitude'):
-                # Use business coordinates if available, otherwise default
-                if job.business and hasattr(job.business, 'latitude') and hasattr(job.business, 'longitude'):
-                    job.latitude = job.business.latitude
-                    job.longitude = job.business.longitude
-                else:
-                    job.latitude = 13.5
-                    job.longitude = 124.3
-        
-        # Ensure we have valid data for the template
-        if not businesses and not jobs:
-            flash('No businesses or jobs found to display on the map.', 'info')
-        
-        return render_template('map.html', businesses=businesses, jobs=jobs)
-    except Exception as e:
-        flash(f'Error loading map: {str(e)}', 'danger')
-        return redirect(url_for('home'))
+# NOTE: Standalone /map route removed. Maps are shown inline in pages and in modals using Leaflet.
 
 @app.route('/profile')
 @login_required
