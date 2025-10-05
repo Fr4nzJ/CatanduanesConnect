@@ -84,56 +84,70 @@ def complete_registration():
             
             file_path = upload_dir / filename
             file.save(file_path)
-            
-            # Send notifications
-            notify_admins_new_submission(user)
-            send_document_received_email(user)
             document_path = str(file_path)
 
         try:
-            # Create user in Neo4j
+            # Create user with Google data
+            user = User(
+                email=google_user['email'],
+                first_name=google_user['given_name'],
+                last_name=google_user['family_name'],
+                google_id=google_user.get('google_id'),
+                profile_picture=google_user.get('picture'),
+                role=role,
+                resume_path=document_path if role == 'job_seeker' else None,
+                permit_path=document_path if role == 'business_owner' else None
+            )
+            
+            # Save user to Neo4j
             with driver.session(database=DATABASE) as session:
                 result = session.run("""
                     CREATE (u:User {
                         id: $id,
                         email: $email,
-                        name: $name,
+                        first_name: $first_name,
+                        last_name: $last_name,
                         google_id: $google_id,
+                        profile_picture: $profile_picture,
                         role: $role,
-                        document_path: $document_path,
-                        verification_status: 'pending_verification',
-                        created_at: datetime(),
-                        is_active: true
-                    })
-                    RETURN u
-                """, {
-                    'id': str(uuid.uuid4()),
-                    'email': google_user['email'],
-                    'name': google_user['name'],
-                    'google_id': google_user['sub'],
-                    'role': role,
-                    'document_path': document_path
-                })
+                        resume_path: $resume_path,
+                        permit_path: $permit_path,
+                        verification_status: $verification_status
+                    }) RETURN u
+                """, id=user.id,
+                     email=user.email,
+                     first_name=user.first_name,
+                     last_name=user.last_name,
+                     google_id=user.google_id,
+                     profile_picture=user.profile_picture,
+                     role=user.role,
+                     resume_path=user.resume_path,
+                     permit_path=user.permit_path,
+                     verification_status='pending_verification')
+
+                # Get the newly created user
+                user = User.get_by_email(google_user['email'])
+                if user:
+                    # Send notifications now that we have the user object
+                    if role in ['job_seeker', 'business_owner']:
+                        notify_admins_new_submission(user)
+                        send_document_received_email(user)
                 
-                new_user = result.single()
-                if new_user:
-                    # Clear Google user data from session
-                    session.pop('google_user', None)
-                    
-                    # Create User object and log them in
-                    user = User.from_neo4j(new_user['u'])
-                    login_user(user)
-                    
-                    flash('Registration completed successfully. Your account is pending verification.', 'success')
-                    return redirect(url_for('auth.restricted_access'))
+                # Clear Google user data from session
+                session.pop('google_user', None)
+                
+                # Log the user in
+                login_user(user)
+                
+                flash('Registration completed successfully. Your account is pending verification.', 'success')
+                return redirect(url_for('auth.restricted_access'))
                     
         except Exception as e:
-            logger.error(f'Error creating user: {str(e)}')
+            current_app.logger.error(f'Error creating user: {str(e)}')
             flash('An error occurred during registration. Please try again.', 'danger')
             return redirect(url_for('auth.complete_registration'))
 
     return render_template('auth/complete_registration.html', google_user=google_user)
-    return render_template('auth/complete_registration.html')
 logger = logging.getLogger(__name__)
 
 # --------------------------
@@ -369,8 +383,24 @@ def google_callback():
             raise ValueError('Missing email or name components from Google response')
 
         user = User.get_by_email(email)
+        google_id = user_info.get('google_id')
+        
+        # Try to find user by google_id first
+        user = User.get_by_google_id(google_id) if google_id else None
+        
+        if not user:
+            # Try finding by email as fallback
+            user = User.get_by_email(email)
+            
         if user:
-            # Existing user can login directly
+            # Update existing user's Google info if needed
+            if google_id and not user.google_id:
+                user.google_id = google_id
+            if picture and not user.profile_picture:
+                user.profile_picture = picture
+            user.save()
+            
+            # Log them in
             login_user(user)
             flash('Successfully logged in with Google!', 'success')
             return redirect(url_for('dashboard'))
@@ -380,7 +410,8 @@ def google_callback():
                 'email': email,
                 'given_name': given_name,
                 'family_name': family_name,
-                'picture': picture
+                'picture': picture,
+                'google_id': google_id
             }
             return redirect(url_for('auth.complete_registration'))
     except Exception as e:

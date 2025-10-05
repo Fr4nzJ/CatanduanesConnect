@@ -459,26 +459,11 @@ class User(UserMixin):
                 """, email=email)
                 record = result.single()
                 if record:
-                    properties = record['u']
+                    properties = dict(record['u'])
                     return cls(**properties)
                 return None
         except Exception as e:
             logger.error(f'Error getting user by email: {str(e)}')
-            return None
-        """Retrieve a user by their email address"""
-        try:
-            with driver.session(database=DATABASE) as session:
-                result = session.run("""
-                    MATCH (u:User {email: $email})
-                    RETURN u
-                    """, email=email)
-                record = result.single()
-                if record:
-                    user_data = record['u']
-                    return cls(**user_data)
-                return None
-        except Exception as e:
-            logger.error(f'Error retrieving user by email: {str(e)}')
             return None
 
     def verify(self, admin_email, notes=None):
@@ -589,133 +574,190 @@ class User(UserMixin):
         return check_password_hash(self.password, password)
 
     def save(self):
-        # Generate ID for new users
-        if not self.id:
-            self.id = str(uuid.uuid4())
-            
-        # Prevent setting role to admin via save except for hardcoded admin email
-        if self.email != 'ermido09@gmail.com':
-            self.role = self.role if self.role in self.SIGNUP_ROLES else 'job_seeker'
-            
-        with driver.session(database=DATABASE) as session:
-            # Prepare user data
-            user_data = {
-                'id': self.id,
-                'email': self.email,
-                'first_name': self.first_name,
-                'last_name': self.last_name,
-                'middle_name': self.middle_name,
-                'suffix': self.suffix,
-                'role': self.role,
-                'phone': self.phone,
-                'address': self.address,
-                'skills': self.skills,
-                'experience': self.experience,
-                'education': self.education,
-                'resume_path': self.resume_path,
-                'permit_path': self.permit_path,
-                'verification_status': self.verification_status
-            }
-            
-            # Add password if set
-            if self.password:
-                user_data['password'] = self.password
+        try:
+            # Generate ID for new users
+            if not self.id:
+                self.id = str(uuid.uuid4())
                 
-            # Create or update user
-            result = session.run(
-                """
-                MERGE (u:User {id: $id})
-                SET u += $user_data
-                RETURN u
-                """,
-                id=self.id,
-                user_data=user_data
-            )
-            return result.single() is not None
+            # Prevent setting role to admin via save except for hardcoded admin email
+            if self.email != 'ermido09@gmail.com':
+                self.role = self.role if self.role in self.SIGNUP_ROLES else 'job_seeker'
+                
+            if driver is None:
+                logger.error('Driver not initialized when saving user')
+                return False
+
+            with driver.session(database=DATABASE) as session:
+                # Prepare user data
+                user_data = {
+                    'id': self.id,
+                    'email': self.email,
+                    'first_name': self.first_name,
+                    'last_name': self.last_name,
+                    'middle_name': self.middle_name,
+                    'suffix': self.suffix,
+                    'role': self.role,
+                    'phone': self.phone,
+                    'address': self.address,
+                    'skills': self.skills or [],
+                    'experience': self.experience or [],
+                    'education': self.education or [],
+                    'resume_path': self.resume_path,
+                    'permit_path': self.permit_path,
+                    'verification_status': self.verification_status,
+                    'verification_notes': self.verification_notes,
+                    'verified_by': self.verified_by,
+                    'verified_at': self.verified_at,
+                    'is_admin': self.is_admin,
+                    'google_id': self.google_id,
+                    'profile_picture': self.profile_picture
+                }
+                
+                # Add password if set
+                if self.password:
+                    user_data['password'] = self.password
+                    
+                # Create or update user
+                result = session.run(
+                    """
+                    MERGE (u:User {id: $id})
+                    SET u += $user_data
+                    RETURN u
+                    """,
+                    id=self.id,
+                    user_data=user_data
+                )
+                return result.single() is not None
+        except Exception as e:
+            logger.error(f'Error saving user: {str(e)}')
+            return False
 
     @staticmethod
     def get_by_id(user_id):
-        with driver.session() as session:
-            result = session.run(
-                "MATCH (u:User {id: $id}) RETURN u",
-                id=user_id
-            )
-            record = result.single()
-            if record:
-                user = record["u"]
-                return User(
-                    id=user["id"],
-                    email=user["email"],
-                    password=user["password"],
-                    first_name=user.get("first_name"),
-                    last_name=user.get("last_name"),
-                    middle_name=user.get("middle_name"),
-                    suffix=user.get("suffix"),
-                    role=user["role"],
-                    phone=user.get("phone"),
-                    address=user.get("address"),
-                    skills=user.get("skills", []),
-                    experience=user.get("experience", []),
-                    education=user.get("education", []),
-                    resume_path=user.get("resume_path"),
-                    permit_path=user.get("permit_path"),
-                    verification_status=user.get("verification_status", "pending")
+        try:
+            if driver is None:
+                logger.error('Driver not initialized when getting user by id')
+                return None
+            with driver.session(database=DATABASE) as session:
+                result = session.run(
+                    "MATCH (u:User {id: $id}) RETURN u",
+                    id=user_id
                 )
+                record = result.single()
+                if record:
+                    user = record["u"]
+                    return User(
+                        id=user["id"],
+                        email=user["email"],
+                        password=user.get("password"),
+                        first_name=user.get("first_name"),
+                        last_name=user.get("last_name"),
+                        middle_name=user.get("middle_name"),
+                        suffix=user.get("suffix"),
+                        role=user.get("role", "job_seeker"),
+                        phone=user.get("phone"),
+                        address=user.get("address"),
+                        skills=user.get("skills", []),
+                        experience=user.get("experience", []),
+                        education=user.get("education", []),
+                        resume_path=user.get("resume_path"),
+                        permit_path=user.get("permit_path"),
+                        verification_status=user.get("verification_status", "pending_verification"),
+                        google_id=user.get("google_id"),
+                        profile_picture=user.get("profile_picture"),
+                        verification_notes=user.get("verification_notes"),
+                        verified_by=user.get("verified_by"),
+                        verified_at=user.get("verified_at"),
+                        is_admin=user.get("is_admin", False)
+                    )
+                return None
+        except Exception as e:
+            logger.error(f'Error getting user by id: {str(e)}')
             return None
 
     @staticmethod
     def get_by_email(email):
-        with driver.session() as session:
-            result = session.run(
-                "MATCH (u:User {email: $email}) RETURN u",
-                email=email
-            )
-            record = result.single()
-            if record:
-                user = record["u"]
-                return User(
-                    id=user["id"],
-                    email=user["email"],
-                    password=user["password"],
-                    first_name=user.get("first_name"),
-                    last_name=user.get("last_name"),
-                    middle_name=user.get("middle_name"),
-                    suffix=user.get("suffix"),
-                    role=user["role"],
-                    phone=user.get("phone"),
-                    address=user.get("address"),
-                    skills=user.get("skills", []),
-                    experience=user.get("experience", []),
-                    education=user.get("education", []),
-                    resume_path=user.get("resume_path"),
-                    permit_path=user.get("permit_path"),
-                    verification_status=user.get("verification_status", "pending")
+        try:
+            if driver is None:
+                logger.error('Driver not initialized when getting user by email')
+                return None
+            with driver.session(database=DATABASE) as session:
+                result = session.run(
+                    "MATCH (u:User {email: $email}) RETURN u",
+                    email=email
                 )
+                record = result.single()
+                if record:
+                    user = record["u"]
+                    return User(
+                        id=user["id"],
+                        email=user["email"],
+                        password=user.get("password"),
+                        first_name=user.get("first_name"),
+                        last_name=user.get("last_name"),
+                        middle_name=user.get("middle_name"),
+                        suffix=user.get("suffix"),
+                        role=user.get("role", "job_seeker"),
+                        phone=user.get("phone"),
+                        address=user.get("address"),
+                        skills=user.get("skills", []),
+                        experience=user.get("experience", []),
+                        education=user.get("education", []),
+                        resume_path=user.get("resume_path"),
+                        permit_path=user.get("permit_path"),
+                        verification_status=user.get("verification_status", "pending_verification"),
+                        google_id=user.get("google_id"),
+                        profile_picture=user.get("profile_picture"),
+                        verification_notes=user.get("verification_notes"),
+                        verified_by=user.get("verified_by"),
+                        verified_at=user.get("verified_at"),
+                        is_admin=user.get("is_admin", False)
+                    )
+                return None
+        except Exception as e:
+            logger.error(f'Error getting user by email: {str(e)}')
             return None
+
+    @classmethod
+    def from_neo4j(cls, node_data):
+        """Create a User instance from Neo4j node data"""
+        return cls(
+            id=node_data.get("id"),
+            email=node_data.get("email"),
+            password=node_data.get("password"),
+            first_name=node_data.get("first_name"),
+            last_name=node_data.get("last_name"),
+            middle_name=node_data.get("middle_name"),
+            suffix=node_data.get("suffix"),
+            role=node_data.get("role", "job_seeker"),
+            phone=node_data.get("phone"),
+            address=node_data.get("address"),
+            skills=node_data.get("skills", []),
+            experience=node_data.get("experience", []),
+            education=node_data.get("education", []),
+            resume_path=node_data.get("resume_path"),
+            permit_path=node_data.get("permit_path"),
+            verification_status=node_data.get("verification_status", "pending_verification"),
+            google_id=node_data.get("google_id"),
+            profile_picture=node_data.get("profile_picture"),
+            verification_notes=node_data.get("verification_notes"),
+            verified_by=node_data.get("verified_by"),
+            verified_at=node_data.get("verified_at"),
+            is_admin=node_data.get("is_admin", False)
+        )
 
     @staticmethod
     def get_all():
-        with driver.session() as session:
-            result = session.run("MATCH (u:User) RETURN u")
-            users = []
-            for record in result:
-                user = record["u"]
-                users.append(User(
-                    id=user["id"],
-                    email=user["email"],
-                    first_name=user.get("first_name"),
-                    last_name=user.get("last_name"),
-                    middle_name=user.get("middle_name"),
-                    suffix=user.get("suffix"),
-                    role=user["role"],
-                    phone=user.get("phone"),
-                    address=user.get("address"),
-                    skills=user.get("skills", []),
-                    experience=user.get("experience", []),
-                    education=user.get("education", []),
-                    resume_path=user.get("resume_path")
-                ))
-            return users
+        try:
+            if driver is None:
+                logger.error('Driver not initialized when getting all users')
+                return []
+            with driver.session(database=DATABASE) as session:
+                result = session.run("MATCH (u:User) RETURN u ORDER BY u.created_at DESC")
+                return [User.from_neo4j(record["u"]) for record in result]
+        except Exception as e:
+            logger.error(f'Error getting all users: {str(e)}')
+            return []
 
 class Business:
     def __init__(self, id=None, name=None, description=None, location=None, category=None, phone=None, email=None, website=None, owner=None, latitude=None, longitude=None):
