@@ -401,11 +401,20 @@ def google_callback():
             if picture and not user.profile_picture:
                 user.profile_picture = picture
             user.save()
-            
+
             # Log them in
             login_user(user)
-            flash('Successfully logged in with Google!', 'success')
-            return redirect(url_for('dashboard'))
+            # If the user is verified, let them into the dashboard. Otherwise redirect to restricted access.
+            if getattr(user, 'verification_status', None) == 'verified':
+                flash('Successfully logged in with Google!', 'success')
+                return redirect(url_for('dashboard'))
+            else:
+                # Provide a clear message and route unverified/rejected users to the restricted access flow
+                if getattr(user, 'verification_status', None) == 'rejected':
+                    flash('Your account has been rejected. Please contact support or re-submit required documents.', 'warning')
+                else:
+                    flash('Your account is pending verification. Some features are restricted until approval.', 'info')
+                return redirect(url_for('auth.restricted_access'))
         else:
             # Store Google data in session and redirect to complete registration
             session['google_user'] = {
