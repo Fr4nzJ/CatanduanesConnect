@@ -1116,20 +1116,39 @@ def post_job():
 
     try:
         if request.method == 'POST':
+            # Accept form-encoded or JSON payloads from the modal
+            if request.is_json:
+                data = request.get_json()
+                title = data.get('title')
+                description = data.get('description')
+                category = data.get('category')
+                location = data.get('location')
+                latitude = data.get('lat') or data.get('latitude')
+                longitude = data.get('lng') or data.get('longitude')
+            else:
+                title = request.form.get('title')
+                description = request.form.get('description')
+                category = request.form.get('category')
+                location = request.form.get('location')
+                latitude = request.form.get('latitude')
+                longitude = request.form.get('longitude')
+
             job = Job(
-                title=request.form.get('title'),
-                description=request.form.get('description'),
-                requirements=request.form.get('requirements'),
-                salary=request.form.get('salary'),
-                job_type=request.form.get('job_type'),
-                location=request.form.get('location'),
-                category=request.form.get('category'),
-                latitude=float(request.form.get('latitude', 13.5)),
-                longitude=float(request.form.get('longitude', 124.3))
+                title=title,
+                description=description,
+                requirements=request.form.get('requirements') if not request.is_json else data.get('requirements'),
+                salary=request.form.get('salary') if not request.is_json else data.get('salary'),
+                job_type=request.form.get('job_type') if not request.is_json else data.get('job_type'),
+                location=location,
+                category=category,
+                latitude=float(latitude) if latitude else 13.5,
+                longitude=float(longitude) if longitude else 124.3
             )
             business = Business.get_by_owner_id(current_user.id)
             if business:
                 job.save(business.id)
+                if request.is_json:
+                    return jsonify({'success': True, 'job_id': job.id})
                 flash('Job posted successfully!', 'success')
                 return redirect(url_for('dashboard'))
             else:
@@ -1208,9 +1227,14 @@ def edit_profile():
                 if 'resume' in request.files:
                     resume = request.files['resume']
                     if resume.filename:
-                        filename = f"resume_{current_user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                        resume.save(os.path.join('static', 'resumes', filename))
-                        current_user.resume_path = filename
+                        from werkzeug.utils import secure_filename
+                        upload_dir = os.path.join('static', 'uploads', 'resumes')
+                        os.makedirs(upload_dir, exist_ok=True)
+                        filename = secure_filename(f"resume_{current_user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{resume.filename}")
+                        resume_path = os.path.join(upload_dir, filename)
+                        resume.save(resume_path)
+                        # store relative path under static/ for templates
+                        current_user.resume_path = f"uploads/resumes/{filename}"
             
             current_user.save()
             flash('Profile updated successfully!', 'success')

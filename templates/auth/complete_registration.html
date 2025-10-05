@@ -12,7 +12,7 @@
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info">
-                        <p>Welcome, {{ session['google_user']['name'] }}! Please complete your registration below.</p>
+                        <p>Welcome, {{ google_user.given_name if google_user and google_user.get('given_name') else (google_user.family_name if google_user and google_user.get('family_name') else google_user.email) }}! Please complete your registration below.</p>
                         <small>* Required for verification and account setup</small>
                     </div>
 
@@ -20,8 +20,8 @@
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         
                         <div class="mb-3">
-                            <label for="user_type" class="form-label">Select Account Type *</label>
-                            <select class="form-select" name="user_type" id="user_type" required onchange="toggleUploadField()">
+                            <label for="role" class="form-label">Select Account Type *</label>
+                            <select class="form-select" name="role" id="role" required onchange="toggleUploadField()">
                                 <option value="">-- Choose Type --</option>
                                 <option value="job_seeker">Job Seeker</option>
                                 <option value="business_owner">Business Owner</option>

@@ -126,7 +126,7 @@
                                     <br>
                                     {{ job.created_at|datetime }}
                                 </small>
-                                {% if current_user.role == 'jobseeker' %}
+                                {% if current_user.role == 'job_seeker' %}
                                 <button class="btn btn-primary btn-sm apply-btn"
                                         data-job-id="{{ job.id }}">
                                     Apply Now
@@ -289,7 +289,7 @@
             }
 
             // Submit job post
-            fetch('/create_job_post', {
+            fetch('/post-job', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

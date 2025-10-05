@@ -19,3 +19,10 @@
 2025-10-06 01:47:37,952 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
 2025-10-06 01:47:38,180 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
 2025-10-06 01:47:38,182 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-06 02:31:28,451 - app - INFO - Successfully connected to Neo4j database
+2025-10-06 02:31:28,452 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
+2025-10-06 02:31:28,452 - app - INFO - models.User has get_by_email: True
+2025-10-06 02:31:29,687 - app - INFO - Existing admin account verified
+2025-10-06 02:31:29,687 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
+2025-10-06 02:31:29,874 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-06 02:31:29,881 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))

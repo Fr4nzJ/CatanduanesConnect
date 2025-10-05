@@ -23,7 +23,8 @@ from utils.email_utils import notify_admins_new_submission, send_document_receiv
 auth = Blueprint('auth', __name__)
 
 # File upload configuration
-UPLOAD_FOLDER = Path('uploads')
+# Store uploads under static/uploads so they are served via Flask's static route
+UPLOAD_FOLDER = Path('static') / 'uploads'
 ALLOWED_EXTENSIONS = {
     'job_seeker': {'pdf', 'doc', 'docx'},
     'business_owner': {'pdf', 'png', 'jpg', 'jpeg'}
@@ -81,10 +82,11 @@ def complete_registration():
             # Create directories if they don't exist
             upload_dir = UPLOAD_FOLDER / role
             upload_dir.mkdir(parents=True, exist_ok=True)
-            
+
             file_path = upload_dir / filename
             file.save(file_path)
-            document_path = str(file_path)
+            # Store relative path (to static/) so templates can link via url_for('static', filename=...)
+            document_path = f"uploads/{role}/{filename}"
 
         try:
             # Create user with Google data
