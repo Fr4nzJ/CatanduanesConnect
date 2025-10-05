@@ -13,34 +13,29 @@ from werkzeug.utils import secure_filename
 from oauth import get_google_auth_flow_from_config, get_google_user_info
 from pathlib import Path
 from database import driver, DATABASE, get_neo4j_driver
+from utils.email_utils import notify_admins_new_submission, send_document_received_email
 
 # Ensure we have a driver
 if driver is None:
     driver = get_neo4j_driver()
-from utils.email_utils import notify_admins_new_submission, send_document_received_email
-from utils.email_utils import notify_admins_new_submission, send_document_received_email
 
 auth = Blueprint('auth', __name__)
 
 # File upload configuration
-# Store uploads under static/uploads so they are served via Flask's static route
 UPLOAD_FOLDER = Path('static') / 'uploads'
+UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
 ALLOWED_EXTENSIONS = {
     'job_seeker': {'pdf', 'doc', 'docx'},
-    'business_owner': {'pdf', 'png', 'jpg', 'jpeg'}
+    'business_owner': {'pdf', 'png', 'jpg', 'jpeg'},
+    'client': {'png', 'jpg', 'jpeg'}
 }
-
-# Clients: accept images for ID front/back
-ALLOWED_EXTENSIONS['client'] = {'png', 'jpg', 'jpeg'}
 
 @auth.route('/restricted_access')
 def restricted_access():
-    """Show restricted access page for unverified users."""
     return render_template('auth/restricted_access.html')
 
 @auth.route('/complete_registration', methods=['GET', 'POST'])
 def complete_registration():
-    # Check if we have Google user data in session
     google_user = session.get('google_user')
     if not google_user:
         flash('Please sign up with Google first.', 'warning')
@@ -52,88 +47,67 @@ def complete_registration():
             flash('Please select a valid role.', 'danger')
             return redirect(url_for('auth.complete_registration'))
 
-        # Handle file upload for job seekers, business owners, and clients
         document_path = None
         id_front_path = None
         id_back_path = None
 
-        if role in ['job_seeker', 'business_owner', 'client']:
-            # Client has two image files (id_front, id_back)
-            if role == 'client':
-                if 'id_front' not in request.files or 'id_back' not in request.files:
-                    flash('Please upload ID front and back images for client accounts.', 'danger')
-                    return redirect(url_for('auth.complete_registration'))
+        if role == 'client':
+            front = request.files.get('id_front')
+            back = request.files.get('id_back')
+            if not front or not back:
+                flash('Please upload both ID front and back.', 'danger')
+                return redirect(url_for('auth.complete_registration'))
 
-                front = request.files['id_front']
-                back = request.files['id_back']
-                if not front.filename or not back.filename:
-                    flash('Please select both ID front and back files.', 'danger')
-                    return redirect(url_for('auth.complete_registration'))
+            # Validate extensions
+            if not front.filename.lower().endswith(tuple(ALLOWED_EXTENSIONS['client'])) or not back.filename.lower().endswith(tuple(ALLOWED_EXTENSIONS['client'])):
+                flash('Invalid file type for ID images. Allowed types: PNG, JPG, JPEG', 'danger')
+                return redirect(url_for('auth.complete_registration'))
 
-                # Validate extensions
-                if not front.filename.lower().endswith(tuple(ALLOWED_EXTENSIONS['client'])) or not back.filename.lower().endswith(tuple(ALLOWED_EXTENSIONS['client'])):
-                    flash('Invalid file type for ID images. Allowed types: PNG, JPG, JPEG', 'danger')
-                    return redirect(url_for('auth.complete_registration'))
-
-                # Check sizes
-                front.seek(0, os.SEEK_END)
-                front_size = front.tell()
-                front.seek(0)
-                back.seek(0, os.SEEK_END)
-                back_size = back.tell()
-                back.seek(0)
-                if front_size > 5 * 1024 * 1024 or back_size > 5 * 1024 * 1024:
+            # Check sizes
+            for f in [front, back]:
+                f.seek(0, os.SEEK_END)
+                if f.tell() > 5 * 1024 * 1024:
                     flash('Each ID image must be less than 5MB.', 'danger')
                     return redirect(url_for('auth.complete_registration'))
+                f.seek(0)
 
-                # Save files
-                ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-                front_fn = secure_filename(f"client_id_front_{ts}_{front.filename}")
-                back_fn = secure_filename(f"client_id_back_{ts}_{back.filename}")
-                upload_dir = UPLOAD_FOLDER / 'client'
-                upload_dir.mkdir(parents=True, exist_ok=True)
-                front_path = upload_dir / front_fn
-                back_path = upload_dir / back_fn
-                front.save(front_path)
-                back.save(back_path)
-                id_front_path = f"uploads/client/{front_fn}"
-                id_back_path = f"uploads/client/{back_fn}"
+            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            upload_dir = UPLOAD_FOLDER / 'client'
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            front_fn = secure_filename(f"client_id_front_{ts}_{front.filename}")
+            back_fn = secure_filename(f"client_id_back_{ts}_{back.filename}")
+            front.save(upload_dir / front_fn)
+            back.save(upload_dir / back_fn)
+            id_front_path = f"uploads/client/{front_fn}"
+            id_back_path = f"uploads/client/{back_fn}"
 
-            else:
-                if 'document' not in request.files:
-                    flash('Please upload the required document.', 'danger')
-                    return redirect(url_for('auth.complete_registration'))
+        elif role in ['job_seeker', 'business_owner']:
+            file = request.files.get('document')
+            if not file or file.filename == '':
+                flash('Please upload the required document.', 'danger')
+                return redirect(url_for('auth.complete_registration'))
 
-                file = request.files['document']
-                if file.filename == '':
-                    flash('No file selected.', 'danger')
-                    return redirect(url_for('auth.complete_registration'))
+            if not file.filename.lower().endswith(tuple(ALLOWED_EXTENSIONS[role])):
+                flash(f'Invalid file type. Allowed types: {", ".join(ALLOWED_EXTENSIONS[role])}', 'danger')
+                return redirect(url_for('auth.complete_registration'))
 
-                # Validate file extension and size
-                if not file.filename.lower().endswith(tuple(ALLOWED_EXTENSIONS[role])):
-                    flash(f'Invalid file type. Allowed types for {role}: {", ".join(ALLOWED_EXTENSIONS[role])}', 'danger')
-                    return redirect(url_for('auth.complete_registration'))
+            file.seek(0, os.SEEK_END)
+            if file.tell() > 5 * 1024 * 1024:
+                flash('File must be less than 5MB.', 'danger')
+                return redirect(url_for('auth.complete_registration'))
+            file.seek(0)
 
-                # Check file size (5MB limit)
-                file.seek(0, os.SEEK_END)
-                size = file.tell()
-                file.seek(0)
-                if size > 5 * 1024 * 1024:  # 5MB
-                    flash('File size must be less than 5MB.', 'danger')
-                    return redirect(url_for('auth.complete_registration'))
-
-                # Save file securely
-                filename = secure_filename(file.filename)
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"{role}_{timestamp}_{filename}"
-                upload_dir = UPLOAD_FOLDER / role
-                upload_dir.mkdir(parents=True, exist_ok=True)
-                file_path = upload_dir / filename
-                file.save(file_path)
-                document_path = f"uploads/{role}/{filename}"
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            upload_dir = UPLOAD_FOLDER / role
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            filename = secure_filename(f"{role}_{timestamp}_{file.filename}")
+            file.save(upload_dir / filename)
+            document_path = f"uploads/{role}/{filename}"
 
         try:
-            # Create user with Google data
+            if not hasattr(user, 'id') or not user.id:
+                user.id = str(uuid.uuid4())
+
             user = User(
                 email=google_user['email'],
                 first_name=google_user['given_name'],
@@ -146,10 +120,9 @@ def complete_registration():
                 id_front_path=id_front_path if role == 'client' else None,
                 id_back_path=id_back_path if role == 'client' else None
             )
-            
-            # Save user to Neo4j
+
             with driver.session(database=DATABASE) as db_session:
-                result = db_session.run("""
+                db_session.run("""
                     CREATE (u:User {
                         id: $id,
                         email: $email,
@@ -160,43 +133,30 @@ def complete_registration():
                         role: $role,
                         resume_path: $resume_path,
                         permit_path: $permit_path,
-                        verification_status: $verification_status
-                    }) RETURN u
-                """, id=user.id,
-                     email=user.email,
-                     first_name=user.first_name,
-                     last_name=user.last_name,
-                     google_id=user.google_id,
-                     profile_picture=user.profile_picture,
-                     role=user.role,
-                     resume_path=user.resume_path,
-                     permit_path=user.permit_path,
-                     verification_status='pending_verification')
+                        verification_status: 'pending_verification'
+                    })
+                """, **user.__dict__)
 
-                # Get the newly created user
                 user = User.get_by_email(google_user['email'])
-                if user:
-                    # Send notifications now that we have the user object
-                    if role in ['job_seeker', 'business_owner']:
+                if user and role in ['job_seeker', 'business_owner']:
+                    try:
                         notify_admins_new_submission(user)
                         send_document_received_email(user)
+                    except Exception as mail_exc:
+                        current_app.logger.warning(f"Email failed: {mail_exc}")
 
-            # Clear Google user data from Flask session (do this outside the DB session)
             session.pop('google_user', None)
-
-            # Log the user in
             login_user(user)
-
             flash('Registration completed successfully. Your account is pending verification.', 'success')
             return redirect(url_for('auth.restricted_access'))
-                    
+
         except Exception as e:
             current_app.logger.error(f'Error creating user: {str(e)}')
             flash('An error occurred during registration. Please try again.', 'danger')
             return redirect(url_for('auth.complete_registration'))
 
     return render_template('auth/complete_registration.html', google_user=google_user)
-logger = logging.getLogger(__name__)
+
 
 # --------------------------
 # Email/Password Login
