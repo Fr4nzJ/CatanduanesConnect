@@ -370,6 +370,16 @@ def create_admin_if_none_exists():
 def load_user(user_id):
     return User.get_by_id(user_id)
 
+# Ensure the default admin account exists at startup (safe, non-fatal)
+try:
+    created_admin = create_admin_if_none_exists()
+    if created_admin:
+        logger.info('Admin verified/created at startup: %s', getattr(created_admin, 'email', 'unknown'))
+    else:
+        logger.info('Admin check completed at startup (no changes)')
+except Exception:
+    logger.exception('Error while ensuring admin account at startup')
+
 # Routes
 @app.route('/')
 def home():
