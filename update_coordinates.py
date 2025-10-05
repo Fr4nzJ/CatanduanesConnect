@@ -10,21 +10,21 @@ def update_coordinates():
         # Update businesses with default coordinates
         session.run("""
             MATCH (b:Business)
-            WHERE NOT EXISTS(b.latitude) OR NOT EXISTS(b.longitude)
+            WHERE b.latitude IS NULL OR b.longitude IS NULL
             SET b.latitude = 13.5, b.longitude = 124.3
         """)
         
         # Update jobs with their business coordinates
         session.run("""
             MATCH (j:Job)<-[:POSTED]-(b:Business)
-            WHERE NOT EXISTS(j.latitude) OR NOT EXISTS(j.longitude)
+            WHERE j.latitude IS NULL OR j.longitude IS NULL
             SET j.latitude = b.latitude, j.longitude = b.longitude
         """)
         
         # Update any remaining jobs with default coordinates
         session.run("""
             MATCH (j:Job)
-            WHERE NOT EXISTS(j.latitude) OR NOT EXISTS(j.longitude)
+            WHERE j.latitude IS NULL OR j.longitude IS NULL
             SET j.latitude = 13.5, j.longitude = 124.3
         """)
 
