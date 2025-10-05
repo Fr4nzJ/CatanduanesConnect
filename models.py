@@ -84,12 +84,8 @@ class Activity:
                     CASE
                         WHEN u IS NOT NULL THEN
                             CASE
-                                WHEN u.middle_name IS NOT NULL AND u.suffix IS NOT NULL THEN
-                                    u.first_name + ' ' + u.middle_name + ' ' + u.last_name + ' ' + u.suffix
                                 WHEN u.middle_name IS NOT NULL THEN
                                     u.first_name + ' ' + u.middle_name + ' ' + u.last_name
-                                WHEN u.suffix IS NOT NULL THEN
-                                    u.first_name + ' ' + u.last_name + ' ' + u.suffix
                                 ELSE
                                     u.first_name + ' ' + u.last_name
                             END
