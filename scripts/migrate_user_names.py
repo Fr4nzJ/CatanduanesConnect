@@ -8,7 +8,11 @@ parent_dir = current_dir.parent
 sys.path.append(str(parent_dir))
 
 from models import User
-from database import get_neo4j_driver, get_database_name
+from database import driver, DATABASE, get_neo4j_driver
+
+# Ensure we have a driver
+if driver is None:
+    driver = get_neo4j_driver()
 import logging
 
 logging.basicConfig(level=logging.INFO)

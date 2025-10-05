@@ -9,9 +9,12 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+# Initialize singleton variables
 _driver = None
 _database = os.getenv('NEO4J_DATABASE', 'neo4j')
 
+# Export DATABASE for other modules to use
+DATABASE = _database
 
 def get_neo4j_driver(max_retries: int = 3, backoff: float = 1.0):
     """Return a singleton Neo4j driver, retrying on transient failures.
@@ -56,4 +59,12 @@ def get_neo4j_driver(max_retries: int = 3, backoff: float = 1.0):
 
 
 def get_database_name():
+    """Return the configured Neo4j database name."""
     return _database
+
+# Initialize the driver on module import
+try:
+    driver = get_neo4j_driver()
+except Exception as e:
+    logger.error(f"Failed to initialize Neo4j driver on module load: {str(e)}")
+    driver = None

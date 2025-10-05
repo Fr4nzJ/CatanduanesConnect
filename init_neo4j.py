@@ -1,4 +1,8 @@
-from models import driver, DATABASE
+from database import driver, DATABASE, get_neo4j_driver
+
+# Ensure we have a driver
+if driver is None:
+    driver = get_neo4j_driver()
 from datetime import datetime
 
 def init_db():

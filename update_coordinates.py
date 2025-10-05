@@ -1,5 +1,9 @@
 from neo4j import GraphDatabase
-from models import driver
+from database import driver, DATABASE, get_neo4j_driver
+
+# Ensure we have a driver
+if driver is None:
+    driver = get_neo4j_driver()
 
 def update_coordinates():
     with driver.session() as session:

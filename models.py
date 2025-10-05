@@ -3,7 +3,7 @@ import os
 import uuid
 from datetime import datetime
 from neo4j import GraphDatabase
-from database import get_neo4j_driver, get_database_name
+from database import driver, DATABASE, get_neo4j_driver
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -14,14 +14,12 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-# Lazy-init Neo4j driver using environment variables with retries
-try:
-    driver = get_neo4j_driver()
-    DATABASE = get_database_name()
-except Exception as e:
-    logger.error(f'Could not initialize Neo4j driver: {str(e)}')
-    driver = None
-    DATABASE = os.getenv("NEO4J_DATABASE", "neo4j")
+# Ensure we have a driver
+if driver is None:
+    try:
+        driver = get_neo4j_driver()
+    except Exception as e:
+        logger.error(f'Could not initialize Neo4j driver: {str(e)}')
 
 class Activity:
     def __init__(self, id=None, type=None, action=None, user_id=None, target_id=None, 

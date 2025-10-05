@@ -5,7 +5,11 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 
 from dotenv import load_dotenv
-from database import get_neo4j_driver, get_database_name
+from database import driver, DATABASE, get_neo4j_driver
+
+# Ensure we have a driver
+if driver is None:
+    driver = get_neo4j_driver()
 from flask import jsonify
 from chatbot import get_response
 

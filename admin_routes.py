@@ -8,11 +8,11 @@ from neo4j import GraphDatabase
 import uuid
 import logging
 
-from database import get_neo4j_driver, get_database_name
+from database import driver, DATABASE, get_neo4j_driver
 
-# Get shared Neo4j driver and database name
-driver = get_neo4j_driver()
-DATABASE = get_database_name()
+# Ensure we have a driver
+if driver is None:
+    driver = get_neo4j_driver()
 
 logger = logging.getLogger(__name__)
 

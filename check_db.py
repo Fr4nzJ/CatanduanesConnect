@@ -1,4 +1,8 @@
-from database import get_neo4j_driver
+from database import driver, DATABASE, get_neo4j_driver
+
+# Ensure we have a driver
+if driver is None:
+    driver = get_neo4j_driver()
 
 def check_database():
     driver = get_neo4j_driver()

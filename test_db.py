@@ -1,16 +1,15 @@
-from neo4j import GraphDatabase
 import os
 from dotenv import load_dotenv
+from database import driver, DATABASE, get_neo4j_driver
 
 # Load environment variables
 load_dotenv()
 
 def test_db_connection():
-    # Neo4j Configuration from environment variables
-    uri = os.getenv("NEO4J_URI")
-    username = os.getenv("NEO4J_USERNAME")
-    password = os.getenv("NEO4J_PASSWORD")
-    database = os.getenv("NEO4J_DATABASE", "neo4j")
+    global driver
+    # Ensure we have a driver
+    if driver is None:
+        driver = get_neo4j_driver()
 
     try:
         driver = GraphDatabase.driver(uri, auth=(username, password))

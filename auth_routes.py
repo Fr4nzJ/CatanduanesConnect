@@ -12,7 +12,11 @@ from models import User
 from werkzeug.utils import secure_filename
 from oauth import get_google_auth_flow_from_config, get_google_user_info
 from pathlib import Path
-from database import driver, DATABASE
+from database import driver, DATABASE, get_neo4j_driver
+
+# Ensure we have a driver
+if driver is None:
+    driver = get_neo4j_driver()
 from utils.email_utils import notify_admins_new_submission, send_document_received_email
 from utils.email_utils import notify_admins_new_submission, send_document_received_email
 
