@@ -35,8 +35,8 @@ def update_schema():
             "CREATE CONSTRAINT business_desc_exists IF NOT EXISTS FOR (b:Business) REQUIRE b.description IS NOT NULL",
             "CREATE CONSTRAINT business_category_exists IF NOT EXISTS FOR (b:Business) REQUIRE b.category IS NOT NULL",
             "CREATE CONSTRAINT business_location_exists IF NOT EXISTS FOR (b:Business) REQUIRE b.location IS NOT NULL",
-            "CREATE CONSTRAINT business_lat_exists IF NOT EXISTS FOR (b:Business) REQUIRE b.lat IS NOT NULL",
-            "CREATE CONSTRAINT business_lng_exists IF NOT EXISTS FOR (b:Business) REQUIRE b.lng IS NOT NULL"
+            "CREATE CONSTRAINT business_latitude_exists IF NOT EXISTS FOR (b:Business) REQUIRE b.latitude IS NOT NULL",
+            "CREATE CONSTRAINT business_longitude_exists IF NOT EXISTS FOR (b:Business) REQUIRE b.longitude IS NOT NULL"
         ]
 
         # Add property existence constraints for JobPost
@@ -45,8 +45,8 @@ def update_schema():
             "CREATE CONSTRAINT job_desc_exists IF NOT EXISTS FOR (j:JobPost) REQUIRE j.description IS NOT NULL",
             "CREATE CONSTRAINT job_category_exists IF NOT EXISTS FOR (j:JobPost) REQUIRE j.category IS NOT NULL",
             "CREATE CONSTRAINT job_location_exists IF NOT EXISTS FOR (j:JobPost) REQUIRE j.location IS NOT NULL",
-            "CREATE CONSTRAINT job_lat_exists IF NOT EXISTS FOR (j:JobPost) REQUIRE j.lat IS NOT NULL",
-            "CREATE CONSTRAINT job_lng_exists IF NOT EXISTS FOR (j:JobPost) REQUIRE j.lng IS NOT NULL"
+            "CREATE CONSTRAINT job_latitude_exists IF NOT EXISTS FOR (j:JobPost) REQUIRE j.latitude IS NOT NULL",
+            "CREATE CONSTRAINT job_longitude_exists IF NOT EXISTS FOR (j:JobPost) REQUIRE j.longitude IS NOT NULL"
         ]
 
         # Add property existence constraints for ServiceRequest
@@ -55,8 +55,8 @@ def update_schema():
             "CREATE CONSTRAINT service_desc_exists IF NOT EXISTS FOR (s:ServiceRequest) REQUIRE s.description IS NOT NULL",
             "CREATE CONSTRAINT service_category_exists IF NOT EXISTS FOR (s:ServiceRequest) REQUIRE s.category IS NOT NULL",
             "CREATE CONSTRAINT service_location_exists IF NOT EXISTS FOR (s:ServiceRequest) REQUIRE s.location IS NOT NULL",
-            "CREATE CONSTRAINT service_lat_exists IF NOT EXISTS FOR (s:ServiceRequest) REQUIRE s.lat IS NOT NULL",
-            "CREATE CONSTRAINT service_lng_exists IF NOT EXISTS FOR (s:ServiceRequest) REQUIRE s.lng IS NOT NULL",
+            "CREATE CONSTRAINT service_latitude_exists IF NOT EXISTS FOR (s:ServiceRequest) REQUIRE s.latitude IS NOT NULL",
+            "CREATE CONSTRAINT service_longitude_exists IF NOT EXISTS FOR (s:ServiceRequest) REQUIRE s.longitude IS NOT NULL",
             "CREATE CONSTRAINT service_payment_exists IF NOT EXISTS FOR (s:ServiceRequest) REQUIRE s.payment IS NOT NULL"
         ]
 

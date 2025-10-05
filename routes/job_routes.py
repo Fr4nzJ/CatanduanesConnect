@@ -138,8 +138,8 @@ def search_jobs():
             OPTIONAL MATCH (j)<-[:POSTED]-(b:Business)
             RETURN j {{
                 .*,
-                lat: j.latitude,
-                lng: j.longitude,
+                latitude: j.latitude,
+                longitude: j.longitude,
                 business: b {{ .* }}
             }} as job
             ORDER BY j.created_at DESC

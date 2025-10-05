@@ -132,8 +132,8 @@
                                 </div>
                                 <button class="btn btn-outline-primary btn-sm view-on-map"
                                         data-service-id="{{ service.id }}"
-                                        data-lat="{{ service.lat }}"
-                                        data-lng="{{ service.lng }}"
+                                        data-latitude="{{ service.latitude }}"
+                                        data-longitude="{{ service.longitude }}"
                                         data-title="{{ service.service_type if service.service_type else service.title }}"
                                         data-owner="{{ service.client.name if service.client else (service.client_name if service.client_name else '') }}"
                                         data-desc="{{ service.description|e }}"
@@ -219,8 +219,8 @@
                     <div class="mb-3">
                         <label class="form-label">Pin Location on Map</label>
                         <div id="postServiceMap" style="height: 300px;"></div>
-                        <input type="hidden" id="serviceLat" required>
-                        <input type="hidden" id="serviceLng" required>
+                        <input type="hidden" id="serviceLatitude" required>
+                        <input type="hidden" id="serviceLongitude" required>
                     </div>
                 </form>
             </div>
@@ -282,8 +282,8 @@
                     const lat = e.latlng.lat;
                     const lng = e.latlng.lng;
                     
-                    document.getElementById('serviceLat').value = lat;
-                    document.getElementById('serviceLng').value = lng;
+                    document.getElementById('serviceLatitude').value = lat;
+                    document.getElementById('serviceLongitude').value = lng;
                     
                     if (postServiceMarker) {
                         postServiceMarker.setLatLng(e.latlng);
@@ -303,13 +303,13 @@
                 category: document.getElementById('serviceCategory').value,
                 location: document.getElementById('serviceLocation').value,
                 payment: document.getElementById('servicePayment').value,
-                lat: parseFloat(document.getElementById('serviceLat').value),
-                lng: parseFloat(document.getElementById('serviceLng').value)
+                latitude: parseFloat(document.getElementById('serviceLatitude').value),
+                longitude: parseFloat(document.getElementById('serviceLongitude').value)
             };
 
             // Validate form
             if (!data.service_type || !data.description || !data.category || 
-                !data.location || !data.payment || !data.lat || !data.lng) {
+                !data.location || !data.payment || !data.latitude || !data.longitude) {
                 alert('Please fill all required fields and pin a location on the map.');
                 return;
             }
@@ -342,8 +342,8 @@
         document.body.addEventListener('click', function(e) {
             const btn = e.target.closest('.view-on-map');
             if (!btn) return;
-            const lat = parseFloat(btn.dataset.lat);
-            const lng = parseFloat(btn.dataset.lng);
+            const lat = parseFloat(btn.dataset.latitude);
+            const lng = parseFloat(btn.dataset.longitude);
             const title = btn.dataset.title;
             const owner = btn.dataset.owner || '';
             const desc = btn.dataset.desc || '';

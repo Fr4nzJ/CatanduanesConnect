@@ -113,8 +113,8 @@
                                 </div>
                                                 <button class="btn btn-outline-primary btn-sm view-on-map"
                                                         data-job-id="{{ job.id }}"
-                                                        data-lat="{{ job.lat }}"
-                                                        data-lng="{{ job.lng }}"
+                                                        data-latitude="{{ job.latitude }}"
+                                                        data-longitude="{{ job.longitude }}"
                                                         data-title="{{ job.title }}"
                                                         data-owner="{{ job.business.name if job.business else job.owner.name }}"
                                                         data-desc="{{ job.description|e }}"
@@ -280,13 +280,13 @@
                 description: document.getElementById('jobDescription').value,
                 category: document.getElementById('jobCategory').value,
                 location: document.getElementById('jobLocation').value,
-                lat: parseFloat(document.getElementById('jobLat').value),
-                lng: parseFloat(document.getElementById('jobLng').value)
+                latitude: parseFloat(document.getElementById('jobLat').value),
+                longitude: parseFloat(document.getElementById('jobLng').value)
             };
 
             // Validate form
             if (!data.title || !data.description || !data.category || 
-                !data.location || !data.lat || !data.lng) {
+                !data.location || Number.isNaN(data.latitude) || Number.isNaN(data.longitude)) {
                 alert('Please fill all required fields and pin a location on the map.');
                 return;
             }
@@ -320,8 +320,8 @@
         document.body.addEventListener('click', function(e) {
             const btn = e.target.closest('.view-on-map');
             if (!btn) return;
-            const lat = parseFloat(btn.dataset.lat);
-            const lng = parseFloat(btn.dataset.lng);
+            const lat = parseFloat(btn.dataset.latitude);
+            const lng = parseFloat(btn.dataset.longitude);
             const title = btn.dataset.title;
             const owner = btn.dataset.owner || '';
             const desc = btn.dataset.desc || '';

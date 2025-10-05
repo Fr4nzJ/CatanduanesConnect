@@ -69,7 +69,7 @@ except Exception as e:
     logger.error(f"Failed to initialize Neo4j driver on module load: {str(e)}")
     driver = None
 
-def create_business(name: str, description: str, category: str, location: str, lat: float, lng: float, email: str, phone: str = None, website: str = None):
+def create_business(name: str, description: str, category: str, location: str, latitude: float, longitude: float, email: str, phone: str = None, website: str = None):
     """Create a new business node in Neo4j."""
     with get_neo4j_driver().session(database=DATABASE) as session:
         result = session.run(
@@ -79,8 +79,8 @@ def create_business(name: str, description: str, category: str, location: str, l
                 description: $description,
                 category: $category,
                 location: $location,
-                lat: $lat,
-                lng: $lng,
+                latitude: $latitude,
+                longitude: $longitude,
                 email: $email,
                 phone: $phone,
                 website: $website,
@@ -92,8 +92,8 @@ def create_business(name: str, description: str, category: str, location: str, l
             description=description,
             category=category,
             location=location,
-            lat=lat,
-            lng=lng,
+            latitude=latitude,
+            longitude=longitude,
             email=email,
             phone=phone,
             website=website
@@ -141,27 +141,27 @@ def search_businesses(query: str = None, category: str = None, location: str = N
         )
         return [record["b"] for record in result]
 
-def get_nearby_businesses(lat: float, lng: float, radius: float = 5.0):
+def get_nearby_businesses(latitude: float, longitude: float, radius: float = 5.0):
     """Get businesses within a radius (in km) of a point."""
     with get_neo4j_driver().session(database=DATABASE) as session:
         # Haversine formula in Cypher
         result = session.run(
             """
-            MATCH (b:Business)
-            WITH b, point({latitude: b.lat, longitude: b.lng}) AS p1, 
+          MATCH (b:Business)
+          WITH b, point({latitude: b.latitude, longitude: b.longitude}) AS p1, 
                  point({latitude: $lat, longitude: $lng}) AS p2
             WITH b, distance(p1, p2) / 1000 AS distance
             WHERE distance <= $radius
             RETURN b, distance
             ORDER BY distance
             """,
-            lat=lat,
-            lng=lng,
+            lat=latitude,
+            lng=longitude,
             radius=radius
         )
         return [(record["b"], record["distance"]) for record in result]
 
-def create_service_request(type: str, description: str, category: str, location: str, lat: float, lng: float, 
+def create_service_request(type: str, description: str, category: str, location: str, latitude: float, longitude: float, 
                          payment: str, user_id: str, skills_required: list = None):
     """Create a new service request."""
     with get_neo4j_driver().session(database=DATABASE) as session:
@@ -173,8 +173,8 @@ def create_service_request(type: str, description: str, category: str, location:
                 description: $description,
                 category: $category,
                 location: $location,
-                lat: $lat,
-                lng: $lng,
+                latitude: $latitude,
+                longitude: $longitude,
                 payment: $payment,
                 skills_required: $skills_required,
                 status: 'open',
@@ -186,8 +186,8 @@ def create_service_request(type: str, description: str, category: str, location:
             description=description,
             category=category,
             location=location,
-            lat=lat,
-            lng=lng,
+            latitude=latitude,
+            longitude=longitude,
             payment=payment,
             user_id=int(user_id),
             skills_required=skills_required or []
@@ -231,22 +231,22 @@ def search_services(query: str = None, type: str = None, category: str = None,
         )
         return [(record["s"], record["u"]) for record in result]
 
-def get_nearby_services(lat: float, lng: float, radius: float = 5.0, status: str = "open"):
+def get_nearby_services(latitude: float, longitude: float, radius: float = 5.0, status: str = "open"):
     """Get service requests within a radius (in km) of a point."""
     with get_neo4j_driver().session(database=DATABASE) as session:
         result = session.run(
             """
-            MATCH (s:ServiceRequest)-[:POSTED_BY]->(u:User)
-            WHERE s.status = $status
-            WITH s, u, point({latitude: s.lat, longitude: s.lng}) AS p1, 
+          MATCH (s:ServiceRequest)-[:POSTED_BY]->(u:User)
+          WHERE s.status = $status
+          WITH s, u, point({latitude: s.latitude, longitude: s.longitude}) AS p1, 
                  point({latitude: $lat, longitude: $lng}) AS p2
             WITH s, u, distance(p1, p2) / 1000 AS distance
             WHERE distance <= $radius
             RETURN s, u, distance
             ORDER BY distance
             """,
-            lat=lat,
-            lng=lng,
+            lat=latitude,
+            lng=longitude,
             radius=radius,
             status=status
         )

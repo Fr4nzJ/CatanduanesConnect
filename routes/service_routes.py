@@ -22,11 +22,11 @@ def index():
         categories = sorted(list(categories))
         locations = sorted(list(locations))
 
-        # Get all service requests with requester info and lat/lng
+        # Get all service requests with requester info and latitude/longitude
         result = session.run("""
             MATCH (s:ServiceRequest)
             OPTIONAL MATCH (s)<-[:REQUESTED]-(u:User)
-            RETURN s { .*, lat: s.latitude, lng: s.longitude, client: u { .* } } as service
+            RETURN s { .*, latitude: s.latitude, longitude: s.longitude, client: u { .* } } as service
             ORDER BY s.created_at DESC
         """)
         services = [dict(record['service']) for record in result]

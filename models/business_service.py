@@ -7,15 +7,16 @@ class Business:
     """Business model class."""
 
     def __init__(self, id=None, name=None, description=None, category=None,
-                 location=None, lat=None, lng=None, email=None, phone=None,
+                 location=None, latitude=None, longitude=None, email=None, phone=None,
                  website=None, created_at=None):
         self.id = id or str(uuid.uuid4())
         self.name = name
         self.description = description
         self.category = category
         self.location = location
-        self.lat = lat
-        self.lng = lng
+        # Normalize coordinate property names
+        self.latitude = latitude
+        self.longitude = longitude
         self.email = email
         self.phone = phone
         self.website = website
@@ -34,8 +35,8 @@ class Business:
                         b.description = $description,
                         b.category = $category,
                         b.location = $location,
-                        b.lat = $lat,
-                        b.lng = $lng,
+                        b.latitude = $latitude,
+                        b.longitude = $longitude,
                         b.email = $email,
                         b.phone = $phone,
                         b.website = $website,
@@ -73,8 +74,8 @@ class Business:
             "description": self.description,
             "category": self.category,
             "location": self.location,
-            "lat": self.lat,
-            "lng": self.lng,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
             "email": self.email,
             "phone": self.phone,
             "website": self.website,
@@ -115,21 +116,21 @@ class Business:
             return [Business.from_dict(record["b"]) for record in result]
 
     @staticmethod
-    def get_nearby(lat, lng, radius=5.0):
+    def get_nearby(latitude, longitude, radius=5.0):
         """Get businesses within a radius (in km) of a point."""
         with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 MATCH (b:Business)
-                WITH b, point({latitude: b.lat, longitude: b.lng}) AS p1, 
+                WITH b, point({latitude: b.latitude, longitude: b.longitude}) AS p1, 
                      point({latitude: $lat, longitude: $lng}) AS p2
                 WITH b, distance(p1, p2) / 1000 AS distance
                 WHERE distance <= $radius
                 RETURN b, distance
                 ORDER BY distance
                 """,
-                lat=lat,
-                lng=lng,
+                lat=latitude,
+                lng=longitude,
                 radius=radius
             )
             return [(Business.from_dict(record["b"]), record["distance"]) 
@@ -139,15 +140,15 @@ class ServiceRequest:
     """Service Request model class."""
 
     def __init__(self, id=None, type=None, description=None, category=None,
-                 location=None, lat=None, lng=None, payment=None, status="open",
+                 location=None, latitude=None, longitude=None, payment=None, status="open",
                  skills_required=None, user_id=None, created_at=None):
         self.id = id or str(uuid.uuid4())
         self.type = type
         self.description = description
         self.category = category
         self.location = location
-        self.lat = lat
-        self.lng = lng
+        self.latitude = latitude
+        self.longitude = longitude
         self.payment = payment
         self.status = status
         self.skills_required = skills_required or []
@@ -168,8 +169,8 @@ class ServiceRequest:
                         s.description = $description,
                         s.category = $category,
                         s.location = $location,
-                        s.lat = $lat,
-                        s.lng = $lng,
+                        s.latitude = $latitude,
+                        s.longitude = $longitude,
                         s.payment = $payment,
                         s.status = $status,
                         s.skills_required = $skills_required,
@@ -216,8 +217,8 @@ class ServiceRequest:
             "description": self.description,
             "category": self.category,
             "location": self.location,
-            "lat": self.lat,
-            "lng": self.lng,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
             "payment": self.payment,
             "status": self.status,
             "skills_required": self.skills_required,
@@ -265,22 +266,22 @@ class ServiceRequest:
                    for record in result]
 
     @staticmethod
-    def get_nearby(lat, lng, radius=5.0, status="open"):
+    def get_nearby(latitude, longitude, radius=5.0, status="open"):
         """Get service requests within a radius (in km) of a point."""
         with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 MATCH (s:ServiceRequest)-[:POSTED_BY]->(u:User)
                 WHERE s.status = $status
-                WITH s, u, point({latitude: s.lat, longitude: s.lng}) AS p1, 
+                WITH s, u, point({latitude: s.latitude, longitude: s.longitude}) AS p1, 
                      point({latitude: $lat, longitude: $lng}) AS p2
                 WITH s, u, distance(p1, p2) / 1000 AS distance
                 WHERE distance <= $radius
                 RETURN s, u, distance
                 ORDER BY distance
                 """,
-                lat=lat,
-                lng=lng,
+                lat=latitude,
+                lng=longitude,
                 radius=radius,
                 status=status
             )

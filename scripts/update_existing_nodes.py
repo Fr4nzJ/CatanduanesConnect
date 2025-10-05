@@ -14,11 +14,11 @@ def update_existing_nodes():
             # Update existing Business nodes
             session.run("""
                 MATCH (b:Business)
-                WHERE b.lat IS NULL OR b.lng IS NULL OR b.location IS NULL 
+                WHERE b.latitude IS NULL OR b.longitude IS NULL OR b.location IS NULL 
                    OR b.category IS NULL OR b.description IS NULL
                 SET 
-                    b.lat = COALESCE(b.lat, 14.0800),  // Default to Catanduanes coordinates
-                    b.lng = COALESCE(b.lng, 124.1700),
+                    b.latitude = COALESCE(b.latitude, 14.0800),  // Default to Catanduanes coordinates
+                    b.longitude = COALESCE(b.longitude, 124.1700),
                     b.location = COALESCE(b.location, 'Virac'),
                     b.category = COALESCE(b.category, 'General'),
                     b.description = COALESCE(b.description, 'No description provided')
@@ -28,12 +28,12 @@ def update_existing_nodes():
             # Update existing ServiceRequest nodes
             session.run("""
                 MATCH (s:ServiceRequest)
-                WHERE s.lat IS NULL OR s.lng IS NULL OR s.location IS NULL 
+                WHERE s.latitude IS NULL OR s.longitude IS NULL OR s.location IS NULL 
                    OR s.category IS NULL OR s.description IS NULL OR s.type IS NULL
                    OR s.payment IS NULL
                 SET 
-                    s.lat = COALESCE(s.lat, 14.0800),
-                    s.lng = COALESCE(s.lng, 124.1700),
+                    s.latitude = COALESCE(s.latitude, 14.0800),
+                    s.longitude = COALESCE(s.longitude, 124.1700),
                     s.location = COALESCE(s.location, 'Virac'),
                     s.category = COALESCE(s.category, 'General'),
                     s.description = COALESCE(s.description, 'No description provided'),

@@ -69,8 +69,8 @@
 
                     <div class="mb-3">
                         <i class="bi bi-geo-alt"></i> {{ business.location }}
-                        <button class="btn btn-sm btn-outline-primary float-end" 
-                                onclick="showLocationModal('{{ business.name }}', {{ business.lat }}, {{ business.lng }})">
+            <button class="btn btn-sm btn-outline-primary float-end" 
+                onclick="showLocationModal('{{ business.name }}', {{ business.latitude }}, {{ business.longitude }})">
                             <i class="bi bi-map"></i> View on Map
                         </button>
                     </div>
@@ -113,7 +113,7 @@
 let map;
 let currentMarker;
 
-function showLocationModal(businessName, lat, lng) {
+function showLocationModal(businessName, latitude, longitude) {
     const modal = new bootstrap.Modal(document.getElementById('mapModal'));
     modal.show();
     
@@ -129,8 +129,8 @@ function showLocationModal(businessName, lat, lng) {
             map.removeLayer(currentMarker);
         }
         
-        map.setView([lat, lng], 14);
-        currentMarker = L.marker([lat, lng])
+        map.setView([latitude, longitude], 14);
+        currentMarker = L.marker([latitude, longitude])
             .addTo(map)
             .bindPopup(businessName)
             .openPopup();
@@ -181,8 +181,8 @@ function updateBusinessListings(businesses) {
 
                     <div class="mb-3">
                         <i class="bi bi-geo-alt"></i> ${business.location}
-                        <button class="btn btn-sm btn-outline-primary float-end" 
-                                onclick="showLocationModal('${business.name}', ${business.lat}, ${business.lng})">
+            <button class="btn btn-sm btn-outline-primary float-end" 
+                onclick="showLocationModal('${business.name}', ${business.latitude}, ${business.longitude})">
                             <i class="bi bi-map"></i> View on Map
                         </button>
                     </div>
