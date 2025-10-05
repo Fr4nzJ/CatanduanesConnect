@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, current_app
+from flask import Blueprint, render_template, request, jsonify, current_app, flash, redirect, url_for
 from flask_login import login_required, current_user
 from database import get_neo4j_driver, DATABASE
 
@@ -23,6 +23,10 @@ def index():
         # Get unique locations
         result = session.run("MATCH (s:ServiceRequest) RETURN DISTINCT s.location as location")
         locations = [record['location'] for record in result if record['location']]
+
+        # Get all services
+        result = session.run("MATCH (s:ServiceRequest) RETURN s ORDER BY s.created_at DESC")
+        services = [dict(record['s']) for record in result]
 
     return render_template('services/index.html',
                          services=services,

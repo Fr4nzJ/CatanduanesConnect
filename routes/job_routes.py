@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import current_user, login_required
 from database import get_neo4j_driver, DATABASE
 from decorators import role_required
@@ -89,72 +89,73 @@ def create():
 
 @bp.route('/api/search-jobs')
 def search_jobs():
-    search_term = request.args.get('q', '').lower()
-    category = request.args.get('category', '')
-    location = request.args.get('location', '')
-    page = int(request.args.get('page', 1))
-    per_page = 10
+    try:
+        search_term = request.args.get('q', '').lower()
+        category = request.args.get('category', '')
+        location = request.args.get('location', '')
+        page = int(request.args.get('page', 1))
+        per_page = 10
 
-    driver = get_neo4j_driver()
-    with driver.session(database=DATABASE) as session:
-        # Build WHERE clause based on filters
-        conditions = []
-        params = {}
+        driver = get_neo4j_driver()
+        with driver.session(database=DATABASE) as session:
+            # Build WHERE clause based on filters
+            conditions = []
+            params = {}
         
-        if search_term:
-            conditions.append("toLower(j.title) CONTAINS $search_term OR toLower(j.description) CONTAINS $search_term")
-            params["search_term"] = search_term
-        
-        if category:
-            conditions.append("j.category = $category")
-            params["category"] = category
+            if search_term:
+                conditions.append("toLower(j.title) CONTAINS $search_term OR toLower(j.description) CONTAINS $search_term")
+                params["search_term"] = search_term
             
-        if location:
-            conditions.append("j.location = $location")
-            params["location"] = location
+            if category:
+                conditions.append("j.category = $category")
+                params["category"] = category
+                
+            if location:
+                conditions.append("j.location = $location")
+                params["location"] = location
+                
+            where_clause = " AND ".join(conditions) if conditions else "true"
             
-        where_clause = " AND ".join(conditions) if conditions else "true"
-        
-        # Count total results
-        count_query = f"""
-        MATCH (j:Job)
-        WHERE {where_clause}
-        RETURN count(j) as total
-        """
-        total = session.run(count_query, params).single()['total']
-        
-        # Get paginated results
-        query = f"""
-        MATCH (j:Job)
-        WHERE {where_clause}
-        OPTIONAL MATCH (j)<-[:POSTED]-(b:Business)
-        RETURN j {{
-            .*,
-            business: b {{ .* }}
-        }} as job
-        ORDER BY j.created_at DESC
-        SKIP $skip
-        LIMIT $limit
-        """
-        
-        params.update({
-            "skip": (page - 1) * per_page,
-            "limit": per_page
-        })
-        
-        results = session.run(query, params)
-        jobs = [dict(record['job']) for record in results]
-        
-        return jsonify({
-            'jobs': jobs,
-            'total': total,
-            'pages': (total + per_page - 1) // per_page
-        })
+            # Count total results
+            count_query = f"""
+            MATCH (j:Job)
+            WHERE {where_clause}
+            RETURN count(j) as total
+            """
+            total = session.run(count_query, params).single()['total']
+            
+            # Get paginated results
+            query = f"""
+            MATCH (j:Job)
+            WHERE {where_clause}
+            OPTIONAL MATCH (j)<-[:POSTED]-(b:Business)
+            RETURN j {{
+                .*,
+                business: b {{ .* }}
+            }} as job
+            ORDER BY j.created_at DESC
+            SKIP $skip
+            LIMIT $limit
+            """
+            
+            params.update({
+                "skip": (page - 1) * per_page,
+                "limit": per_page
+            })
+            
+            results = session.run(query, params)
+            jobs = [dict(record['job']) for record in results]
+            
+            return jsonify({
+                'jobs': jobs,
+                'total': total,
+                'pages': (total + per_page - 1) // per_page
+            })
     except Exception as e:
-        logger.error(f"Error creating job post: {str(e)}")
+        logger.error(f"Error searching jobs: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-@jobs_bp.route('/jobs')
+@bp.route('/jobs')
 def list_jobs():
     """List all job posts with optional filtering."""
     try:
@@ -194,7 +195,7 @@ def list_jobs():
         logger.error(f"Error listing jobs: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-@jobs_bp.route('/jobs/<job_id>')
+@bp.route('/jobs/<job_id>')
 def view_job(job_id):
     """View a single job post."""
     try:
@@ -224,7 +225,7 @@ def view_job(job_id):
         logger.error(f"Error viewing job: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-@jobs_bp.route('/jobs/categories')
+@bp.route('/jobs/categories')
 def get_categories():
     """Get all unique job categories."""
     try:
@@ -240,7 +241,7 @@ def get_categories():
         logger.error(f"Error getting categories: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-@jobs_bp.route('/jobs/locations')
+@bp.route('/jobs/locations')
 def get_locations():
     """Get all unique job locations."""
     try:

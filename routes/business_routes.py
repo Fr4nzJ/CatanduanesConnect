@@ -99,38 +99,3 @@ def search_businesses():
             'total': total,
             'pages': (total + per_page - 1) // per_page
         })
-            (toLower(b.name) CONTAINS $search OR 
-             toLower(b.description) CONTAINS $search OR
-             EXISTS {
-                 MATCH (b)-[:POSTED]->(j:Job)
-                 WHERE toLower(j.title) CONTAINS $search
-             }
-            )
-        """
-        
-        if category:
-            query += " AND b.category = $category"
-        if location:
-            query += " AND b.location = $location"
-
-        query += """
-        OPTIONAL MATCH (b)-[:POSTED]->(j:Job)
-        WITH b, collect({
-            title: j.title,
-            qualifications: j.qualifications
-        }) as jobs
-        RETURN b {
-            .*,
-            jobs: jobs
-        } as business
-        ORDER BY b.name
-        """
-
-        result = session.run(query, 
-                           search=search_term,
-                           category=category,
-                           location=location)
-        
-        businesses = [dict(record['business']) for record in result]
-        
-    return jsonify({'businesses': businesses})

@@ -22,7 +22,7 @@ def migrate_user_names():
     """Migrate existing users from single name field to separate name fields."""
     try:
         driver = get_neo4j_driver()
-        database = get_database_name()
+        database = DATABASE
         
         with driver.session(database=database) as session:
             # First, get all users with the old name field

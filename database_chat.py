@@ -22,7 +22,7 @@ class DatabaseChatService:
     def __init__(self):
         try:
             self.driver = get_neo4j_driver()
-            self.database = get_database_name()
+            self.database = os.getenv('NEO4J_DATABASE', 'neo4j')
         except Exception as e:
             logger.error('Could not initialize Neo4j driver for chat service: %s', str(e), exc_info=True)
             self.driver = None
