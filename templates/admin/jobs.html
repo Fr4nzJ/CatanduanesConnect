@@ -1,9 +1,22 @@
 {% extends 'base.html' %}
 {% block title %}Manage Jobs{% endblock %}
 {% block content %}
-<div class="container py-4">
-  <h1 class="mb-3">Job Offers</h1>
-  <div class="table-responsive">
+<div class="container-fluid">
+  <div class="row">
+    <aside class="col-12 col-md-3 col-lg-2 mb-3 mb-md-0">
+      <div class="list-group">
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.users') }}">Users</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.verifications') }}">Verifications</a>
+        <a class="list-group-item list-group-item-action active" href="{{ url_for('admin.jobs') }}">Jobs</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.services') }}">Services</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.reports') }}">Reports</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </aside>
+    <main class="col-12 col-md-9 col-lg-10 py-4">
+      <h1 class="mb-3">Job Offers</h1>
+      <div class="table-responsive">
     <table class="table table-striped align-middle">
       <thead><tr><th>Title</th><th>Category</th><th>Location</th><th>Poster</th><th>Actions</th></tr></thead>
       <tbody>
@@ -20,6 +33,8 @@
       {% endfor %}
       </tbody>
     </table>
+      </div>
+    </main>
   </div>
 </div>
 {% endblock %}
