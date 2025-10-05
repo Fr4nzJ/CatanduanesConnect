@@ -160,7 +160,7 @@ def login():
         login_user(user, remember=remember)
         next_page = request.args.get("next")
         if user.role == 'admin':
-            return redirect(next_page or url_for("admin.dashboard"))
+            return redirect(next_page or url_for("admin_blueprint.dashboard"))
         return redirect(next_page or url_for("dashboard"))
 
     return render_template("auth/login.html")

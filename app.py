@@ -667,7 +667,7 @@ def admin_dashboard_data():
 def dashboard():
     try:
         if current_user.role == 'admin':
-            return redirect(url_for('admin.dashboard'))
+            return redirect(url_for('admin_blueprint.dashboard'))
         elif current_user.role == 'job_seeker':
             try:
                 job_applications = Application.get_by_applicant_id(current_user.id)

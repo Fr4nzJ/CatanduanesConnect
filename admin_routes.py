@@ -205,7 +205,7 @@ def verify_users_list():
     except Exception as e:
         logger.error(f"Error fetching pending users: {str(e)}")
         flash("Error loading pending verifications.", "danger")
-        return redirect(url_for('admin.dashboard'))
+        return redirect(url_for('admin_blueprint.dashboard'))
 
 @admin.route('/verify-user/<user_id>', methods=['POST'])
 @login_required
