@@ -105,8 +105,8 @@ def complete_registration():
             document_path = f"uploads/{role}/{filename}"
 
         try:
-            if not hasattr(user, 'id') or not user.id:
-                user.id = str(uuid.uuid4())
+            # Build a new user id
+            new_id = str(uuid.uuid4())
 
             user = User(
                 email=google_user['email'],
@@ -133,12 +133,27 @@ def complete_registration():
                         role: $role,
                         resume_path: $resume_path,
                         permit_path: $permit_path,
+                        id_front_path: $id_front_path,
+                        id_back_path: $id_back_path,
                         verification_status: 'pending_verification'
                     })
-                """, **user.__dict__)
+                """, {
+                    'id': new_id,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'google_id': user.google_id,
+                    'profile_picture': user.profile_picture,
+                    'role': user.role,
+                    'resume_path': user.resume_path,
+                    'permit_path': user.permit_path,
+                    'id_front_path': user.id_front_path,
+                    'id_back_path': user.id_back_path
+                })
 
                 user = User.get_by_email(google_user['email'])
-                if user and role in ['job_seeker', 'business_owner']:
+                # Notify admins for any document submission
+                if user and role in ['job_seeker', 'business_owner', 'client']:
                     try:
                         notify_admins_new_submission(user)
                         send_document_received_email(user)
