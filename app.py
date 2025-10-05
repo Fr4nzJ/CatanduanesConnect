@@ -941,7 +941,7 @@ def businesses():
             'iter_pages': lambda: range(1, ((total_businesses + per_page - 1) // per_page) + 1) if total_businesses else []
         }
         
-        return render_template('businesses/directory.html', businesses=paginated_businesses, pagination=pagination)
+    return render_template('businesses/businesses.html', businesses=paginated_businesses, pagination=pagination)
     except Exception as e:
         flash(f'Error loading businesses: {str(e)}', 'danger')
         return redirect(url_for('home'))
@@ -1279,7 +1279,6 @@ def services():
                              current_category=category,
                              current_location=location,
                              current_status=status)
-    except Exception as e:
         flash(f'Error loading services: {str(e)}', 'danger')
         return redirect(url_for('home'))
 
