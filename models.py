@@ -711,6 +711,27 @@ class User(UserMixin):
             verified_at=node_data.get("verified_at"),
             is_admin=node_data.get("is_admin", False)
         )
+    @classmethod
+    def get_by_google_id(cls, google_id):
+        """Retrieve a user by their Google account id."""
+        try:
+            if driver is None:
+                logger.error('Driver not initialized when getting user by google_id')
+                return None
+
+            with driver.session(database=DATABASE) as session:
+                result = session.run(
+                    "MATCH (u:User {google_id: $google_id}) RETURN u",
+                    google_id=google_id
+                )
+                record = result.single()
+                if record and record.get('u'):
+                    node_data = dict(record['u']) if hasattr(record['u'], 'items') else record['u']
+                    return cls.from_neo4j(node_data)
+                return None
+        except Exception as e:
+            logger.error(f'Error retrieving user by google_id: {str(e)}')
+            return None
 
     @staticmethod
     def get_all():
