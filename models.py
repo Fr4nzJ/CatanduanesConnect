@@ -354,26 +354,9 @@ class Service:
 
     @staticmethod
     def get_offers_by_job_seeker(job_seeker_id):
-        with driver.session(database=DATABASE) as session:
-            result = session.run("""
-                MATCH (j:User {id: $job_seeker_id})-[o:OFFERS]->(s:Service)
-                RETURN s, o
-                ORDER BY o.created_at DESC
-                """,
-                job_seeker_id=job_seeker_id
-            )
-            offers = []
-            for record in result:
-                service = Service(**record['s'])
-                offer = record['o']
-                offers.append({
-                    'service': service,
-                    'status': offer['status'],
-                    'proposal': offer['proposal'],
-                    'price': offer['price'],
-                    'created_at': offer['created_at']
-                })
-            return offers
+        # Note: Service offers functionality is not yet implemented
+        # This method returns empty list until the OFFERS relationship is properly implemented
+        return []
 class User(UserMixin):
     ROLES = ['business_owner', 'client', 'job_seeker', 'admin']  # admin is here but not available for signup
     SIGNUP_ROLES = ['business_owner', 'client', 'job_seeker']  # roles available during signup
@@ -766,7 +749,7 @@ class Business:
         self.longitude = longitude
 
     def save(self):
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 CREATE (b:Business {
@@ -802,17 +785,18 @@ class Business:
 
     @staticmethod
     def get_by_owner_id(owner_id):
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 MATCH (u:User {id: $owner_id})-[:OWNS]->(b:Business)
-                RETURN b
+                RETURN b, u as owner
                 """,
                 owner_id=owner_id
             )
             record = result.single()
             if record:
                 business = record["b"]
+                owner = record["owner"]
                 return Business(
                     id=business["id"],
                     name=business["name"],
@@ -825,17 +809,18 @@ class Business:
                     latitude=business.get("latitude"),
                     longitude=business.get("longitude"),
                     owner=User(
-                        id=business["owner"]["id"],
-                        email=business["owner"]["email"],
-                        name=business["owner"]["name"],
-                        role=business["owner"]["role"]
+                        id=owner["id"],
+                        email=owner["email"],
+                        first_name=owner.get("first_name"),
+                        last_name=owner.get("last_name"),
+                        role=owner["role"]
                     )
                 )
             return None
 
     @staticmethod
     def get_by_id(business_id):
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 MATCH (b:Business {id: $id})
@@ -862,15 +847,16 @@ class Business:
                     owner=User(
                         id=owner["id"],
                         email=owner["email"],
-                        name=owner["name"],
+                        first_name=owner.get("first_name"),
+                        last_name=owner.get("last_name"),
                         role=owner["role"]
-                    )
+                    ) if owner else None
                 )
             return None
 
     @staticmethod
     def get_all():
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 MATCH (b:Business)
@@ -908,7 +894,7 @@ class Business:
 
     @staticmethod
     def search(query=None, location=None, category=None):
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             cypher_query = """
                 MATCH (b:Business)
                 OPTIONAL MATCH (u:User)-[:OWNS]->(b)
@@ -983,7 +969,7 @@ class Business:
 
     def get_average_rating(self):
         try:
-            with driver.session() as session:
+            with driver.session(database=DATABASE) as session:
                 result = session.run(
                     """
                     MATCH (r:Review)-[:FOR]->(b:Business {id: $business_id})
@@ -1050,7 +1036,7 @@ class Job:
 
     @staticmethod
     def get_by_id(job_id):
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 MATCH (j:Job {id: $id})
@@ -1099,7 +1085,7 @@ class Job:
 
     @staticmethod
     def get_all():
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 MATCH (j:Job)
@@ -1178,7 +1164,7 @@ class Job:
 
     @staticmethod
     def search(query=None, location=None, job_type=None, category=None):
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             cypher_query = """
                 MATCH (j:Job)
                 OPTIONAL MATCH (b:Business)-[:POSTED]->(j)
@@ -1252,7 +1238,7 @@ class Job:
 
     @staticmethod
     def get_by_business_id(business_id):
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 MATCH (b:Business {id: $business_id})-[:POSTED]->(j:Job)
@@ -1362,7 +1348,7 @@ class Application:
         with driver.session(database=DATABASE) as session:
             result = session.run("""
                 MATCH (a:User {id: $applicant_id})-[:APPLIED_TO]->(app:Application)-[:FOR_JOB]->(j:Job)
-                MATCH (b:Business)<-[:POSTED_BY]-(j)
+                OPTIONAL MATCH (b:Business)-[:POSTED]->(j)
                 RETURN app, a as applicant, j as job, b as business
                 ORDER BY app.date_applied DESC
                 """,
@@ -1372,7 +1358,7 @@ class Application:
                 {
                     'application': Application(**record['app']),
                     'job': Job(**record['job']),
-                    'business': Business(**record['business'])
+                    'business': Business(**record['business']) if record['business'] else None
                 }
                 for record in result
             ]
@@ -1421,7 +1407,7 @@ class Review:
         self.created_at = created_at or datetime.now()
 
     def save(self):
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 CREATE (r:Review {
@@ -1447,7 +1433,7 @@ class Review:
 
     @staticmethod
     def get_by_business_id(business_id):
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 MATCH (u:User)-[:WROTE]->(r:Review)-[:FOR]->(b:Business {id: $business_id})
@@ -1479,7 +1465,7 @@ class Review:
 
     @staticmethod
     def get_average_rating(business_id):
-        with driver.session() as session:
+        with driver.session(database=DATABASE) as session:
             result = session.run(
                 """
                 MATCH (r:Review)-[:FOR]->(b:Business {id: $business_id})
