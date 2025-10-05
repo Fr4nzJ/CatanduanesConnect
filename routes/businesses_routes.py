@@ -58,7 +58,8 @@ def list_business_owners():
                 f"""
                 MATCH (u:User)
                 WHERE {where_clause}
-                RETURN u ORDER BY toLower(u.business_name)
+                WITH u, toLower(coalesce(u.business_name, u.first_name + ' ' + coalesce(u.last_name,''))) AS sortKey
+                RETURN u ORDER BY sortKey
                 """,
                 **params,
             )
