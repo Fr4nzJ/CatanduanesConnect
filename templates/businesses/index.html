@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Businesses - Catanduanes Connect{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/businesses.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Search and Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12 col-md-6 mb-3">
+            <div class="input-group">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search businesses or job titles...">
+                <button class="btn btn-primary" type="button" onclick="performSearch()">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="row">
+                <div class="col-6">
+                    <select id="categoryFilter" class="form-select" onchange="applyFilters()">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6">
+                    <select id="locationFilter" class="form-select" onchange="applyFilters()">
+                        <option value="">All Locations</option>
+                        {% for location in locations %}
+                        <option value="{{ location }}">{{ location }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Business Listings -->
+    <div class="row" id="businessListings">
+        {% for business in businesses %}
+        <div class="col-12 col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ business.name }}</h5>
+                    <p class="card-text">{{ business.description }}</p>
+                    
+                    {% if business.jobs %}
+                    <div class="mb-3">
+                        <strong>Open Positions:</strong>
+                        <ul class="list-unstyled">
+                        {% for job in business.jobs %}
+                            <li>
+                                <i class="bi bi-briefcase"></i> {{ job.title }}
+                                {% if job.qualifications %}
+                                <small class="text-muted d-block">Required: {{ job.qualifications }}</small>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <i class="bi bi-geo-alt"></i> {{ business.location }}
+                        <button class="btn btn-sm btn-outline-primary float-end" 
+                                onclick="showLocationModal('{{ business.name }}', {{ business.lat }}, {{ business.lng }})">
+                            <i class="bi bi-map"></i> View on Map
+                        </button>
+                    </div>
+
+                    <div class="contact-info">
+                        {% if business.email %}
+                        <i class="bi bi-envelope"></i> {{ business.email }}<br>
+                        {% endif %}
+                        {% if business.phone %}
+                        <i class="bi bi-telephone"></i> {{ business.phone }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Map Modal -->
+<div class="modal fade" id="mapModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Business Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="mapContainer" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let map;
+let currentMarker;
+
+function showLocationModal(businessName, lat, lng) {
+    const modal = new bootstrap.Modal(document.getElementById('mapModal'));
+    modal.show();
+    
+    setTimeout(() => {
+        if (!map) {
+            map = L.map('mapContainer');
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19
+            }).addTo(map);
+        }
+        
+        if (currentMarker) {
+            map.removeLayer(currentMarker);
+        }
+        
+        map.setView([lat, lng], 14);
+        currentMarker = L.marker([lat, lng])
+            .addTo(map)
+            .bindPopup(businessName)
+            .openPopup();
+    }, 300);
+}
+
+function performSearch() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const category = document.getElementById('categoryFilter').value;
+    const location = document.getElementById('locationFilter').value;
+    
+    fetch(`/api/search-businesses?q=${searchTerm}&category=${category}&location=${location}`)
+        .then(response => response.json())
+        .then(data => {
+            updateBusinessListings(data.businesses);
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function applyFilters() {
+    performSearch();
+}
+
+function updateBusinessListings(businesses) {
+    const container = document.getElementById('businessListings');
+    container.innerHTML = businesses.map(business => `
+        <div class="col-12 col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">${business.name}</h5>
+                    <p class="card-text">${business.description}</p>
+                    
+                    ${business.jobs ? `
+                    <div class="mb-3">
+                        <strong>Open Positions:</strong>
+                        <ul class="list-unstyled">
+                        ${business.jobs.map(job => `
+                            <li>
+                                <i class="bi bi-briefcase"></i> ${job.title}
+                                ${job.qualifications ? `
+                                <small class="text-muted d-block">Required: ${job.qualifications}</small>
+                                ` : ''}
+                            </li>
+                        `).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+
+                    <div class="mb-3">
+                        <i class="bi bi-geo-alt"></i> ${business.location}
+                        <button class="btn btn-sm btn-outline-primary float-end" 
+                                onclick="showLocationModal('${business.name}', ${business.lat}, ${business.lng})">
+                            <i class="bi bi-map"></i> View on Map
+                        </button>
+                    </div>
+
+                    <div class="contact-info">
+                        ${business.email ? `<i class="bi bi-envelope"></i> ${business.email}<br>` : ''}
+                        ${business.phone ? `<i class="bi bi-telephone"></i> ${business.phone}` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+</script>
+{% endblock %}

@@ -32,9 +32,17 @@ from decorators import admin_required
 from admin_routes import admin
 from chatbot_routes import bp as chatbot_bp
 from dashboard_routes import dashboard
+from routes.job_routes import bp as jobs_bp
+from routes.service_routes import bp as services_bp
+from routes.business_routes import bp as business_bp
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Register blueprints
+app.register_blueprint(jobs_bp)
+app.register_blueprint(services_bp)
+app.register_blueprint(business_bp)
 
 # Initialize a simple module logger early so startup code can log before
 # the full logging configuration is applied later in this file. This
@@ -88,6 +96,8 @@ CORS(app)
 app.register_blueprint(admin, name='admin_blueprint')
 app.register_blueprint(chatbot_bp)
 app.register_blueprint(dashboard)
+app.register_blueprint(jobs_bp)
+app.register_blueprint(services_bp)
 
 # Custom template filters
 @app.template_filter('datetime')

@@ -1,0 +1,47 @@
+.card {
+    transition: transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.contact-info {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.card-title {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.list-unstyled li {
+    margin-bottom: 0.5rem;
+}
+
+.bi {
+    margin-right: 0.5rem;
+}
+
+#mapContainer {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.form-select, .form-control {
+    border-radius: 0.5rem;
+}
+
+.input-group .btn {
+    border-top-right-radius: 0.5rem !important;
+    border-bottom-right-radius: 0.5rem !important;
+}
+
+@media (max-width: 768px) {
+    .row > [class*='col-'] {
+        margin-bottom: 1rem;
+    }
+}

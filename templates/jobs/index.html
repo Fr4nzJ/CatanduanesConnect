@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Jobs - Catanduanes Connect{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphism.css') }}">
+<style>
+    .job-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+    }
+    .job-card:hover {
+        transform: translateY(-5px);
+    }
+    #map-modal .modal-dialog {
+        max-width: 800px;
+    }
+    #location-map {
+        height: 400px;
+        width: 100%;
+    }
+    .filter-section {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Job Offers</h1>
+        {% if current_user.is_authenticated and current_user.role == 'business_owner' %}
+        <a href="{{ url_for('jobs.create') }}" class="btn btn-primary">Post a Job</a>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        <!-- Filters Section -->
+        <div class="col-md-3">
+            <div class="filter-section">
+                <h4>Filters</h4>
+                <form id="search-form">
+                    <div class="mb-3">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               placeholder="Search jobs...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category }}" 
+                                    {% if request.args.get('category') == category %}selected{% endif %}>
+                                {{ category }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <select class="form-select" id="location" name="location">
+                            <option value="">All Locations</option>
+                            {% for location in locations %}
+                            <option value="{{ location }}"
+                                    {% if request.args.get('location') == location %}selected{% endif %}>
+                                {{ location }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Jobs List Section -->
+        <div class="col-md-9">
+            {% if current_user.role == 'business_owner' %}
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Job Listings</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#postJobModal">
+                    <i class="fas fa-plus"></i> Post New Job
+                </button>
+            </div>
+            {% else %}
+            <h2 class="mb-4">Job Listings</h2>
+            {% endif %}
+
+            <div id="jobsList">
+                {% if jobs %}
+                    {% for job in jobs %}
+                    <div class="card job-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="card-title">{{ job.title }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="fas fa-map-marker-alt"></i> {{ job.location }}
+                                        &bull;
+                                        <i class="fas fa-tag"></i> {{ job.category }}
+                                    </h6>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm view-on-map"
+                                        data-job-id="{{ job.id }}"
+                                        data-lat="{{ job.lat }}"
+                                        data-lng="{{ job.lng }}"
+                                        data-title="{{ job.title }}">
+                                    <i class="fas fa-map-marked-alt"></i> View on Map
+                                </button>
+                            </div>
+                            <p class="card-text">{{ job.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    Posted by {{ job.owner.name }}
+                                    <br>
+                                    {{ job.created_at|datetime }}
+                                </small>
+                                {% if current_user.role == 'jobseeker' %}
+                                <button class="btn btn-primary btn-sm apply-btn"
+                                        data-job-id="{{ job.id }}">
+                                    Apply Now
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="alert alert-info">
+                    No jobs found matching your criteria.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Post Job Modal -->
+{% if current_user.role == 'business_owner' %}
+<div class="modal fade" id="postJobModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Post a New Job</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="postJobForm">
+                    <div class="mb-3">
+                        <label for="jobTitle" class="form-label">Job Title</label>
+                        <input type="text" class="form-control" id="jobTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="jobDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="jobDescription" rows="4" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="jobCategory" class="form-label">Category</label>
+                                <select class="form-select" id="jobCategory" required>
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category }}">{{ category }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="jobLocation" class="form-label">Location</label>
+                                <select class="form-select" id="jobLocation" required>
+                                    <option value="">Select Location</option>
+                                    {% for location in locations %}
+                                    <option value="{{ location }}">{{ location }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pin Location on Map</label>
+                        <div id="postJobMap" style="height: 300px;"></div>
+                        <input type="hidden" id="jobLat" required>
+                        <input type="hidden" id="jobLng" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitJob">Post Job</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- View on Map Modal -->
+<div class="modal fade" id="mapModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Job Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="jobMap"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialize maps
+    let postJobMap = null;
+    let viewJobMap = null;
+    let postJobMarker = null;
+    const catanduanesCenter = [13.7089, 124.2384]; // Virac coordinates
+
+    // Initialize view map modal
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize map in view modal
+        const mapModal = document.getElementById('mapModal');
+        mapModal.addEventListener('shown.bs.modal', function() {
+            if (!viewJobMap) {
+                viewJobMap = L.map('jobMap').setView(catanduanesCenter, 10);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(viewJobMap);
+            }
+            viewJobMap.invalidateSize();
+        });
+
+        // Initialize post job map if user is business owner
+        {% if current_user.role == 'business_owner' %}
+        const postJobModal = document.getElementById('postJobModal');
+        postJobModal.addEventListener('shown.bs.modal', function() {
+            if (!postJobMap) {
+                postJobMap = L.map('postJobMap').setView(catanduanesCenter, 10);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(postJobMap);
+                
+                // Add click handler for setting location
+                postJobMap.on('click', function(e) {
+                    const lat = e.latlng.lat;
+                    const lng = e.latlng.lng;
+                    
+                    document.getElementById('jobLat').value = lat;
+                    document.getElementById('jobLng').value = lng;
+                    
+                    if (postJobMarker) {
+                        postJobMarker.setLatLng(e.latlng);
+                    } else {
+                        postJobMarker = L.marker(e.latlng).addTo(postJobMap);
+                    }
+                });
+            }
+            postJobMap.invalidateSize();
+        });
+        
+        // Handle job post submission
+        document.getElementById('submitJob').addEventListener('click', function() {
+            const form = document.getElementById('postJobForm');
+            const data = {
+                title: document.getElementById('jobTitle').value,
+                description: document.getElementById('jobDescription').value,
+                category: document.getElementById('jobCategory').value,
+                location: document.getElementById('jobLocation').value,
+                lat: parseFloat(document.getElementById('jobLat').value),
+                lng: parseFloat(document.getElementById('jobLng').value)
+            };
+
+            // Validate form
+            if (!data.title || !data.description || !data.category || 
+                !data.location || !data.lat || !data.lng) {
+                alert('Please fill all required fields and pin a location on the map.');
+                return;
+            }
+
+            // Submit job post
+            fetch('/create_job_post', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                // Close modal and reload page
+                bootstrap.Modal.getInstance(postJobModal).hide();
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Error posting job: ' + error.message);
+            });
+        });
+        {% endif %}
+
+        // Handle view on map clicks
+        document.querySelectorAll('.view-on-map').forEach(button => {
+            button.addEventListener('click', function() {
+                const lat = parseFloat(this.dataset.lat);
+                const lng = parseFloat(this.dataset.lng);
+                const title = this.dataset.title;
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('mapModal'));
+                modal.show();
+
+                // Add marker after modal is shown
+                modal._element.addEventListener('shown.bs.modal', function() {
+                    viewJobMap.setView([lat, lng], 13);
+                    L.marker([lat, lng])
+                        .bindPopup(title)
+                        .addTo(viewJobMap)
+                        .openPopup();
+                }, { once: true });
+            });
+        });
+
+        // Handle job application clicks
+        document.querySelectorAll('.apply-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const jobId = this.dataset.jobId;
+                // Implement application logic here
+                alert('Application feature coming soon!');
+            });
+        });
+
+        // Handle filter form submission
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const searchParams = new URLSearchParams();
+            
+            const search = document.getElementById('search').value;
+            const category = document.getElementById('category').value;
+            const location = document.getElementById('location').value;
+            
+            if (search) searchParams.append('search', search);
+            if (category) searchParams.append('category', category);
+            if (location) searchParams.append('location', location);
+            
+            window.location.search = searchParams.toString();
+        });
+    });
+</script>
+{% endblock %}

@@ -1,51 +1,90 @@
 {% extends "base.html" %}
-{% from 'macros/forms.html' import csrf %}
 
-{% block title %}Create Service Request - Catanduanes Connect{% endblock %}
+{% block title %}Request a Service - Catanduanes Connect{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphism.css') }}">
+<style>
+    .form-container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 30px;
+        margin: 20px 0;
+    }
+    #service-map {
+        height: 400px;
+        width: 100%;
+        margin: 20px 0;
+        border-radius: 10px;
+    }
+</style>
 
 {% block content %}
-<div class="container py-4">
-    <h1 class="mb-4">Create Service Request</h1>
-    
-    <div class="card">
-        <div class="card-body">
-            <form method="POST" action="{{ url_for('create_service') }}">
-                {{ csrf() }}
-                <div class="mb-3">
-                    <label for="title" class="form-label">Title</label>
-                    <input type="text" class="form-control" id="title" name="title" required>
-                </div>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="form-container">
+                <h2 class="mb-4">Request a Service</h2>
                 
-                <div class="mb-3">
-                    <label for="description" class="form-label">Description</label>
-                    <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="category" class="form-label">Category</label>
-                        <select class="form-select" id="category" name="category" required>
-                            <option value="">Select a category</option>
-                            <option value="home_service">Home Service</option>
-                            <option value="repair">Repair & Maintenance</option>
-                            <option value="delivery">Delivery</option>
-                            <option value="cleaning">Cleaning</option>
-                            <option value="other">Other</option>
-                        </select>
+                <form method="POST" id="service-form">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Service Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
                     </div>
-                    
-                    <div class="col-md-6 mb-3">
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Service Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Home Services">Home Services</option>
+                                    <option value="Professional Services">Professional Services</option>
+                                    <option value="Technical Services">Technical Services</option>
+                                    <option value="Creative Services">Creative Services</option>
+                                    <option value="Healthcare">Healthcare</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="budget" class="form-label">Budget (PHP)</label>
+                                <input type="number" class="form-control" id="budget" name="budget" placeholder="Optional">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="location" class="form-label">Location</label>
                         <input type="text" class="form-control" id="location" name="location" required>
                     </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="budget" class="form-label">Budget</label>
-                        <input type="text" class="form-control" id="budget" name="budget" required>
-                        <div class="form-text">Expected budget range (e.g., ₱500-1000)</div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Pin Service Location on Map</label>
+                        <div id="service-map"></div>
+                        <input type="hidden" id="latitude" name="latitude" required>
+                        <input type="hidden" id="longitude" name="longitude" required>
                     </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Submit Service Request</button>
+                        <a href="{{ url_for('services.index') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
                     
                     <div class="col-md-6 mb-3">
                         <label for="duration" class="form-label">Duration</label>

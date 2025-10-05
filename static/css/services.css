@@ -1,0 +1,61 @@
+.card {
+    transition: transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.client-info {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.card-title {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.bi {
+    margin-right: 0.5rem;
+}
+
+#mapContainer {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.form-select, .form-control {
+    border-radius: 0.5rem;
+}
+
+.input-group .btn {
+    border-top-right-radius: 0.5rem !important;
+    border-bottom-right-radius: 0.5rem !important;
+}
+
+.btn-lg.rounded-circle {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-lg.rounded-circle:hover {
+    transform: scale(1.1);
+}
+
+.btn-lg.rounded-circle i {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .row > [class*='col-'] {
+        margin-bottom: 1rem;
+    }
+}

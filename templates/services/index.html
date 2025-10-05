@@ -1,53 +1,391 @@
 {% extends "base.html" %}
 
-{% block title %}Service Requests - Catanduanes Connect{% endblock %}
+{% block title %}Services - Catanduanes Connect{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphism.css') }}">
+<style>
+    .service-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+    }
+    .service-card:hover {
+        transform: translateY(-5px);
+    }
+    #map-modal .modal-dialog {
+        max-width: 800px;
+    }
+    #location-map {
+        height: 400px;
+        width: 100%;
+    }
+    .filter-section {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Service Requests</h1>
-        {% if current_user.is_authenticated and current_user.role == 'client' %}
-        <a href="{{ url_for('create_service') }}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Post New Request
-        </a>
+        <h1>Service Needed</h1>
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('services.create') }}" class="btn btn-primary">Request a Service</a>
         {% endif %}
     </div>
 
     <div class="row">
-        <!-- Filters -->
+        <!-- Filters Section -->
         <div class="col-md-3">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Filters</h5>
-                    <form method="GET" action="{{ url_for('services') }}">
-                        <div class="mb-3">
-                            <label for="category" class="form-label">Category</label>
-                            <select class="form-select" id="category" name="category">
-                                <option value="">All Categories</option>
-                                {% for category in categories %}
-                                <option value="{{ category }}" {% if category == current_category %}selected{% endif %}>
-                                    {{ category|title }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
+            <div class="filter-section">
+                <h4>Filters</h4>
+                <form id="search-form">
+                    <div class="mb-3">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               placeholder="Search services...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" id="category" name="category">
+                            <option value="">All Categories</option>
+                            {% for category in categories %}
+                            <option value="{{ category }}"
+                                    {% if request.args.get('category') == category %}selected{% endif %}>
+                                {{ category }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <select class="form-select" id="location" name="location">
+                            <option value="">All Locations</option>
+                            {% for location in locations %}
+                            <option value="{{ location }}"
+                                    {% if request.args.get('location') == location %}selected{% endif %}>
+                                {{ location }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="open" {% if request.args.get('status', 'open') == 'open' %}selected{% endif %}>Open</option>
+                            <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>In Progress</option>
+                            <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completed</option>
+                            <option value="cancelled" {% if request.args.get('status') == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                </form>
+            </div>
+        </div>
 
-                        <div class="mb-3">
-                            <label for="location" class="form-label">Location</label>
-                            <input type="text" class="form-control" id="location" name="location" 
-                                   value="{{ current_location or '' }}" placeholder="Enter location">
-                        </div>
+        <!-- Services List Section -->
+        <div class="col-md-9">
+            {% if current_user.role == 'client' %}
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Service Requests</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#postServiceModal">
+                    <i class="fas fa-plus"></i> Post New Request
+                </button>
+            </div>
+            {% else %}
+            <h2 class="mb-4">Service Requests</h2>
+            {% endif %}
 
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Status</label>
-                            <select class="form-select" id="status" name="status">
-                                <option value="open" {% if current_status == 'open' %}selected{% endif %}>Open</option>
-                                <option value="in_progress" {% if current_status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                                <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
-                            </select>
+            <div id="servicesList">
+                {% if services %}
+                    {% for service in services %}
+                    <div class="card service-card">
+                        <div class="card-body">
+                            <span class="badge 
+                                      {% if service.status == 'open' %}bg-success
+                                      {% elif service.status == 'in_progress' %}bg-warning
+                                      {% elif service.status == 'completed' %}bg-info
+                                      {% else %}bg-secondary{% endif %} 
+                                      status-badge">
+                                {{ service.status|title }}
+                            </span>
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="card-title">{{ service.service_type }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">
+                                        <i class="fas fa-map-marker-alt"></i> {{ service.location }}
+                                        &bull;
+                                        <i class="fas fa-tag"></i> {{ service.category }}
+                                        &bull;
+                                        <i class="fas fa-money-bill"></i> {{ service.payment }}
+                                    </h6>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm view-on-map"
+                                        data-service-id="{{ service.id }}"
+                                        data-lat="{{ service.lat }}"
+                                        data-lng="{{ service.lng }}"
+                                        data-type="{{ service.service_type }}">
+                                    <i class="fas fa-map-marked-alt"></i> View on Map
+                                </button>
+                            </div>
+                            <p class="card-text">{{ service.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    Requested by {{ service.client.name }}
+                                    <br>
+                                    {{ service.created_at|datetime }}
+                                </small>
+                                {% if service.status == 'open' and current_user.role == 'provider' %}
+                                <button class="btn btn-primary btn-sm offer-service"
+                                        data-service-id="{{ service.id }}">
+                                    Offer Service
+                                </button>
+                                {% endif %}
+                            </div>
                         </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="alert alert-info">
+                    No service requests found matching your criteria.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 
-                        <div class="d-grid">
+<!-- Post Service Modal -->
+{% if current_user.role == 'client' %}
+<div class="modal fade" id="postServiceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Post a Service Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="postServiceForm">
+                    <div class="mb-3">
+                        <label for="serviceType" class="form-label">Service Type</label>
+                        <input type="text" class="form-control" id="serviceType" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="serviceDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="serviceDescription" rows="4" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="serviceCategory" class="form-label">Category</label>
+                                <select class="form-select" id="serviceCategory" required>
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category }}">{{ category }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="serviceLocation" class="form-label">Location</label>
+                                <select class="form-select" id="serviceLocation" required>
+                                    <option value="">Select Location</option>
+                                    {% for location in locations %}
+                                    <option value="{{ location }}">{{ location }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="servicePayment" class="form-label">Payment</label>
+                        <input type="text" class="form-control" id="servicePayment" required
+                               placeholder="Hourly rate, fixed price, or negotiable">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pin Location on Map</label>
+                        <div id="postServiceMap" style="height: 300px;"></div>
+                        <input type="hidden" id="serviceLat" required>
+                        <input type="hidden" id="serviceLng" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitService">Post Request</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- View on Map Modal -->
+<div class="modal fade" id="mapModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Service Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="serviceMap"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Initialize maps
+    let postServiceMap = null;
+    let viewServiceMap = null;
+    let postServiceMarker = null;
+    const catanduanesCenter = [13.7089, 124.2384]; // Virac coordinates
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize map in view modal
+        const mapModal = document.getElementById('mapModal');
+        mapModal.addEventListener('shown.bs.modal', function() {
+            if (!viewServiceMap) {
+                viewServiceMap = L.map('serviceMap').setView(catanduanesCenter, 10);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(viewServiceMap);
+            }
+            viewServiceMap.invalidateSize();
+        });
+
+        // Initialize post service map if user is client
+        {% if current_user.role == 'client' %}
+        const postServiceModal = document.getElementById('postServiceModal');
+        postServiceModal.addEventListener('shown.bs.modal', function() {
+            if (!postServiceMap) {
+                postServiceMap = L.map('postServiceMap').setView(catanduanesCenter, 10);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(postServiceMap);
+                
+                // Add click handler for setting location
+                postServiceMap.on('click', function(e) {
+                    const lat = e.latlng.lat;
+                    const lng = e.latlng.lng;
+                    
+                    document.getElementById('serviceLat').value = lat;
+                    document.getElementById('serviceLng').value = lng;
+                    
+                    if (postServiceMarker) {
+                        postServiceMarker.setLatLng(e.latlng);
+                    } else {
+                        postServiceMarker = L.marker(e.latlng).addTo(postServiceMap);
+                    }
+                });
+            }
+            postServiceMap.invalidateSize();
+        });
+        
+        // Handle service request submission
+        document.getElementById('submitService').addEventListener('click', function() {
+            const data = {
+                service_type: document.getElementById('serviceType').value,
+                description: document.getElementById('serviceDescription').value,
+                category: document.getElementById('serviceCategory').value,
+                location: document.getElementById('serviceLocation').value,
+                payment: document.getElementById('servicePayment').value,
+                lat: parseFloat(document.getElementById('serviceLat').value),
+                lng: parseFloat(document.getElementById('serviceLng').value)
+            };
+
+            // Validate form
+            if (!data.service_type || !data.description || !data.category || 
+                !data.location || !data.payment || !data.lat || !data.lng) {
+                alert('Please fill all required fields and pin a location on the map.');
+                return;
+            }
+
+            // Submit service request
+            fetch('/create_service_request', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+                // Close modal and reload page
+                bootstrap.Modal.getInstance(postServiceModal).hide();
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Error posting service request: ' + error.message);
+            });
+        });
+        {% endif %}
+
+        // Handle view on map clicks
+        document.querySelectorAll('.view-on-map').forEach(button => {
+            button.addEventListener('click', function() {
+                const lat = parseFloat(this.dataset.lat);
+                const lng = parseFloat(this.dataset.lng);
+                const type = this.dataset.type;
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('mapModal'));
+                modal.show();
+
+                // Add marker after modal is shown
+                modal._element.addEventListener('shown.bs.modal', function() {
+                    viewServiceMap.setView([lat, lng], 13);
+                    L.marker([lat, lng])
+                        .bindPopup(type)
+                        .addTo(viewServiceMap)
+                        .openPopup();
+                }, { once: true });
+            });
+        });
+
+        // Handle offer service clicks
+        document.querySelectorAll('.offer-service').forEach(button => {
+            button.addEventListener('click', function() {
+                const serviceId = this.dataset.serviceId;
+                // Implement offer service logic here
+                alert('Offer service feature coming soon!');
+            });
+        });
+
+        // Handle filter form submission
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const searchParams = new URLSearchParams();
+            
+            const search = document.getElementById('search').value;
+            const category = document.getElementById('category').value;
+            const location = document.getElementById('location').value;
+            const status = document.getElementById('status').value;
+            
+            if (search) searchParams.append('search', search);
+            if (category) searchParams.append('category', category);
+            if (location) searchParams.append('location', location);
+            if (status) searchParams.append('status', status);
+            
+            window.location.search = searchParams.toString();
+        });
+    });
+</script>
+{% endblock %}
                             <button type="submit" class="btn btn-primary">Apply Filters</button>
                         </div>
                     </form>
