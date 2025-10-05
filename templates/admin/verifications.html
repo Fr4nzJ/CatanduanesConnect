@@ -5,12 +5,12 @@
   <div class="row">
     <aside class="col-12 col-md-3 col-lg-2 mb-3 mb-md-0">
       <div class="list-group">
-        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.dashboard') }}">Dashboard</a>
-        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.users') }}">Users</a>
-        <a class="list-group-item list-group-item-action active" href="{{ url_for('admin.verifications') }}">Verifications</a>
-        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.jobs') }}">Jobs</a>
-        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.services') }}">Services</a>
-        <a class="list-group-item list-group-item-action" href="{{ url_for('admin.reports') }}">Reports</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin_blueprint.dashboard') }}">Dashboard</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin_blueprint.users') }}">Users</a>
+        <a class="list-group-item list-group-item-action active" href="{{ url_for('admin_blueprint.verifications') }}">Verifications</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin_blueprint.jobs') }}">Jobs</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin_blueprint.services') }}">Services</a>
+        <a class="list-group-item list-group-item-action" href="{{ url_for('admin_blueprint.reports') }}">Reports</a>
         <a class="list-group-item list-group-item-action" href="{{ url_for('logout') }}">Logout</a>
       </div>
     </aside>

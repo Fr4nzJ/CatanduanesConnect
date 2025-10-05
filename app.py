@@ -593,7 +593,7 @@ def download_resume(user_id):
         user = User.get_by_id(user_id)
         if not user or not user.resume_path:
             flash('Resume not found.', 'danger')
-            return redirect(url_for('admin.verify_users_list'))
+            return redirect(url_for('admin_blueprint.verifications'))
             
         return send_file(
             user.resume_path,
@@ -603,7 +603,7 @@ def download_resume(user_id):
     except Exception as e:
         logger.error(f"Error downloading resume: {str(e)}")
         flash('Error downloading resume.', 'danger')
-        return redirect(url_for('admin.verify_users_list'))
+        return redirect(url_for('admin_blueprint.verifications'))
 
 @app.route('/download/permit/<user_id>')
 @login_required
@@ -614,7 +614,7 @@ def download_permit(user_id):
         user = User.get_by_id(user_id)
         if not user or not user.permit_path:
             flash('Business permit not found.', 'danger')
-            return redirect(url_for('admin.verify_users_list'))
+            return redirect(url_for('admin_blueprint.verifications'))
             
         return send_file(
             user.permit_path,
@@ -624,7 +624,7 @@ def download_permit(user_id):
     except Exception as e:
         logger.error(f"Error downloading permit: {str(e)}")
         flash('Error downloading permit.', 'danger')
-        return redirect(url_for('admin.verify_users_list'))
+        return redirect(url_for('admin_blueprint.verifications'))
 
 @app.route('/notifications')
 @login_required

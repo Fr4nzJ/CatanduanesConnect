@@ -99,12 +99,7 @@
                             <td>{{ user.role|title }}</td>
                             <td>
                                 {% if user.resume_path or user.permit_path %}
-                                    <a href="{{ url_for('admin.view_document', user_id=user.id) }}" 
-                                       target="_blank" 
-                                       class="document-link">
-                                        <i class="bi bi-file-earmark-text"></i>
-                                        View Document
-                                    </a>
+                                    <span class="text-muted">Document Available</span>
                                 {% else %}
                                     <span class="text-muted">No Document Required</span>
                                 {% endif %}
@@ -175,7 +170,7 @@ function showVerificationModal(userId, action) {
     // Set up the modal
     modalTitle.textContent = action === 'verify' ? 'Verify User' : 'Reject User';
     actionInput.value = action;
-    form.action = `{{ url_for('admin.verify_user', user_id='') }}${userId}`;
+    form.action = `{{ url_for('admin_blueprint.verifications') }}`;
     
     // Style the confirm button
     confirmButton.className = `btn ${action === 'verify' ? 'btn-success' : 'btn-danger'}`;
@@ -230,14 +225,16 @@ function showVerificationModal(userId, action) {
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="POST" class="d-inline">
+                                    <form action="{{ url_for('admin_blueprint.verifications') }}" method="POST" class="d-inline">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                        <button type="submit" name="action" value="verify" class="btn btn-sm btn-success">
+                                        <input type="hidden" name="email" value="{{ user.email }}"/>
+                                        <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">
                                             <i class="bi bi-check-circle"></i> Verify
                                         </button>
                                     </form>
-                                    <form action="{{ url_for('admin.verify_user', user_id=user.id) }}" method="POST" class="d-inline ms-2">
+                                    <form action="{{ url_for('admin_blueprint.verifications') }}" method="POST" class="d-inline ms-2">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <input type="hidden" name="email" value="{{ user.email }}"/>
                                         <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger">
                                             <i class="bi bi-x-circle"></i> Reject
                                         </button>
