@@ -380,7 +380,8 @@ class User(UserMixin):
     
     def __init__(self, id=None, email=None, password=None, first_name=None, last_name=None, middle_name=None,
                  suffix=None, role=None, phone=None, address=None, skills=None, experience=None,
-                 education=None, resume_path=None, permit_path=None, verification_status='pending_verification',
+                 education=None, resume_path=None, permit_path=None, id_front_path=None, id_back_path=None,
+                 verification_status='pending_verification',
                  google_id=None, profile_picture=None, name=None, verification_notes=None, 
                  verified_by=None, verified_at=None, is_admin=False):
         # Handle legacy name field
@@ -406,6 +407,8 @@ class User(UserMixin):
         self.education = education or []
         self.resume_path = resume_path
         self.permit_path = permit_path
+        self.id_front_path = id_front_path
+        self.id_back_path = id_back_path
         self.verification_status = verification_status or 'pending_verification'  # pending_verification, verified, rejected
         self.verification_notes = verification_notes
         self.verified_by = verified_by
@@ -703,6 +706,8 @@ class User(UserMixin):
             education=node_data.get("education", []),
             resume_path=node_data.get("resume_path"),
             permit_path=node_data.get("permit_path"),
+            id_front_path=node_data.get("id_front_path"),
+            id_back_path=node_data.get("id_back_path"),
             verification_status=node_data.get("verification_status", "pending_verification"),
             google_id=node_data.get("google_id"),
             profile_picture=node_data.get("profile_picture"),

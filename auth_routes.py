@@ -30,6 +30,9 @@ ALLOWED_EXTENSIONS = {
     'business_owner': {'pdf', 'png', 'jpg', 'jpeg'}
 }
 
+# Clients: accept images for ID front/back
+ALLOWED_EXTENSIONS['client'] = {'png', 'jpg', 'jpeg'}
+
 @auth.route('/restricted_access')
 def restricted_access():
     """Show restricted access page for unverified users."""
@@ -49,44 +52,85 @@ def complete_registration():
             flash('Please select a valid role.', 'danger')
             return redirect(url_for('auth.complete_registration'))
 
-        # Handle file upload for job seekers and business owners
+        # Handle file upload for job seekers, business owners, and clients
         document_path = None
-        if role in ['job_seeker', 'business_owner']:
-            if 'document' not in request.files:
-                flash('Please upload the required document.', 'danger')
-                return redirect(url_for('auth.complete_registration'))
+        id_front_path = None
+        id_back_path = None
 
-            file = request.files['document']
-            if file.filename == '':
-                flash('No file selected.', 'danger')
-                return redirect(url_for('auth.complete_registration'))
+        if role in ['job_seeker', 'business_owner', 'client']:
+            # Client has two image files (id_front, id_back)
+            if role == 'client':
+                if 'id_front' not in request.files or 'id_back' not in request.files:
+                    flash('Please upload ID front and back images for client accounts.', 'danger')
+                    return redirect(url_for('auth.complete_registration'))
 
-            # Validate file extension and size
-            if not file.filename.lower().endswith(tuple(ALLOWED_EXTENSIONS[role])):
-                flash(f'Invalid file type. Allowed types for {role}: {", ".join(ALLOWED_EXTENSIONS[role])}', 'danger')
-                return redirect(url_for('auth.complete_registration'))
-                
-            # Check file size (5MB limit)
-            file.seek(0, os.SEEK_END)
-            size = file.tell()
-            file.seek(0)
-            if size > 5 * 1024 * 1024:  # 5MB
-                flash('File size must be less than 5MB.', 'danger')
-                return redirect(url_for('auth.complete_registration'))
+                front = request.files['id_front']
+                back = request.files['id_back']
+                if not front.filename or not back.filename:
+                    flash('Please select both ID front and back files.', 'danger')
+                    return redirect(url_for('auth.complete_registration'))
 
-            # Save file securely
-            filename = secure_filename(file.filename)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f"{role}_{timestamp}_{filename}"
-            
-            # Create directories if they don't exist
-            upload_dir = UPLOAD_FOLDER / role
-            upload_dir.mkdir(parents=True, exist_ok=True)
+                # Validate extensions
+                if not front.filename.lower().endswith(tuple(ALLOWED_EXTENSIONS['client'])) or not back.filename.lower().endswith(tuple(ALLOWED_EXTENSIONS['client'])):
+                    flash('Invalid file type for ID images. Allowed types: PNG, JPG, JPEG', 'danger')
+                    return redirect(url_for('auth.complete_registration'))
 
-            file_path = upload_dir / filename
-            file.save(file_path)
-            # Store relative path (to static/) so templates can link via url_for('static', filename=...)
-            document_path = f"uploads/{role}/{filename}"
+                # Check sizes
+                front.seek(0, os.SEEK_END)
+                front_size = front.tell()
+                front.seek(0)
+                back.seek(0, os.SEEK_END)
+                back_size = back.tell()
+                back.seek(0)
+                if front_size > 5 * 1024 * 1024 or back_size > 5 * 1024 * 1024:
+                    flash('Each ID image must be less than 5MB.', 'danger')
+                    return redirect(url_for('auth.complete_registration'))
+
+                # Save files
+                ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+                front_fn = secure_filename(f"client_id_front_{ts}_{front.filename}")
+                back_fn = secure_filename(f"client_id_back_{ts}_{back.filename}")
+                upload_dir = UPLOAD_FOLDER / 'client'
+                upload_dir.mkdir(parents=True, exist_ok=True)
+                front_path = upload_dir / front_fn
+                back_path = upload_dir / back_fn
+                front.save(front_path)
+                back.save(back_path)
+                id_front_path = f"uploads/client/{front_fn}"
+                id_back_path = f"uploads/client/{back_fn}"
+
+            else:
+                if 'document' not in request.files:
+                    flash('Please upload the required document.', 'danger')
+                    return redirect(url_for('auth.complete_registration'))
+
+                file = request.files['document']
+                if file.filename == '':
+                    flash('No file selected.', 'danger')
+                    return redirect(url_for('auth.complete_registration'))
+
+                # Validate file extension and size
+                if not file.filename.lower().endswith(tuple(ALLOWED_EXTENSIONS[role])):
+                    flash(f'Invalid file type. Allowed types for {role}: {", ".join(ALLOWED_EXTENSIONS[role])}', 'danger')
+                    return redirect(url_for('auth.complete_registration'))
+
+                # Check file size (5MB limit)
+                file.seek(0, os.SEEK_END)
+                size = file.tell()
+                file.seek(0)
+                if size > 5 * 1024 * 1024:  # 5MB
+                    flash('File size must be less than 5MB.', 'danger')
+                    return redirect(url_for('auth.complete_registration'))
+
+                # Save file securely
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"{role}_{timestamp}_{filename}"
+                upload_dir = UPLOAD_FOLDER / role
+                upload_dir.mkdir(parents=True, exist_ok=True)
+                file_path = upload_dir / filename
+                file.save(file_path)
+                document_path = f"uploads/{role}/{filename}"
 
         try:
             # Create user with Google data
@@ -98,7 +142,9 @@ def complete_registration():
                 profile_picture=google_user.get('picture'),
                 role=role,
                 resume_path=document_path if role == 'job_seeker' else None,
-                permit_path=document_path if role == 'business_owner' else None
+                permit_path=document_path if role == 'business_owner' else None,
+                id_front_path=id_front_path if role == 'client' else None,
+                id_back_path=id_back_path if role == 'client' else None
             )
             
             # Save user to Neo4j

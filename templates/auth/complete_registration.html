@@ -32,12 +32,21 @@
 
                         <div id="upload_field" class="mb-3" style="display: none;">
                             <label class="form-label">Required Document *</label>
-                            <input type="file" class="form-control" name="document" id="document" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+                            <div id="singleUpload">
+                                <input type="file" class="form-control" name="document" id="document" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+                            </div>
+                            <div id="clientUpload" style="display:none;">
+                                <label class="form-label">ID Front *</label>
+                                <input type="file" class="form-control mb-2" name="id_front" id="id_front" accept=".png,.jpg,.jpeg">
+                                <label class="form-label">ID Back *</label>
+                                <input type="file" class="form-control" name="id_back" id="id_back" accept=".png,.jpg,.jpeg">
+                            </div>
                             <div class="form-text" id="document_help">
                                 Job Seeker: Resume (PDF/DOC/DOCX)<br>
-                                Business Owner: Business Permit (PDF/Image)
+                                Business Owner: Business Permit (PDF/Image)<br>
+                                Client: Government-issued ID (Image files front and back)
                             </div>
-                            <div class="invalid-feedback">Please upload the required document.</div>
+                            <div class="invalid-feedback">Please upload the required document(s).</div>
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100">Complete Registration</button>
@@ -50,23 +59,44 @@
 
 <script>
 function toggleUploadField() {
-    const userType = document.getElementById('user_type').value;
+    const userType = document.getElementById('role').value;
     const uploadField = document.getElementById('upload_field');
+    const singleUpload = document.getElementById('singleUpload');
+    const clientUpload = document.getElementById('clientUpload');
     const documentInput = document.getElementById('document');
-    
-    if (userType === 'job_seeker' || userType === 'business_owner') {
+    const idFront = document.getElementById('id_front');
+    const idBack = document.getElementById('id_back');
+
+    if (userType === 'job_seeker') {
         uploadField.style.display = 'block';
+        singleUpload.style.display = 'block';
+        clientUpload.style.display = 'none';
         documentInput.required = true;
-        
-        // Update accepted file types based on user type
-        if (userType === 'job_seeker') {
-            documentInput.accept = '.pdf,.doc,.docx';
-        } else if (userType === 'business_owner') {
-            documentInput.accept = '.pdf,.png,.jpg,.jpeg';
-        }
+        idFront.required = false;
+        idBack.required = false;
+        documentInput.accept = '.pdf,.doc,.docx';
+    } else if (userType === 'business_owner') {
+        uploadField.style.display = 'block';
+        singleUpload.style.display = 'block';
+        clientUpload.style.display = 'none';
+        documentInput.required = true;
+        idFront.required = false;
+        idBack.required = false;
+        documentInput.accept = '.pdf,.png,.jpg,.jpeg';
+    } else if (userType === 'client') {
+        uploadField.style.display = 'block';
+        singleUpload.style.display = 'none';
+        clientUpload.style.display = 'block';
+        documentInput.required = false;
+        idFront.required = true;
+        idBack.required = true;
     } else {
         uploadField.style.display = 'none';
+        singleUpload.style.display = 'block';
+        clientUpload.style.display = 'none';
         documentInput.required = false;
+        idFront.required = false;
+        idBack.required = false;
     }
 }
 

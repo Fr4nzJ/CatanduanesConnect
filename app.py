@@ -472,7 +472,7 @@ def signup():
                         filename = secure_upload(permit_file, 'permit')
                         if filename:
                             user.permit_path = filename
-                            user.verification_status = 'pending'
+                            user.verification_status = 'pending_verification'
                     except Exception as e:
                         logger.error(f'Error uploading permit: {str(e)}')
                         flash('Error uploading business permit. Please try again.', 'danger')
