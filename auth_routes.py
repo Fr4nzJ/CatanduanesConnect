@@ -180,7 +180,7 @@ def complete_registration():
 def login():
     if current_user.is_authenticated:
         if current_user.role == 'admin':
-            return redirect(url_for("admin.dashboard"))
+            return redirect(url_for("admin_blueprint.dashboard"))
         return redirect(url_for("dashboard"))
 
     if request.method == "POST":
@@ -210,7 +210,7 @@ def login():
 def signup():
     if current_user.is_authenticated:
         if current_user.role == 'admin':
-            return redirect(url_for("admin.dashboard"))
+            return redirect(url_for("admin_blueprint.dashboard"))
         return redirect(url_for("dashboard"))
 
     if request.method == "POST":
@@ -284,7 +284,7 @@ def google_login():
 def google_callback():
     if current_user.is_authenticated:
         if current_user.role == 'admin':
-            return redirect(url_for("admin.dashboard"))
+            return redirect(url_for("admin_blueprint.dashboard"))
         return redirect(url_for("dashboard"))
 
     state = session.get("google_state")

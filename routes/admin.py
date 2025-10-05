@@ -113,7 +113,7 @@ def verifications():
                     status=new_status,
                 )
             flash("Status updated.", "success")
-        return redirect(url_for("admin.verifications"))
+        return redirect(url_for("admin_blueprint.verifications"))
 
     pending = []
     with neo4j_driver.session(database=NEO4J_DATABASE) as session:
