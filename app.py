@@ -39,11 +39,6 @@ from routes.business_routes import bp as business_bp
 # Initialize Flask app
 app = Flask(__name__)
 
-# Register blueprints
-app.register_blueprint(jobs_bp)
-app.register_blueprint(services_bp)
-app.register_blueprint(business_bp)
-
 # Initialize a simple module logger early so startup code can log before
 # the full logging configuration is applied later in this file. This
 # prevents NameError when early startup code (like ProxyFix or config
