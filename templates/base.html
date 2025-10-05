@@ -201,13 +201,13 @@
                         {% if current_user.role in ['job_seeker', 'business_owner'] %}
                             <li class="nav-item">
                                 <span class="status-badge 
-                                    {% if current_user.verification_status == 'approved' %}badge-success
+                                    {% if current_user.verification_status == 'verified' %}badge-success
                                     {% elif current_user.verification_status == 'pending_verification' %}badge-warning
                                     {% else %}badge-danger{% endif %}"
                                     {% if current_user.verification_status == 'rejected' %}
                                         data-tooltip="You can re-upload your document in your dashboard"
                                     {% endif %}>
-                                    {% if current_user.verification_status == 'approved' %}
+                                    {% if current_user.verification_status == 'verified' %}
                                         <i class="fas fa-check-circle"></i> Verified
                                     {% elif current_user.verification_status == 'pending_verification' %}
                                         <i class="fas fa-clock"></i> Pending
