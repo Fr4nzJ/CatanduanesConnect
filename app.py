@@ -594,9 +594,16 @@ def download_resume(user_id):
         if not user or not user.resume_path:
             flash('Resume not found.', 'danger')
             return redirect(url_for('admin_blueprint.verifications'))
+        
+        # Construct the full file path
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'resumes', user.resume_path)
+        
+        if not os.path.exists(file_path):
+            flash('Resume file not found on server.', 'danger')
+            return redirect(url_for('admin_blueprint.verifications'))
             
         return send_file(
-            user.resume_path,
+            file_path,
             as_attachment=True,
             download_name=f"{user.name}_resume.{user.resume_path.split('.')[-1]}"
         )
@@ -615,9 +622,16 @@ def download_permit(user_id):
         if not user or not user.permit_path:
             flash('Business permit not found.', 'danger')
             return redirect(url_for('admin_blueprint.verifications'))
+        
+        # Construct the full file path
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'permits', user.permit_path)
+        
+        if not os.path.exists(file_path):
+            flash('Business permit file not found on server.', 'danger')
+            return redirect(url_for('admin_blueprint.verifications'))
             
         return send_file(
-            user.permit_path,
+            file_path,
             as_attachment=True,
             download_name=f"{user.name}_permit.{user.permit_path.split('.')[-1]}"
         )
@@ -636,9 +650,21 @@ def download_id_front(user_id):
         if not user or not user.id_front_path:
             flash('ID front image not found.', 'danger')
             return redirect(url_for('admin_blueprint.verifications'))
+        
+        # Construct the full file path - ID images might be in a different directory
+        # Check if it's already a full path or just a filename
+        if os.path.isabs(user.id_front_path):
+            file_path = user.id_front_path
+        else:
+            # Assume ID images are stored in uploads/id_documents/ or similar
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'id_documents', user.id_front_path)
+        
+        if not os.path.exists(file_path):
+            flash('ID front image file not found on server.', 'danger')
+            return redirect(url_for('admin_blueprint.verifications'))
             
         return send_file(
-            user.id_front_path,
+            file_path,
             as_attachment=True,
             download_name=f"{user.name}_id_front.{user.id_front_path.split('.')[-1]}"
         )
@@ -657,9 +683,21 @@ def download_id_back(user_id):
         if not user or not user.id_back_path:
             flash('ID back image not found.', 'danger')
             return redirect(url_for('admin_blueprint.verifications'))
+        
+        # Construct the full file path - ID images might be in a different directory
+        # Check if it's already a full path or just a filename
+        if os.path.isabs(user.id_back_path):
+            file_path = user.id_back_path
+        else:
+            # Assume ID images are stored in uploads/id_documents/ or similar
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'id_documents', user.id_back_path)
+        
+        if not os.path.exists(file_path):
+            flash('ID back image file not found on server.', 'danger')
+            return redirect(url_for('admin_blueprint.verifications'))
             
         return send_file(
-            user.id_back_path,
+            file_path,
             as_attachment=True,
             download_name=f"{user.name}_id_back.{user.id_back_path.split('.')[-1]}"
         )
