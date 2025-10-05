@@ -164,7 +164,7 @@ def search_jobs():
         logger.error(f"Error searching jobs: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-@bp.route('/jobs')
+@bp.route('/jobs', endpoint='jobs')
 def list_jobs():
     """List all job posts with optional filtering."""
     try:
@@ -195,7 +195,7 @@ def list_jobs():
                 return jsonify({"jobs": jobs})
                 
             # For direct browser requests, render template
-            return render_template('businesses/jobs.html', 
+            return render_template('jobs/index.html', 
                                 jobs=jobs,
                                 search=search,
                                 category=category,
@@ -229,7 +229,7 @@ def view_job(job_id):
                 return jsonify({"job": job})
                 
             # For direct browser requests, render template
-            return render_template('businesses/job_details.html', job=job)
+            return render_template('jobs/details.html', job=job)
     except Exception as e:
         logger.error(f"Error viewing job: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
