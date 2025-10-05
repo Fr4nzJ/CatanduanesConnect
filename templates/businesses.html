@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Businesses{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <style>
+    .business-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; background: #fff; }
+    .business-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .filters { display: grid; grid-template-columns: 1fr 220px 220px; gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 768px) { .filters { grid-template-columns: 1fr; } }
+    .map-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); align-items: center; justify-content: center; z-index: 50; }
+    .map-modal.open { display: flex; }
+    .map-content { width: min(900px, 95vw); height: min(600px, 80vh); background: #fff; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+    #map { flex: 1; }
+    .map-header { padding: 10px 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:1100px;">
+  <h1>Business Directory</h1>
+
+  <div class="filters">
+    <input id="searchInput" class="form-control" type="text" placeholder="Search by name or service..." value="{{ q or '' }}" />
+    <select id="categorySelect" class="form-control">
+      <option value="">All Categories</option>
+      {% for c in categories %}
+        <option value="{{ c }}" {% if current_category==c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <select id="locationSelect" class="form-control">
+      <option value="">All Locations</option>
+      {% for l in locations %}
+        <option value="{{ l }}" {% if current_location==l %}selected{% endif %}>{{ l }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div id="cards" class="business-grid">
+    {% for o in owners %}
+    <div class="business-card" 
+         data-name="{{ (o.business_name or '')|lower }}" 
+         data-desc="{{ (o.description or '')|lower }}" 
+         data-category="{{ (o.category or '')|lower }}" 
+         data-location="{{ ((o.city ~ ', ' ~ o.province) if o.city or o.province else (o.location or ''))|lower }}"
+         data-lat="{{ o.latitude or '' }}"
+         data-lng="{{ o.longitude or '' }}">
+      <h3 style="margin:0 0 6px 0;">{{ o.business_name or (o.first_name ~ ' ' ~ o.last_name) }}</h3>
+      <div style="color:#6b7280; margin-bottom:8px;">{{ o.description or 'No description provided' }}</div>
+      <div style="font-size: 14px; margin-bottom:6px;">
+        <strong>Category:</strong> {{ o.category or 'N/A' }}
+      </div>
+      <div style="font-size: 14px; margin-bottom:6px;">
+        <strong>Location:</strong> 
+        {% if o.city or o.province %}
+          {{ o.city }}{% if o.city and o.province %}, {% endif %}{{ o.province }}
+        {% else %}
+          {{ o.location or 'N/A' }}
+        {% endif %}
+      </div>
+      {% if o.email %}
+      <div style="font-size: 14px; margin-bottom:10px;">
+        <strong>Email:</strong> <a href="mailto:{{ o.email }}">{{ o.email }}</a>
+      </div>
+      {% endif %}
+      {% if o.latitude and o.longitude %}
+      <button class="btn btn-primary btn-sm view-map" 
+              data-name="{{ o.business_name or '' }}"
+              data-desc="{{ o.description or '' }}"
+              data-lat="{{ o.latitude }}"
+              data-lng="{{ o.longitude }}">View on Map</button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if not owners or owners|length == 0 %}
+    <p id="emptyState">No businesses found.</p>
+  {% else %}
+    <p id="emptyState" style="display:none;">No businesses found.</p>
+  {% endif %}
+</div>
+
+<!-- Map Modal -->
+<div id="mapModal" class="map-modal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="map-content">
+    <div class="map-header">
+      <div id="mapTitle">Location</div>
+      <button id="closeMap" class="btn btn-light">Close</button>
+    </div>
+    <div id="map"></div>
+  </div>
+  <div class="sr-only" aria-live="polite"></div>
+  <!-- sr-only region for screen readers -->
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="{{ url_for('static', filename='js/businesses.js') }}"></script>
+{% endblock %}
+
+

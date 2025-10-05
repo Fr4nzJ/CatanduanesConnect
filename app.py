@@ -35,6 +35,7 @@ from dashboard_routes import dashboard
 from routes.job_routes import bp as jobs_bp
 from routes.service_routes import bp as services_bp
 from routes.business_routes import bp as business_bp
+from routes.businesses_routes import businesses_bp
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -93,6 +94,7 @@ app.register_blueprint(chatbot_bp)
 app.register_blueprint(dashboard)
 app.register_blueprint(jobs_bp)
 app.register_blueprint(services_bp)
+app.register_blueprint(businesses_bp, url_prefix="/businesses")
 
 # Custom template filters
 @app.template_filter('datetime')
@@ -148,14 +150,7 @@ def about():
     return render_template('about.html')
 
 
-@app.route('/map', endpoint='map')
-def map_view():
-    """Render the standalone map page. Kept for backward compatibility with templates linking to 'map'.
-
-    Note: interactive maps are used inline and in modals across the site, but some templates
-    still link to a dedicated map page. This route renders templates/map.html.
-    """
-    return render_template('map.html')
+ 
 
 # Error handlers
 @app.errorhandler(HTTPException)
@@ -903,48 +898,7 @@ def jobs():
         flash(f'Error loading jobs: {str(e)}', 'danger')
         return redirect(url_for('home'))
 
-@app.route('/businesses')
-def businesses():
-    try:
-        page = request.args.get('page', 1, type=int)
-        per_page = 10
-        
-        # Get all businesses
-        businesses = Business.get_all()
-        
-        # Apply filters manually
-        category = request.args.get('category')
-        location = request.args.get('location')
-        search_query = request.args.get('q')
-        
-        filtered_businesses = businesses
-        if category:
-            filtered_businesses = [b for b in filtered_businesses if b.category.lower() == category.lower()]
-        if location:
-            filtered_businesses = [b for b in filtered_businesses if b.location.lower() == location.lower()]
-        if search_query:
-            search_query = search_query.lower()
-            filtered_businesses = [b for b in filtered_businesses if 
-                                 search_query in b.name.lower() or 
-                                 search_query in b.description.lower()]
-        
-        # Calculate pagination
-        total_businesses = len(filtered_businesses)
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        paginated_businesses = filtered_businesses[start_idx:end_idx]
-        
-        # Create pagination object
-        pagination = {
-            'page': page,
-            'pages': (total_businesses + per_page - 1) // per_page if total_businesses else 0,
-            'iter_pages': lambda: range(1, ((total_businesses + per_page - 1) // per_page) + 1) if total_businesses else []
-        }
-        
-        return render_template('businesses/businesses.html', businesses=paginated_businesses, pagination=pagination)
-    except Exception as e:
-        flash(f'Error loading businesses: {str(e)}', 'danger')
-        return redirect(url_for('home'))
+ 
 
 # NOTE: Standalone /map route removed. Maps are shown inline in pages and in modals using Leaflet.
 

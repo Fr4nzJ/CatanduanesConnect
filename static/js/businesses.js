@@ -1,3 +1,112 @@
+(() => {
+  const searchInput = document.getElementById('searchInput');
+  const categorySelect = document.getElementById('categorySelect');
+  const locationSelect = document.getElementById('locationSelect');
+  const cards = document.getElementById('cards');
+  const emptyState = document.getElementById('emptyState');
+
+  const mapModal = document.getElementById('mapModal');
+  const closeMapBtn = document.getElementById('closeMap');
+  const mapTitle = document.getElementById('mapTitle');
+  let leafletMap = null;
+  let currentMarker = null;
+
+  function normalize(str) {
+    return (str || '').toString().trim().toLowerCase();
+  }
+
+  function filterCards() {
+    const q = normalize(searchInput?.value);
+    const cat = normalize(categorySelect?.value);
+    const loc = normalize(locationSelect?.value);
+
+    let visible = 0;
+    Array.from(cards.children).forEach((card) => {
+      const name = normalize(card.dataset.name);
+      const desc = normalize(card.dataset.desc);
+      const category = normalize(card.dataset.category);
+      const location = normalize(card.dataset.location);
+
+      const matchesQ = !q || name.includes(q) || desc.includes(q);
+      const matchesCat = !cat || category === cat;
+      const matchesLoc = !loc || location.includes(loc);
+
+      const show = matchesQ && matchesCat && matchesLoc;
+      card.style.display = show ? '' : 'none';
+      if (show) visible += 1;
+    });
+
+    if (emptyState) emptyState.style.display = visible === 0 ? '' : 'none';
+  }
+
+  function setupFilters() {
+    if (searchInput) searchInput.addEventListener('input', filterCards);
+    if (categorySelect) categorySelect.addEventListener('change', filterCards);
+    if (locationSelect) locationSelect.addEventListener('change', filterCards);
+  }
+
+  function openMap({ name, desc, lat, lng }) {
+    if (!mapModal) return;
+    mapModal.classList.add('open');
+    if (mapTitle) mapTitle.textContent = name || 'Location';
+
+    const latNum = Number(lat);
+    const lngNum = Number(lng);
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) return;
+
+    setTimeout(() => {
+      if (!leafletMap) {
+        leafletMap = L.map('map');
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(leafletMap);
+      }
+
+      leafletMap.setView([latNum, lngNum], 15);
+      if (currentMarker) {
+        currentMarker.remove();
+      }
+      currentMarker = L.marker([latNum, lngNum]).addTo(leafletMap);
+      currentMarker.bindPopup(`<strong>${name || ''}</strong><br/>${desc || ''}`).openPopup();
+      leafletMap.invalidateSize();
+    }, 0);
+  }
+
+  function closeMap() {
+    if (!mapModal) return;
+    mapModal.classList.remove('open');
+  }
+
+  function setupMapButtons() {
+    if (!cards) return;
+    cards.addEventListener('click', (e) => {
+      const btn = e.target.closest('.view-map');
+      if (!btn) return;
+      const lat = btn.dataset.lat;
+      const lng = btn.dataset.lng;
+      const name = btn.dataset.name;
+      const desc = btn.dataset.desc;
+      openMap({ name, desc, lat, lng });
+    });
+    if (closeMapBtn) closeMapBtn.addEventListener('click', closeMap);
+    if (mapModal) mapModal.addEventListener('click', (e) => {
+      // click outside content closes
+      if (e.target === mapModal) closeMap();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMap();
+    });
+  }
+
+  // init
+  if (cards) {
+    setupFilters();
+    setupMapButtons();
+    filterCards();
+  }
+})();
+
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
