@@ -249,12 +249,12 @@ function showVerificationModal(userId, action) {
                     </tbody>
                 </table>
             </div>
-            {% else %}
-            <div class="alert alert-info">
-                No pending user verifications.
-            </div>
-            {% endif %}
         </div>
+        {% if not pending_users %}
+        <div class="alert alert-info">
+            No pending user verifications.
+        </div>
+        {% endif %}
     </div>
 </div>
-{% endblock %}
+{% endblock content %}
