@@ -446,6 +446,24 @@ class User(UserMixin):
     def is_verified(self):
         return self.verification_status == 'verified'
 
+    @classmethod
+    def get_by_email(cls, email):
+        """Retrieve a user by their email address"""
+        try:
+            with driver.session(database=DATABASE) as session:
+                result = session.run("""
+                    MATCH (u:User {email: $email})
+                    RETURN u
+                    """, email=email)
+                record = result.single()
+                if record:
+                    user_data = record['u']
+                    return cls(**user_data)
+                return None
+        except Exception as e:
+            logger.error(f'Error retrieving user by email: {str(e)}')
+            return None
+
     def verify(self, admin_email, notes=None):
         try:
             with driver.session(database=DATABASE) as session:
