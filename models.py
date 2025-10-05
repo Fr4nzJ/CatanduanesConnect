@@ -447,23 +447,22 @@ class User(UserMixin):
         return self.verification_status == 'verified'
 
     @classmethod
-    @classmethod
     def get_by_email(cls, email):
-        """Retrieve a user by their email address"""
+        """Retrieve a user by their email address as a classmethod."""
         try:
             if driver is None:
                 logger.error('Driver not initialized when getting user by email')
                 return None
 
             with driver.session(database=DATABASE) as session:
-                result = session.run("""
-                    MATCH (u:User {email: $email}) 
-                    RETURN u
-                """, email=email)
-                
+                result = session.run(
+                    "MATCH (u:User {email: $email}) RETURN u",
+                    email=email
+                )
                 record = result.single()
-                if record and record['u']:
-                    return cls(**dict(record['u']))
+                if record and record.get('u'):
+                    node_data = dict(record['u']) if hasattr(record['u'], 'items') else record['u']
+                    return cls.from_neo4j(node_data)
                 return None
 
         except Exception as e:
