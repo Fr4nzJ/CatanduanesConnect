@@ -26,3 +26,17 @@
 2025-10-06 02:31:29,687 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
 2025-10-06 02:31:29,874 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
 2025-10-06 02:31:29,881 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-06 02:52:44,366 - app - INFO - Successfully connected to Neo4j database
+2025-10-06 02:52:44,369 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
+2025-10-06 02:52:44,379 - app - INFO - models.User has get_by_email: True
+2025-10-06 02:52:44,944 - app - INFO - Existing admin account verified
+2025-10-06 02:52:44,946 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
+2025-10-06 02:52:45,113 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-06 02:52:45,116 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-06 02:59:58,854 - app - INFO - Successfully connected to Neo4j database
+2025-10-06 02:59:58,855 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
+2025-10-06 02:59:58,856 - app - INFO - models.User has get_by_email: True
+2025-10-06 02:59:59,356 - app - INFO - Existing admin account verified
+2025-10-06 02:59:59,357 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
+2025-10-06 02:59:59,514 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-06 02:59:59,521 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))

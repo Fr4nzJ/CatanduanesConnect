@@ -102,8 +102,8 @@ def complete_registration():
             )
             
             # Save user to Neo4j
-            with driver.session(database=DATABASE) as session:
-                result = session.run("""
+            with driver.session(database=DATABASE) as db_session:
+                result = db_session.run("""
                     CREATE (u:User {
                         id: $id,
                         email: $email,
@@ -134,15 +134,15 @@ def complete_registration():
                     if role in ['job_seeker', 'business_owner']:
                         notify_admins_new_submission(user)
                         send_document_received_email(user)
-                
-                # Clear Google user data from session
-                session.pop('google_user', None)
-                
-                # Log the user in
-                login_user(user)
-                
-                flash('Registration completed successfully. Your account is pending verification.', 'success')
-                return redirect(url_for('auth.restricted_access'))
+
+            # Clear Google user data from Flask session (do this outside the DB session)
+            session.pop('google_user', None)
+
+            # Log the user in
+            login_user(user)
+
+            flash('Registration completed successfully. Your account is pending verification.', 'success')
+            return redirect(url_for('auth.restricted_access'))
                     
         except Exception as e:
             current_app.logger.error(f'Error creating user: {str(e)}')
