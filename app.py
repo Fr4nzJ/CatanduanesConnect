@@ -90,6 +90,13 @@ else:
 # Enable CORS
 CORS(app)
 
+# Set up upload directories
+UPLOAD_ROOT = os.path.join(app.static_folder, 'uploads')
+for subfolder in ['job_seeker', 'business_owner', 'client']:
+    folder_path = os.path.join(UPLOAD_ROOT, subfolder)
+    os.makedirs(folder_path, exist_ok=True)
+    logger.info(f'Created upload directory: {folder_path}')
+
 # Register blueprints
 app.register_blueprint(new_admin, name='admin_blueprint')
 app.register_blueprint(chatbot_bp)

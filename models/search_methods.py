@@ -53,6 +53,108 @@ class JobOffer:
         return job
             
     @staticmethod
+    def get_all_active(category=None, location=None):
+        """Get all active job offers with optional filtering."""
+        conditions = ["j.status = 'open'"]        
+        params = {}
+        
+        if category:
+            conditions.append("j.category = $category")
+            params['category'] = category
+            
+        if location:
+            conditions.append("toLower(j.location) CONTAINS toLower($location)")
+            params['location'] = location
+            
+        cypher_query = f"""
+        MATCH (j:JobOffer)
+        WHERE {' AND '.join(conditions)}
+        RETURN j
+        ORDER BY j.created_at DESC
+        """
+        
+        try:
+            with get_neo4j_driver().session() as session:
+                result = session.run(cypher_query, params)
+                return [JobOffer.from_node(record['j']) for record in result]
+        except Exception as e:
+            logger.error(f"Error getting active jobs: {str(e)}")
+            return []
+    
+    @staticmethod
+    def get_by_owner(email):
+        """Get all job offers posted by a specific business owner."""
+        cypher_query = """
+        MATCH (u:User {email: $email})-[:POSTED]->(j:JobOffer)
+        RETURN j
+        ORDER BY j.created_at DESC
+        """
+        
+        try:
+            with get_neo4j_driver().session() as session:
+                result = session.run(cypher_query, email=email)
+                return [JobOffer.from_node(record['j']) for record in result]
+        except Exception as e:
+            logger.error(f"Error getting owner's jobs: {str(e)}")
+            return []
+    
+    @staticmethod
+    def create(data, owner_email):
+        """Create a new job offer."""
+        cypher_query = """
+        MATCH (u:User {email: $owner_email})
+        CREATE (j:JobOffer)
+        SET j += $data
+        CREATE (u)-[:POSTED]->(j)
+        RETURN j
+        """
+        
+        try:
+            with get_neo4j_driver().session() as session:
+                result = session.run(cypher_query, 
+                                   owner_email=owner_email,
+                                   data=data)
+                return JobOffer.from_node(result.single()['j'])
+        except Exception as e:
+            logger.error(f"Error creating job: {str(e)}")
+            return None
+    
+    @staticmethod
+    def update(job_id, data):
+        """Update an existing job offer."""
+        cypher_query = """
+        MATCH (j:JobOffer {id: $job_id})
+        SET j += $data
+        RETURN j
+        """
+        
+        try:
+            with get_neo4j_driver().session() as session:
+                result = session.run(cypher_query,
+                                   job_id=job_id,
+                                   data=data)
+                return JobOffer.from_node(result.single()['j'])
+        except Exception as e:
+            logger.error(f"Error updating job: {str(e)}")
+            return None
+    
+    @staticmethod
+    def delete(job_id):
+        """Delete a job offer."""
+        cypher_query = """
+        MATCH (j:JobOffer {id: $job_id})
+        DETACH DELETE j
+        """
+        
+        try:
+            with get_neo4j_driver().session() as session:
+                session.run(cypher_query, job_id=job_id)
+                return True
+        except Exception as e:
+            logger.error(f"Error deleting job: {str(e)}")
+            return False
+
+    @staticmethod
     def get_categories():
         """Get all unique job categories."""
         cypher_query = """
@@ -116,6 +218,97 @@ class ServiceRequest:
             logger.error(f"Error searching services: {str(e)}")
             return []
             
+    @staticmethod
+    def get_all_active():
+        """Get all active service requests."""
+        cypher_query = """
+        MATCH (s:ServiceRequest)
+        WHERE s.status = 'open'
+        RETURN s
+        ORDER BY s.created_at DESC
+        """
+        
+        try:
+            with get_neo4j_driver().session() as session:
+                result = session.run(cypher_query)
+                return [ServiceRequest.from_node(record['s']) for record in result]
+        except Exception as e:
+            logger.error(f"Error getting active services: {str(e)}")
+            return []
+    
+    @staticmethod
+    def get_by_client(email):
+        """Get all service requests posted by a specific client."""
+        cypher_query = """
+        MATCH (u:User {email: $email})-[:POSTED]->(s:ServiceRequest)
+        RETURN s
+        ORDER BY s.created_at DESC
+        """
+        
+        try:
+            with get_neo4j_driver().session() as session:
+                result = session.run(cypher_query, email=email)
+                return [ServiceRequest.from_node(record['s']) for record in result]
+        except Exception as e:
+            logger.error(f"Error getting client's services: {str(e)}")
+            return []
+    
+    @staticmethod
+    def create(data, client_email):
+        """Create a new service request."""
+        cypher_query = """
+        MATCH (u:User {email: $client_email})
+        CREATE (s:ServiceRequest)
+        SET s += $data
+        CREATE (u)-[:POSTED]->(s)
+        RETURN s
+        """
+        
+        try:
+            with get_neo4j_driver().session() as session:
+                result = session.run(cypher_query,
+                                   client_email=client_email,
+                                   data=data)
+                return ServiceRequest.from_node(result.single()['s'])
+        except Exception as e:
+            logger.error(f"Error creating service: {str(e)}")
+            return None
+    
+    @staticmethod
+    def update(service_id, data):
+        """Update an existing service request."""
+        cypher_query = """
+        MATCH (s:ServiceRequest {id: $service_id})
+        SET s += $data
+        RETURN s
+        """
+        
+        try:
+            with get_neo4j_driver().session() as session:
+                result = session.run(cypher_query,
+                                   service_id=service_id,
+                                   data=data)
+                return ServiceRequest.from_node(result.single()['s'])
+        except Exception as e:
+            logger.error(f"Error updating service: {str(e)}")
+            return None
+    
+    @staticmethod
+    def delete(service_id):
+        """Delete a service request."""
+        cypher_query = """
+        MATCH (s:ServiceRequest {id: $service_id})
+        DETACH DELETE s
+        """
+        
+        try:
+            with get_neo4j_driver().session() as session:
+                session.run(cypher_query, service_id=service_id)
+                return True
+        except Exception as e:
+            logger.error(f"Error deleting service: {str(e)}")
+            return False
+
     @staticmethod
     def get_categories():
         """Get all unique service categories."""
