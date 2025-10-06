@@ -51,33 +51,53 @@ class ChatBubble {
         // Add user message to chat
         this.addMessage(message, 'user');
 
+        // Show thinking indicator
+        const thinkingDiv = document.createElement('div');
+        thinkingDiv.className = 'message bot-message thinking';
+        thinkingDiv.innerHTML = `
+            <div class="message-content">
+                <i class="fas fa-circle-notch fa-spin me-2"></i>Thinking...
+            </div>
+        `;
+        thinkingDiv.id = 'thinking';
+        this.messagesContainer.appendChild(thinkingDiv);
+        this.scrollToBottom();
+
         try {
-            // Send message to chatbot server
-            const response = await fetch('/chatbot/chat', {
+            // Send message to chatbot server using new Gemini endpoint
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
                 },
-                body: JSON.stringify({ message }),
+                body: JSON.stringify({ message })
             });
+
+            // Remove thinking indicator
+            const thinking = document.getElementById('thinking');
+            if (thinking) thinking.remove();
 
             if (!response.ok) {
                 const error = await response.json();
-                // Prefer the server-provided error message (error.error), then detail
-                throw new Error(error.error || error.detail || 'Failed to get response');
+                throw new Error(error.message || error.error || 'Failed to get response');
             }
 
             const data = await response.json();
             
             // Add bot response to chat
-            if (data.reply) {
-                this.addMessage(data.reply, 'bot');
+            if (data.response) {
+                this.addMessage(data.response, 'bot');
             } else {
                 this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
             }
         } catch (error) {
             console.error('Error:', error);
             this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+            
+            // Remove thinking indicator if still present
+            const thinking = document.getElementById('thinking');
+            if (thinking) thinking.remove();
         }
 
         // Scroll to bottom
@@ -86,8 +106,12 @@ class ChatBubble {
 
     addMessage(text, type) {
         const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message', `${type}-message`);
-        messageDiv.textContent = text;
+        messageDiv.className = `message ${type}-message`;
+        messageDiv.innerHTML = `
+            <div class="message-content">
+                ${text}
+            </div>
+        `;
         this.messagesContainer.appendChild(messageDiv);
         this.scrollToBottom();
     }
