@@ -37,3 +37,6 @@ class Config:
     
     # Support email for user contact
     SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL', 'support@catanduanesconnect.com')
+    
+    # Google AI/Gemini Configuration
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')

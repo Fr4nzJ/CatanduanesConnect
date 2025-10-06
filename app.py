@@ -28,7 +28,7 @@ from email_service import (
 from models import (
     User, Business, Job, Application, 
     Review, Service, Notification, Activity,
-    JobOffer, ServiceRequest)
+    JobOffer, ServiceRequest
 )
 from decorators import admin_required
 from routes.admin import admin as new_admin

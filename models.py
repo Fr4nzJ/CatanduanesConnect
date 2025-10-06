@@ -8,6 +8,9 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 
+# Import search methods
+from models.search_methods import JobOffer, ServiceRequest, Business
+
 # Set up logging
 logger = logging.getLogger(__name__)
 

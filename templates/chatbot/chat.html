@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - Catanduanes Connect{% endblock %}
+
+{% block head %}
+<style>
+    .chat-container {
+        height: calc(100vh - 200px);
+        display: flex;
+        flex-direction: column;
+    }
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    .message {
+        margin-bottom: 1rem;
+        max-width: 80%;
+    }
+    .message.user {
+        margin-left: auto;
+    }
+    .message.assistant {
+        margin-right: auto;
+    }
+    .message-content {
+        padding: 0.75rem 1rem;
+        border-radius: 1rem;
+        display: inline-block;
+    }
+    .user .message-content {
+        background: #007bff;
+        color: white;
+        border-top-right-radius: 0.25rem;
+    }
+    .assistant .message-content {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-top-left-radius: 0.25rem;
+    }
+    .chat-input {
+        padding: 1rem;
+        background: white;
+        border-top: 1px solid #dee2e6;
+    }
+    .thinking {
+        padding: 0.5rem;
+        font-style: italic;
+        color: #6c757d;
+    }
+    .error {
+        color: #dc3545;
+        padding: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card chat-container">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot me-2"></i> Chat with JobConnect Assistant
+                    </h5>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Welcome message -->
+                    <div class="message assistant">
+                        <div class="message-content">
+                            👋 Hello {{ current_user.firstname }}! I'm here to help you find jobs, businesses, and services in Catanduanes. What can I assist you with today?
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <form id="chatForm" class="d-flex gap-2">
+                        <input type="text" id="userInput" class="form-control" 
+                               placeholder="Type your message..." required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const chatMessages = document.getElementById('chatMessages');
+const chatForm = document.getElementById('chatForm');
+const userInput = document.getElementById('userInput');
+
+// Function to add a message to the chat
+function addMessage(message, role) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${role}`;
+    messageDiv.innerHTML = `
+        <div class="message-content">${message}</div>
+    `;
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Function to show thinking indicator
+function showThinking() {
+    const thinkingDiv = document.createElement('div');
+    thinkingDiv.className = 'message assistant thinking';
+    thinkingDiv.innerHTML = `
+        <div class="message-content">
+            <i class="fas fa-circle-notch fa-spin me-2"></i>Thinking...
+        </div>
+    `;
+    thinkingDiv.id = 'thinking';
+    chatMessages.appendChild(thinkingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Function to hide thinking indicator
+function hideThinking() {
+    const thinking = document.getElementById('thinking');
+    if (thinking) {
+        thinking.remove();
+    }
+}
+
+// Function to show error message
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'message assistant error';
+    errorDiv.innerHTML = `
+        <div class="message-content">
+            <i class="fas fa-exclamation-triangle me-2"></i>${message}
+        </div>
+    `;
+    chatMessages.appendChild(errorDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Handle form submission
+chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const message = userInput.value.trim();
+    if (!message) return;
+    
+    // Add user message to chat
+    addMessage(message, 'user');
+    
+    // Clear input
+    userInput.value = '';
+    
+    // Show thinking indicator
+    showThinking();
+    
+    try {
+        // Send message to backend
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ message })
+        });
+        
+        // Hide thinking indicator
+        hideThinking();
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            // Add assistant's response to chat
+            addMessage(data.response, 'assistant');
+        } else {
+            showError(data.message || 'An error occurred. Please try again.');
+        }
+        
+    } catch (error) {
+        hideThinking();
+        showError('Failed to connect to the server. Please try again.');
+        console.error('Chat error:', error);
+    }
+});
+
+// Focus input on load
+userInput.focus();
+</script>
+{% endblock %}
