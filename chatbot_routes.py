@@ -104,16 +104,30 @@ def chat_api():
         
         try:
             # Get Gemini chat instance and process message
+            logger.info(f"Processing message with Gemini API: {user_message[:100]}...")
             gemini = get_chat_instance()
+            if gemini is None:
+                logger.error("Failed to get Gemini chat instance")
+                return jsonify({
+                    'status': 'error',
+                    'error': ERROR_PROCESSING,
+                    'message': 'Chatbot service is temporarily unavailable'
+                }), 503
+
             response = gemini.process_message(
                 message=user_message,
                 history=chat_history,
                 context=context
             )
+            logger.info(f"Received Gemini response: {response[:100]}...")
                 
         except Exception as e:
             logger.error(f"Gemini chat error: {str(e)}")
-            raise
+            return jsonify({
+                'status': 'error',
+                'error': ERROR_PROCESSING,
+                'message': 'An error occurred while generating the response'
+            }), 500
             
         # Update chat history
         chat_history.extend([
@@ -142,52 +156,3 @@ def chat_api():
             'message': 'An error occurred processing your request'
         }), 500
 
-@bp.route('/chat', methods=['POST'])
-def process_message():
-    """Process chat messages and return responses using memory-optimized model."""
-    try:
-        data = request.get_json()
-        if not data or 'message' not in data:
-            logger.error("Invalid request data")
-            return jsonify({'error': ERROR_EMPTY_INPUT}), 400
-
-        message = data['message'].strip()
-        if not message:
-            return jsonify({'error': ERROR_EMPTY_INPUT}), 400
-
-        logger.info("Generating response...")
-        # Ensure chatbot functionality is available
-        if not TORCH_AVAILABLE:
-            logger.warning('Torch not available; chatbot functionality is disabled')
-            return jsonify({'error': 'chatbot_unavailable'}), 503
-
-        try:
-            # Lazy import to avoid import-time dependency on heavy modules
-            from chatbot import get_response
-
-            # Use torch.inference_mode if available
-            if hasattr(torch, 'inference_mode'):
-                with torch.inference_mode():
-                    response = get_response(message)
-            else:
-                response = get_response(message)
-        except Exception:
-            logger.exception("Error generating response")
-            return jsonify({'error': ERROR_PROCESSING}), 500
-
-        if response in [ERROR_PROCESSING, ERROR_EMPTY_INPUT]:
-            logger.error(f"Error generating response: {response}")
-            return jsonify({'error': response}), 500
-
-        result = {
-            'reply': response,
-            'timestamp': datetime.now().isoformat()
-        }
-
-        return jsonify(result)
-
-    except Exception as e:
-        logger.exception("Error in chat processing")
-        return jsonify({'error': ERROR_PROCESSING}), 500
-
-# Remove unused routes since we're using chat bubble overlay

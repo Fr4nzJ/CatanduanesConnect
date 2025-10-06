@@ -13,16 +13,26 @@ class GeminiChat:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
+            logger.error("GEMINI_API_KEY environment variable is not set")
             raise ValueError("GEMINI_API_KEY environment variable is not set")
             
-        # Configure the Gemini API
-        genai.configure(api_key=api_key)
-        
-        # Initialize the model
-        self.model = genai.GenerativeModel('gemini-pro')
-        
-        # Start a new chat
-        self.chat = self.model.start_chat(history=[])
+        try:
+            # Configure the Gemini API
+            logger.debug("Configuring Gemini API...")
+            genai.configure(api_key=api_key)
+            
+            # Initialize the model
+            logger.debug("Initializing Gemini model...")
+            self.model = genai.GenerativeModel('gemini-pro')
+            
+            # Start a new chat
+            logger.debug("Starting new chat session...")
+            self.chat = self.model.start_chat(history=[])
+            logger.info("Successfully initialized Gemini chat")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize Gemini API: {str(e)}")
+            raise
         
     def process_message(
         self,

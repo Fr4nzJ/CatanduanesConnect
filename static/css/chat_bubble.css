@@ -131,6 +131,7 @@
 
 .bot-message .message-content {
     background: white;
+    color: #212529;
     border: 1px solid #dee2e6;
     border-top-left-radius: 0.25rem;
 }
