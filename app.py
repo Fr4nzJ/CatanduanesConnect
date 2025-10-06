@@ -27,12 +27,13 @@ from email_service import (
 
 from models import (
     User, Business, Job, Application, 
-    Review, Service, Notification, Activity
+    Review, Service, Notification, Activity,
+    JobOffer, ServiceRequest)
 )
 from decorators import admin_required
 from routes.admin import admin as new_admin
 from chatbot_routes import bp as chatbot_bp
-from dashboard_routes import dashboard
+from routes.dashboard_routes import dashboard
 from routes.job_routes import bp as jobs_bp
 from routes.service_routes import bp as services_bp
 from routes.business_routes import bp as business_bp

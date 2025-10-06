@@ -1,22 +1,33 @@
 {% extends "base.html" %}
 
-{% block title %}Job Seeker Dashboard - Catanduanes Connect{% endblock %}
+{% block title %}Job Seeker Dashboard - {{ user.firstname }}{% endblock %}
 
-{% block styles %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <style>
-    .status-update {
-        animation: highlight 2s ease-out;
+    #mapContainer {
+        height: 400px;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    
-    @keyframes highlight {
-        0% { background-color: rgba(255, 243, 205, 1); }
-        100% { background-color: transparent; }
+    .job-list {
+        max-height: 600px;
+        overflow-y: auto;
     }
-</style>
+    .job-card {
+        margin-bottom: 1rem;
+        transition: transform 0.2s;
+    }
+    .job-card:hover {
+        transform: translateY(-2px);
+    }
+</link>
 {% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container-fluid py-4">
     <div class="row">
         <div class="col-md-4">
             <!-- Profile Card -->
