@@ -56,3 +56,7 @@ else:
         'User', 'Business', 'Job', 'Service', 'Application',
         'Notification', 'Review', 'Activity'
     ]
+
+# Import and expose search method models
+from .search_methods import JobOffer, ServiceRequest, Business as SearchBusiness
+__all__.extend(['JobOffer', 'ServiceRequest'])

@@ -1,4 +1,21 @@
+import logging
+from database import get_neo4j_driver
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
 class JobOffer:
+    def __init__(self):
+        self.id = None
+        self.title = None
+        self.company_name = None
+        self.description = None
+        self.location = None
+        self.salary = None
+        self.category = None
+        self.created_at = None
+        self.status = None
+        
     @staticmethod
     def search_by_keywords(query: str):
         """Search for job offers using keywords."""
@@ -27,6 +44,15 @@ class JobOffer:
             return []
             
     @staticmethod
+    def from_node(node):
+        """Create a JobOffer instance from a Neo4j node."""
+        job = JobOffer()
+        # Map Neo4j node properties to object attributes
+        for key in node.keys():
+            setattr(job, key, node.get(key))
+        return job
+            
+    @staticmethod
     def get_categories():
         """Get all unique job categories."""
         cypher_query = """
@@ -44,6 +70,25 @@ class JobOffer:
             return []
 
 class ServiceRequest:
+    def __init__(self):
+        self.id = None
+        self.title = None
+        self.description = None
+        self.location = None
+        self.payment_offer = None
+        self.category = None
+        self.created_at = None
+        self.status = None
+    
+    @staticmethod
+    def from_node(node):
+        """Create a ServiceRequest instance from a Neo4j node."""
+        service = ServiceRequest()
+        # Map Neo4j node properties to object attributes
+        for key in node.keys():
+            setattr(service, key, node.get(key))
+        return service
+
     @staticmethod
     def search_by_keywords(query: str):
         """Search for service requests using keywords."""
@@ -89,7 +134,24 @@ class ServiceRequest:
             return []
 
 class Business:
+    def __init__(self):
+        self.id = None
+        self.name = None
+        self.description = None
+        self.location = None
+        self.business_type = None
+        self.status = None
+        
     @staticmethod
+    def from_node(node):
+        """Create a Business instance from a Neo4j node."""
+        business = Business()
+        # Map Neo4j node properties to object attributes
+        for key in node.keys():
+            setattr(business, key, node.get(key))
+        return business
+
+    @staticmethod 
     def search_by_keywords(query: str):
         """Search for businesses using keywords."""
         query = query.lower()
