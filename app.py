@@ -753,13 +753,21 @@ def view_notifications():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    """
+    Route handler for the main dashboard.
+    Redirects users to role-specific dashboards with appropriate data.
+    """
     try:
         if current_user.role == 'admin':
+            # Redirect to admin blueprint for admin users
             return redirect(url_for('admin_blueprint.dashboard'))
+        
         elif current_user.role == 'job_seeker':
             try:
+                # Get job applications and service offers for job seekers
                 job_applications = Application.get_by_applicant_id(current_user.id)
                 service_offers = Service.get_offers_by_job_seeker(current_user.id)
+                
                 return render_template('dashboard/job_seeker.html', 
                                     applications=job_applications,
                                     service_offers=service_offers)
@@ -772,15 +780,18 @@ def dashboard():
                                 
         elif current_user.role == 'business_owner':
             try:
+                # Get business and related data for business owners
                 business = Business.get_by_owner_id(current_user.id)
                 jobs = []
                 applications = []
+                
                 if business:
                     jobs = Job.get_by_business_id(business.id)
                     # Get applications for each job
                     for job in jobs:
                         job_apps = Application.get_by_job_id(job.id)
                         applications.extend(job_apps if job_apps else [])
+                        
                 return render_template('dashboard/business_owner.html',
                                     business=business,
                                     jobs=jobs,
@@ -802,112 +813,29 @@ def dashboard():
                         RETURN s ORDER BY s.created_at DESC
                     """, {"user_id": current_user.id})
                     services = [Service(**record["s"]) for record in result]
+                    
                 return render_template('dashboard/client.html', services=services)
+                
             except neo4j_exceptions.ServiceUnavailable as e:
                 logger.error(f'Database connection error in client dashboard: {str(e)}')
                 flash('Database connection error. Please try again later.', 'danger')
                 return render_template('dashboard/client.html', services=[])
+                
             except Exception as e:
                 logger.error(f'Error loading client dashboard: {str(e)}')
                 flash('Error loading your services. Please try again.', 'danger')
                 return render_template('dashboard/client.html', services=[])
                                 
-        else:  # admin
-            try:
-                with driver.session(database=DATABASE) as session:
-                    # Get user statistics
-                    user_stats = session.run("""
-                        MATCH (u:User)
-                        WITH u.role as role, count(u) as count
-                        RETURN collect({role: role, count: count}) as roles
-                    """).single()['roles']
-                    
-                    # Get total counts
-                    total_counts = session.run("""
-                        CALL { MATCH (u:User) RETURN count(u) AS users }
-                        CALL { MATCH (b:Business) RETURN count(b) AS businesses }
-                        CALL { MATCH (j:Job) RETURN count(j) AS jobs }
-                        CALL { MATCH (s:Service) RETURN count(s) AS services }
-                        CALL { MATCH (a:Application) RETURN count(a) AS applications }
-                        RETURN { 
-                            users: users, 
-                            businesses: businesses, 
-                            jobs: jobs, 
-                            services: services, 
-                            applications: applications 
-                        } AS counts
-                    """).single()['counts']
-                    
-                    # Get application statistics
-                    app_stats = session.run("""
-                        MATCH (a:Application) 
-                        WITH a.status as status, count(a) as count 
-                        RETURN collect({status: status, count: count}) as statuses;
-                    """).single()['statuses']
-                    
-                    # Get recent activities (last 10) 
-                    recent_activities = session.run("""
-                        MATCH (a:Activity) 
-                        RETURN a 
-                        ORDER BY a.timestamp DESC 
-                        LIMIT 10;
-                    """).data()
-
-                return render_template('dashboard/admin.html',
-                                    user_stats=user_stats,
-                                    total_counts=total_counts,
-                                    app_stats=app_stats,
-                                    recent_activities=recent_activities)
-            except Exception as e:
-                logger.error(f'Error loading admin dashboard: {str(e)}')
-                flash(f'Error loading dashboard: {str(e)}', 'danger') 
-                return redirect(url_for('home'))
-                with driver.session(database=DATABASE) as session:
-                    # Get user statistics
-                    user_stats = session.run("""
-                        MATCH (u:User)
-                        WITH u.role as role, count(u) as count
-                        RETURN collect({role: role, count: count}) as roles
-                    """).single()['roles']
-                    
-                    # Get total counts
-                    total_counts = session.run("""
-                        CALL { MATCH (u:User) RETURN count(u) AS users }
-                        CALL { MATCH (b:Business) RETURN count(b) AS businesses }
-                        CALL { MATCH (j:Job) RETURN count(j) AS jobs }
-                        CALL { MATCH (s:Service) RETURN count(s) AS services }
-                        CALL { MATCH (a:Application) RETURN count(a) AS applications }
-                        RETURN { 
-                            users: users, 
-                            businesses: businesses, 
-                            jobs: jobs, 
-                            services: services, 
-                            applications: applications 
-                        } AS counts
-                    """).single()['counts']
-                    
-                    # Get application statistics
-                    app_stats = session.run("""
-                        MATCH (a:Application)
-                        WITH a.status as status, count(a) as count
-                        RETURN collect({status: status, count: count}) as statuses
-                    """).single()['statuses']
-                    
-                    # Get recent activities (last 10)
-                    recent_activities = session.run("""
-                        MATCH (a:Activity)
-                        RETURN a
-                        ORDER BY a.timestamp DESC
-                        LIMIT 10
-                    """).data()
-
-                return render_template('dashboard/admin.html',
-                                    user_stats=user_stats,
-                                    total_counts=total_counts,
-                                    app_stats=app_stats,
-                                    recent_activities=recent_activities)
+        else:
+            # Handle unknown roles
+            logger.warning(f'Unknown user role: {current_user.role}')
+            flash('Invalid user role. Please contact support.', 'danger')
+            return redirect(url_for('home'))
+            
     except Exception as e:
-        flash(f'Error loading dashboard: {str(e)}', 'danger')
+        # Global exception handler for the route
+        logger.error(f'Unexpected error in dashboard route: {str(e)}')
+        flash('An unexpected error occurred. Please try again.', 'danger')
         return redirect(url_for('home'))
 
 @app.route('/jobs')
