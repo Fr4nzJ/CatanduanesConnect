@@ -2,26 +2,60 @@ from flask import Blueprint, render_template, request, jsonify, current_app, ses
 from flask_login import login_required, current_user
 from datetime import datetime
 import logging
+import os
 from typing import List, Dict, Optional
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferMemory
-import os
+from langchain.prompts import PromptTemplate
+import textwrap
 
-def get_chat_instance():
+# System prompt for CatanduanesConnect context
+SYSTEM_PROMPT = """You are an AI assistant for CatanduanesConnect, a platform connecting job seekers, businesses, 
+and service providers in Catanduanes. Help users find jobs, businesses, and services while providing accurate,
+helpful information about opportunities in the region. When discussing jobs or services, always try to include
+specific details about location, requirements, and how to apply or contact.
+
+Key Features to Remember:
+• Job searching and application assistance
+• Business directory and service provider lookup
+• Location-based recommendations
+• Professional communication tips
+
+Please maintain a helpful, professional tone and prioritize local opportunities in Catanduanes."""
+
+# Initialize LangChain components
+try:
+    logger.info("Initializing LangChain components...")
+    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
     llm = ChatGoogleGenerativeAI(
         model="gemini-pro",
         google_api_key=os.getenv("GEMINI_API_KEY"),
         temperature=0.7
     )
-    memory = ConversationBufferMemory()
+    # Create prompt template
+    prompt = PromptTemplate(
+        input_variables=["context", "chat_history", "input"],
+        template=f"{SYSTEM_PROMPT}\n\n"
+                 "Context: {context}\n\n"
+                 "Chat History:\n{chat_history}\n"
+                 "User: {input}\n"
+                 "Assistant:"
+    )
+    # Create conversation chain
     chain = ConversationChain(
         llm=llm,
         memory=memory,
+        prompt=prompt,
         verbose=True
     )
-    return chain
+    logger.info("Successfully initialized LangChain components")
+except Exception as e:
+    logger.error(f"Failed to initialize LangChain: {str(e)}")
+    memory = None
+    llm = None
+    chain = None
 from models import JobOffer, ServiceRequest, Business
 from database import get_neo4j_driver
 
@@ -91,7 +125,7 @@ def chat():
 def chat_api():
     """
     Handle chat API requests.
-    
+
     Expects JSON: {
         "message": "user message"
     }
@@ -104,7 +138,7 @@ def chat_api():
                 'error': ERROR_EMPTY_INPUT,
                 'message': 'No message provided'
             }), 400
-            
+
         user_message = data['message'].strip()
         if not user_message:
             return jsonify({
@@ -112,38 +146,60 @@ def chat_api():
                 'error': ERROR_EMPTY_INPUT,
                 'message': 'Message cannot be empty'
             }), 400
-            
+
         # Get chat history from session
         chat_history = session.get('chat_history', [])
-        
+
         # Get relevant context from database
         context = get_relevant_data(user_message)
-        
-        # Get chat instance and process message
-        chat_instance = get_chat_instance()
-        response = chat_instance.process_message(
-            message=user_message,
-            history=chat_history,
-            context=context
-        )
-        
+
+        # Check if LangChain or Gemini is initialized
+        if chain is None:
+            return jsonify({
+                'status': 'error',
+                'error': ERROR_PROCESSING,
+                'message': 'Chatbot service is not available'
+            }), 503
+
+        try:
+            # Format the context
+            formatted_context = context if context else "No specific context available."
+
+            # Get response from the AI chain
+            response = chain.predict(
+                context=formatted_context,
+                input=user_message
+            )
+
+            # Clean up formatting
+            formatted_response = textwrap.fill(response.strip(), width=80)
+            formatted_response = formatted_response.replace("**", "").replace("*", "• ")
+
+        except Exception as e:
+            logger.error(f"Error generating response: {str(e)}")
+            return jsonify({
+                'status': 'error',
+                'error': ERROR_PROCESSING,
+                'message': 'Error while generating response'
+            }), 500
+
         # Update chat history in session
         chat_history.append({"role": "user", "content": user_message})
-        chat_history.append({"role": "assistant", "content": response})
-        
-        # Keep only last 10 messages to prevent session bloat
+        chat_history.append({"role": "assistant", "content": formatted_response})
+
+        # Keep only the last 10 messages
         if len(chat_history) > 10:
             chat_history = chat_history[-10:]
-            
+
         session['chat_history'] = chat_history
-        
+
         # Return successful response
         return jsonify({
             'status': 'success',
-            'message': response,
+            'message': formatted_response,
             'timestamp': datetime.utcnow().isoformat()
         })
-        
+
     except Exception as e:
         logger.error(f"Error in chat API: {str(e)}")
         return jsonify({
@@ -151,6 +207,7 @@ def chat_api():
             'error': ERROR_PROCESSING,
             'message': 'An error occurred while processing your message'
         }), 500
+
 
 @bp.route('/api/chat/history', methods=['GET'])
 @login_required

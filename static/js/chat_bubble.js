@@ -86,8 +86,10 @@ class ChatBubble {
             const data = await response.json();
             
             // Add bot response to chat
-            if (data.response) {
-                this.addMessage(data.response, 'bot');
+            if (data.status === 'success' && data.message) {
+                this.addMessage(data.message, 'bot');
+            } else if (data.error) {
+                this.addMessage(`Sorry, an error occurred: ${data.message}`, 'bot');
             } else {
                 this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
             }
@@ -107,9 +109,16 @@ class ChatBubble {
     addMessage(text, type) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}-message`;
+
+        // Format message content with proper spacing and bullet points
+        const formattedText = text
+            .replace(/•/g, '<br>•')  // Add line breaks before bullet points
+            .replace(/\n/g, '<br>')  // Convert newlines to <br>
+            .trim();
+
         messageDiv.innerHTML = `
             <div class="message-content">
-                ${text}
+                ${formattedText}
             </div>
         `;
         this.messagesContainer.appendChild(messageDiv);
