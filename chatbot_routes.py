@@ -25,6 +25,9 @@ Key Features to Remember:
 
 Please maintain a helpful, professional tone and prioritize local opportunities in Catanduanes."""
 
+# Set up logging
+logger = logging.getLogger(__name__)
+
 # Initialize LangChain components
 try:
     logger.info("Initializing LangChain components...")
