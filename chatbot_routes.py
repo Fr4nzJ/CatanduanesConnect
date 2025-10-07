@@ -4,7 +4,24 @@ from datetime import datetime
 import logging
 from typing import List, Dict, Optional
 
-from gemini_client_fixed import get_chat_instance
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chains import ConversationChain
+from langchain.memory import ConversationBufferMemory
+import os
+
+def get_chat_instance():
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-pro",
+        google_api_key=os.getenv("GEMINI_API_KEY"),
+        temperature=0.7
+    )
+    memory = ConversationBufferMemory()
+    chain = ConversationChain(
+        llm=llm,
+        memory=memory,
+        verbose=True
+    )
+    return chain
 from models import JobOffer, ServiceRequest, Business
 from database import get_neo4j_driver
 
