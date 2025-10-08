@@ -1,6 +1,9 @@
 import uuid
 from datetime import datetime
-from db.config import driver, DATABASE, logger
+from database import driver, DATABASE
+import logging
+
+logger = logging.getLogger(__name__)
 from models.user import User
 
 class Business:

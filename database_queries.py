@@ -1,6 +1,6 @@
 import logging
 from models.business_service import Business
-from db.config import driver, DATABASE
+from database import driver, DATABASE
 
 logger = logging.getLogger(__name__)
 
