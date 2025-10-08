@@ -3,13 +3,8 @@ from flask_login import login_required, current_user
 from datetime import datetime
 import logging
 import os
+import google.generativeai as genai
 from typing import List, Dict, Optional
-
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
-from langchain.prompts import PromptTemplate
-import textwrap
 
 # System prompt for CatanduanesConnect context
 SYSTEM_PROMPT = """You are an AI assistant for CatanduanesConnect, a platform connecting job seekers, businesses, 
@@ -25,6 +20,10 @@ Key Features to Remember:
 
 Please maintain a helpful, professional tone and prioritize local opportunities in Catanduanes."""
 
+# Configure Gemini API
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-pro')
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -37,28 +36,10 @@ try:
         google_api_key=os.getenv("GEMINI_API_KEY"),
         temperature=0.7
     )
-    # Create prompt template
-    prompt = PromptTemplate(
-        input_variables=["context", "chat_history", "input"],
-        template=f"{SYSTEM_PROMPT}\n\n"
-                 "Context: {context}\n\n"
-                 "Chat History:\n{chat_history}\n"
-                 "User: {input}\n"
-                 "Assistant:"
-    )
-    # Create conversation chain
-    chain = ConversationChain(
-        llm=llm,
-        memory=memory,
-        prompt=prompt,
-        verbose=True
-    )
-    logger.info("Successfully initialized LangChain components")
+    logger.info("Successfully initialized Gemini API")
 except Exception as e:
-    logger.error(f"Failed to initialize LangChain: {str(e)}")
-    memory = None
-    llm = None
-    chain = None
+    logger.error(f"Failed to initialize Gemini API: {str(e)}")
+    model = None
 from models import JobOffer, ServiceRequest, Business
 from database import get_neo4j_driver
 
@@ -156,8 +137,8 @@ def chat_api():
         # Get relevant context from database
         context = get_relevant_data(user_message)
 
-        # Check if LangChain or Gemini is initialized
-        if chain is None:
+        # Check if Gemini is initialized
+        if model is None:
             return jsonify({
                 'status': 'error',
                 'error': ERROR_PROCESSING,
@@ -168,14 +149,17 @@ def chat_api():
             # Format the context
             formatted_context = context if context else "No specific context available."
 
-            # Get response from the AI chain
-            response = chain.predict(
-                context=formatted_context,
-                input=user_message
-            )
+            # Start a chat session and send the message
+            chat = model.start_chat(history=[
+                {"role": "system", "parts": [SYSTEM_PROMPT]},
+                *[{"role": msg["role"], "parts": [msg["content"]]} for msg in chat_history]
+            ])
 
-            # Clean up formatting
-            formatted_response = textwrap.fill(response.strip(), width=80)
+            # Send the message with context
+            response = chat.send_message(f"Context: {formatted_context}\n\nUser Message: {user_message}")
+            
+            # Get the response text
+            formatted_response = response.text.strip()
             formatted_response = formatted_response.replace("**", "").replace("*", "• ")
 
         except Exception as e:
