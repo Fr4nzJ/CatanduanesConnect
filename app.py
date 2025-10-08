@@ -137,20 +137,11 @@ from auth_routes import auth
 app.register_blueprint(auth)
 
 # Set up enhanced logging
-if not os.path.exists('logs'):
-    os.mkdir('logs')
-
+# Configure logging to console only for development
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        RotatingFileHandler(
-            'logs/app.log', 
-            maxBytes=10240,
-            backupCount=10
-        )
-    ])
+    handlers=[logging.StreamHandler()])
 
 # Routes
 @app.route('/about')

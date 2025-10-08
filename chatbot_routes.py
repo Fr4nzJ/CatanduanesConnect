@@ -3,8 +3,8 @@ from flask_login import login_required, current_user
 from datetime import datetime
 import logging
 import os
-import google.generativeai as genai
 from typing import List, Dict, Optional
+from gemini_client import GeminiChat
 
 # System prompt for CatanduanesConnect context
 SYSTEM_PROMPT = """You are an AI assistant for CatanduanesConnect, a platform connecting job seekers, businesses, 
@@ -20,27 +20,28 @@ Key Features to Remember:
 
 Please maintain a helpful, professional tone and prioritize local opportunities in Catanduanes."""
 
-# Configure Gemini API
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-pro')
-
 # Set up logging
 logger = logging.getLogger(__name__)
 
-# Initialize LangChain components
+# Initialize Gemini chat client
 try:
-    logger.info("Initializing LangChain components...")
-    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-pro",
-        google_api_key=os.getenv("GEMINI_API_KEY"),
-        temperature=0.7
-    )
-    logger.info("Successfully initialized Gemini API")
+    logger.info("Initializing Gemini chat client...")
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        logger.error("GEMINI_API_KEY environment variable not set")
+        raise ValueError("GEMINI_API_KEY environment variable not set")
+    
+    chatbot = GeminiChat(api_key=api_key)
+    # Test the client with a simple message to verify it's working
+    test_response = chatbot.send_message("test", context="Testing connection", history=[])
+    if test_response:
+        logger.info("Successfully initialized and tested Gemini chat client")
+    else:
+        raise ValueError("Failed to get response from Gemini chat client")
 except Exception as e:
-    logger.error(f"Failed to initialize Gemini API: {str(e)}")
-    model = None
-from models import JobOffer, ServiceRequest, Business
+    logger.error(f"Failed to initialize Gemini chat client: {str(e)}", exc_info=True)
+    chatbot = None
+from models.search_methods import JobOffer, ServiceRequest, Business
 from database import get_neo4j_driver
 
 # Set up logging
@@ -88,7 +89,7 @@ def get_relevant_data(query: str) -> Optional[str]:
             for business in businesses[:3]:
                 context_parts.append(f"- {business.name}")
                 context_parts.append(f"  Location: {business.location}")
-                context_parts.append(f"  Type: {business.business_type}")
+                context_parts.append(f"  Category: {business.category}")
                 if business.description:
                     context_parts.append(f"  Description: {business.description[:200]}...")
                     
@@ -138,7 +139,7 @@ def chat_api():
         context = get_relevant_data(user_message)
 
         # Check if Gemini is initialized
-        if model is None:
+        if chatbot is None:
             return jsonify({
                 'status': 'error',
                 'error': ERROR_PROCESSING,
@@ -148,18 +149,16 @@ def chat_api():
         try:
             # Format the context
             formatted_context = context if context else "No specific context available."
-
-            # Start a chat session and send the message
-            chat = model.start_chat(history=[
-                {"role": "system", "parts": [SYSTEM_PROMPT]},
-                *[{"role": msg["role"], "parts": [msg["content"]]} for msg in chat_history]
-            ])
-
-            # Send the message with context
-            response = chat.send_message(f"Context: {formatted_context}\n\nUser Message: {user_message}")
             
-            # Get the response text
-            formatted_response = response.text.strip()
+            # Send the message with context and get response
+            response = chatbot.send_message(
+                message=user_message,
+                context=formatted_context,
+                history=chat_history
+            )
+
+            # Format response
+            formatted_response = response.strip()
             formatted_response = formatted_response.replace("**", "").replace("*", "• ")
 
         except Exception as e:

@@ -1,37 +1,26 @@
 import os
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any, Iterator
 from datetime import datetime
+import google.generativeai as genai
 
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.schema import SystemMessage, HumanMessage, AIMessage
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationChain
-from langchain.prompts import PromptTemplate
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 SYSTEM_TEMPLATE = """You are a helpful AI assistant for CatanduanesConnect, a platform connecting job seekers, 
 businesses, and service providers in Catanduanes. Your role is to help users find jobs, businesses, and services, 
-and answer their questions about the platform.
-
-Context from the platform:
-{context}
-
-Conversation History:
-{history}
-
-Current User Message: {input}
-
-Please provide a helpful and accurate response based on the context and conversation history."""
+and answer their questions about the platform."""
 
 class GeminiChat:
-    """Client for interacting with Google's Gemini API using LangChain."""
+    """Client for interacting with Google's Gemini API."""
     
     def __init__(self, api_key: str = None):
         """
-        Initialize the Gemini chat client.
+        Initialize the Gemini client.
         
         Args:
             api_key: Google Gemini API key. If None, will try to get from environment.
@@ -44,50 +33,26 @@ class GeminiChat:
             raise ValueError("GEMINI_API_KEY environment variable is not set")
             
         try:
-            # Initialize the LangChain Gemini chat model
-            logger.debug("Initializing Gemini model with LangChain...")
-            self.llm = ChatGoogleGenerativeAI(
-                model="gemini-pro",
-                temperature=0.7,
-                google_api_key=api_key,
-                convert_system_message_to_human=True
-            )
+            # Initialize the Gemini client
+            logger.debug("Initializing Gemini client...")
             
-            # Initialize conversation memory
-            self.memory = ConversationBufferMemory(
-                memory_key="history",
-                input_key="input",
-                output_key="response"
-            )
+            genai.configure(api_key=api_key)
+            self.model = "models/gemini-pro-latest"
             
-            # Create prompt template
-            self.prompt = PromptTemplate(
-                input_variables=["context", "history", "input"],
-                template=SYSTEM_TEMPLATE
-            )
-            
-            # Create conversation chain
-            self.chain = ConversationChain(
-                llm=self.llm,
-                memory=self.memory,
-                prompt=self.prompt,
-                verbose=False  # Set to True for debugging
-            )
-            
-            logger.info("Successfully initialized Gemini chat with LangChain")
+            logger.info("Successfully initialized Gemini client")
             
         except Exception as e:
-            logger.error(f"Failed to initialize Gemini API: {str(e)}")
+            logger.error(f"Failed to initialize Gemini client: {str(e)}")
             raise
-
-    def process_message(
+            
+    def send_message(
         self,
         message: str,
         history: Optional[List[Dict[str, str]]] = None,
         context: Optional[str] = None
     ) -> str:
         """
-        Process a chat message with optional history and context.
+        Send a message to the Gemini model.
         
         Args:
             message: The user's message
@@ -97,43 +62,154 @@ class GeminiChat:
         Returns:
             String containing the assistant's response
         """
-        try:
-            # Clear previous conversation memory
-            self.memory.clear()
+        if not message or not message.strip():
+            raise ValueError("Message cannot be empty")
             
-            # Add history to memory if provided
+        try:
+            # Build chat history as list of parts
+            parts = []
+            
+            # Add system context if provided
+            if context:
+                parts.append({
+                    "role": "user",
+                    "parts": [{"text": SYSTEM_TEMPLATE + "\n" + context}]
+                })
+            
+            # Add message history
             if history:
                 for msg in history:
-                    if msg["role"] == "user":
-                        self.memory.chat_memory.add_user_message(msg["content"])
-                    else:
-                        self.memory.chat_memory.add_ai_message(msg["content"])
+                    role = "model" if msg["role"] == "assistant" else "user"
+                    parts.append({
+                        "role": role,
+                        "parts": [{"text": msg["content"]}]
+                    })
             
-            # Prepare context string
-            context_str = context if context else "No additional context available."
+            # Add current message
+            parts.append({
+                "role": "user",
+                "parts": [{"text": message}]
+            })
             
-            # Process the message through the chain
-            response = self.chain.predict(
-                context=context_str,
-                history="",  # Memory will handle this
-                input=message
+            # Get model response
+            model = genai.GenerativeModel(self.model)
+            chat = model.start_chat(
+                history=[
+                    {"role": part["role"], "parts": part["parts"]}
+                    for part in parts[:-1]
+                ] if len(parts) > 1 else None
             )
             
-            return response.strip()
+            response = chat.send_message(
+                parts[-1]["parts"][0]["text"],
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.7,
+                    candidate_count=1,
+                    max_output_tokens=2048,
+                    top_p=0.95,
+                    top_k=40,
+                )
+            )
+            
+            # Extract and clean response
+            if not response.text:
+                raise ValueError("No response generated")
+                
+            text = response.text.strip()
+            return text
             
         except Exception as e:
             logger.error(f"Error processing message with Gemini: {str(e)}")
             return "I apologize, but I'm having trouble processing your message. Please try again."
+            
+    def stream_message(
+        self,
+        message: str,
+        history: Optional[List[Dict[str, str]]] = None,
+        context: Optional[str] = None
+    ) -> Iterator[str]:
+        """
+        Send a message to the Gemini model and stream the response.
+        
+        Args:
+            message: The user's message
+            history: Optional list of previous messages [{"role": "user|assistant", "content": "..."}]
+            context: Optional context string (e.g., relevant business/job data)
+            
+        Yields:
+            Chunks of the assistant's response as they are generated
+        """
+        if not message or not message.strip():
+            raise ValueError("Message cannot be empty")
+            
+        try:
+            # Build chat history as list of parts
+            parts = []
+            
+            # Add system context if provided
+            if context:
+                parts.append({
+                    "role": "user",
+                    "parts": [{"text": SYSTEM_TEMPLATE + "\n" + context}]
+                })
+            
+            # Add message history
+            if history:
+                for msg in history:
+                    role = "model" if msg["role"] == "assistant" else "user"
+                    parts.append({
+                        "role": role,
+                        "parts": [{"text": msg["content"]}]
+                    })
+            
+            # Add current message
+            parts.append({
+                "role": "user",
+                "parts": [{"text": message}]
+            })
+            
+            # Get model response stream
+            model = genai.GenerativeModel(self.model)
+            chat = model.start_chat(
+                history=[
+                    {"role": part["role"], "parts": part["parts"]}
+                    for part in parts[:-1]
+                ] if len(parts) > 1 else None
+            )
+            
+            response_stream = chat.send_message(
+                parts[-1]["parts"][0]["text"],
+                stream=True,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.7,
+                    candidate_count=1,
+                    max_output_tokens=2048,
+                    top_p=0.95,
+                    top_k=40,
+                )
+            )
+            
+            # Yield chunks as they arrive
+            for chunk in response_stream:
+                if chunk.text:
+                    yield chunk.text
+            
+        except Exception as e:
+            logger.error(f"Error streaming message with Gemini: {str(e)}")
+            yield "I apologize, but I'm having trouble processing your message. Please try again."
+
 
 # Global instance for easy access
 _chat_instance = None
 
-def get_chat_instance() -> GeminiChat:
+
+def get_chat_instance() -> 'GeminiChat':
     """Get the global chat instance, creating it if necessary."""
     global _chat_instance
     if _chat_instance is None:
         _chat_instance = GeminiChat()
     return _chat_instance
+
 
 def reset_chat_instance():
     """Reset the global chat instance (useful for testing)."""

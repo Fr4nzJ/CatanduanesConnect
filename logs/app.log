@@ -1,56 +1,150 @@
-2025-10-06 01:43:23,423 - app - INFO - Successfully connected to Neo4j database
-2025-10-06 01:43:23,443 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
-2025-10-06 01:43:23,443 - app - INFO - models.User has get_by_email: False
-2025-10-06 01:43:23,516 - app - ERROR - Error creating default admin: type object 'User' has no attribute 'get_by_email'
-2025-10-06 01:43:23,516 - app - INFO - Admin check completed at startup (no changes)
-2025-10-06 01:43:24,123 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 01:43:24,126 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 01:45:55,789 - app - INFO - Successfully connected to Neo4j database
-2025-10-06 01:45:55,790 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
-2025-10-06 01:45:55,790 - app - INFO - models.User has get_by_email: True
-2025-10-06 01:45:55,895 - app - ERROR - Error creating default admin: 'classmethod' object is not callable
-2025-10-06 01:45:55,895 - app - INFO - Admin check completed at startup (no changes)
-2025-10-06 01:45:56,086 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 01:45:56,089 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 01:47:37,282 - app - INFO - Successfully connected to Neo4j database
-2025-10-06 01:47:37,283 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
-2025-10-06 01:47:37,284 - app - INFO - models.User has get_by_email: True
-2025-10-06 01:47:37,950 - app - INFO - Existing admin account verified
-2025-10-06 01:47:37,952 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
-2025-10-06 01:47:38,180 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 01:47:38,182 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 02:31:28,451 - app - INFO - Successfully connected to Neo4j database
-2025-10-06 02:31:28,452 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
-2025-10-06 02:31:28,452 - app - INFO - models.User has get_by_email: True
-2025-10-06 02:31:29,687 - app - INFO - Existing admin account verified
-2025-10-06 02:31:29,687 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
-2025-10-06 02:31:29,874 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 02:31:29,881 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 02:52:44,366 - app - INFO - Successfully connected to Neo4j database
-2025-10-06 02:52:44,369 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
-2025-10-06 02:52:44,379 - app - INFO - models.User has get_by_email: True
-2025-10-06 02:52:44,944 - app - INFO - Existing admin account verified
-2025-10-06 02:52:44,946 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
-2025-10-06 02:52:45,113 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 02:52:45,116 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 02:59:58,854 - app - INFO - Successfully connected to Neo4j database
-2025-10-06 02:59:58,855 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
-2025-10-06 02:59:58,856 - app - INFO - models.User has get_by_email: True
-2025-10-06 02:59:59,356 - app - INFO - Existing admin account verified
-2025-10-06 02:59:59,357 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
-2025-10-06 02:59:59,514 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 02:59:59,521 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 03:09:54,364 - app - INFO - Successfully connected to Neo4j database
-2025-10-06 03:09:54,399 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
-2025-10-06 03:09:54,401 - app - INFO - models.User has get_by_email: True
-2025-10-06 03:09:55,233 - app - INFO - Existing admin account verified
-2025-10-06 03:09:55,234 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
-2025-10-06 03:09:55,416 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 03:09:55,419 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 03:19:09,345 - app - INFO - Successfully connected to Neo4j database
-2025-10-06 03:19:09,356 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
-2025-10-06 03:19:09,363 - app - INFO - models.User has get_by_email: True
-2025-10-06 03:19:10,505 - app - INFO - Existing admin account verified
-2025-10-06 03:19:10,506 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
-2025-10-06 03:19:10,697 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
-2025-10-06 03:19:10,709 - neo4j - ERROR - Failed to write data to connection IPv4Address(('si-10215489-6c77.production-orch-0703.neo4j.io', 7687)) (ResolvedIPv4Address(('34.124.169.171', 7687)))
+2025-10-08 11:49:12,631 - app - INFO - Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Sec-Ch-Ua-Platform: "Windows"
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Sec-Ch-Ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+Sec-Ch-Ua-Mobile: ?0
+Accept: text/css,*/*;q=0.1
+Sec-Gpc: 1
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Dest: style
+Referer: http://127.0.0.1:5000/
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJztkz1uwzAMha8iaOkSB5L1nxtk614UBiVRsVHHCmS5QBrk7lXQoe3WA3Qk-fjeN5A3OqSC60gPtWy4o8MU6YF6cBK8AoiOaWv7ELQIMSnOklXCMmNBJqWCYsEqCMLHaGzPjZABVYqRSw1JhpSSgSiYdL2zFqIVyIVhXibdex10MNEJcFwzjQGT5zx55L13tIFsK5YvGsWUs1KxrtfSd9JY1TnpXGfAMId9EtI-NsIIdRinteZypYeXGw15qbjU5jDiPOcmKXnGVj6s6X33U3EkcMlzPk0fuCN-q-T4dCYjvE_LidSSNz8juZQccF0frWveCjm3Ak64J88zwopNdyVwgmnZf0dB068VWsbvvHH6x_nH-TPOazvvtaSh5jdc2siglhpBCGkgBY3Rc4zoFXppEtM9s9i-S1t6_wRgIEkO.aOXctA.NuffkdtER39nCyujDH7wVQBr5a8
+If-None-Match: "1758827884.3646758-4117-3169983317"
+If-Modified-Since: Thu, 25 Sep 2025 19:18:04 GMT
+
+
+2025-10-08 11:49:12,649 - app - INFO - Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Sec-Ch-Ua-Platform: "Windows"
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Sec-Ch-Ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+Sec-Ch-Ua-Mobile: ?0
+Accept: text/css,*/*;q=0.1
+Sec-Gpc: 1
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Dest: style
+Referer: http://127.0.0.1:5000/
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJztkz1uwzAMha8iaOkSB5L1nxtk614UBiVRsVHHCmS5QBrk7lXQoe3WA3Qk-fjeN5A3OqSC60gPtWy4o8MU6YF6cBK8AoiOaWv7ELQIMSnOklXCMmNBJqWCYsEqCMLHaGzPjZABVYqRSw1JhpSSgSiYdL2zFqIVyIVhXibdex10MNEJcFwzjQGT5zx55L13tIFsK5YvGsWUs1KxrtfSd9JY1TnpXGfAMId9EtI-NsIIdRinteZypYeXGw15qbjU5jDiPOcmKXnGVj6s6X33U3EkcMlzPk0fuCN-q-T4dCYjvE_LidSSNz8juZQccF0frWveCjm3Ak64J88zwopNdyVwgmnZf0dB068VWsbvvHH6x_nH-TPOazvvtaSh5jdc2siglhpBCGkgBY3Rc4zoFXppEtM9s9i-S1t6_wRgIEkO.aOXctA.NuffkdtER39nCyujDH7wVQBr5a8
+If-None-Match: "1759620716.7959201-7765-3977779197"
+If-Modified-Since: Sat, 04 Oct 2025 23:31:56 GMT
+
+
+2025-10-08 11:49:12,669 - app - INFO - Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Sec-Ch-Ua-Platform: "Windows"
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Sec-Ch-Ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+Sec-Ch-Ua-Mobile: ?0
+Accept: */*
+Sec-Gpc: 1
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Dest: script
+Referer: http://127.0.0.1:5000/
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJztkz1uwzAMha8iaOkSB5L1nxtk614UBiVRsVHHCmS5QBrk7lXQoe3WA3Qk-fjeN5A3OqSC60gPtWy4o8MU6YF6cBK8AoiOaWv7ELQIMSnOklXCMmNBJqWCYsEqCMLHaGzPjZABVYqRSw1JhpSSgSiYdL2zFqIVyIVhXibdex10MNEJcFwzjQGT5zx55L13tIFsK5YvGsWUs1KxrtfSd9JY1TnpXGfAMId9EtI-NsIIdRinteZypYeXGw15qbjU5jDiPOcmKXnGVj6s6X33U3EkcMlzPk0fuCN-q-T4dCYjvE_LidSSNz8juZQccF0frWveCjm3Ak64J88zwopNdyVwgmnZf0dB068VWsbvvHH6x_nH-TPOazvvtaSh5jdc2siglhpBCGkgBY3Rc4zoFXppEtM9s9i-S1t6_wRgIEkO.aOXctA.NuffkdtER39nCyujDH7wVQBr5a8
+If-None-Match: "1759796935.7576973-4910-1328814431"
+If-Modified-Since: Tue, 07 Oct 2025 00:28:55 GMT
+
+
+2025-10-08 11:49:12,732 - app - INFO - Body: b''
+2025-10-08 11:49:12,814 - app - INFO - Body: b''
+2025-10-08 11:49:12,994 - werkzeug - INFO - 127.0.0.1 - - [08/Oct/2025 11:49:12] "[36mGET /static/css/chat_bubble.css HTTP/1.1[0m" 304 -
+2025-10-08 11:49:13,002 - werkzeug - INFO - 127.0.0.1 - - [08/Oct/2025 11:49:13] "[36mGET /static/css/glassmorphism.css HTTP/1.1[0m" 304 -
+2025-10-08 11:49:12,918 - app - INFO - Body: b''
+2025-10-08 11:49:12,986 - app - INFO - Body: b''
+2025-10-08 11:49:13,086 - werkzeug - INFO - 127.0.0.1 - - [08/Oct/2025 11:49:13] "[36mGET /static/js/chat_bubble.js HTTP/1.1[0m" 304 -
+2025-10-08 11:49:13,077 - werkzeug - INFO - 127.0.0.1 - - [08/Oct/2025 11:49:13] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-10-08 11:49:23,336 - app - INFO - Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Content-Length: 16
+Sec-Ch-Ua-Platform: "Windows"
+X-Csrf-Token: IjdlNjQ2ZWEzMzQ3YWZjNmVkYjFlZGViNWViNDdmMDYyMDhlNmM3Njgi.aOXfOA.1GPDWQLXpt6aN7HwdfRgGGnNRq4
+X-Csrftoken: IjdlNjQ2ZWEzMzQ3YWZjNmVkYjFlZGViNWViNDdmMDYyMDhlNmM3Njgi.aOXfOA.1GPDWQLXpt6aN7HwdfRgGGnNRq4
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Sec-Ch-Ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+Content-Type: application/json
+Sec-Ch-Ua-Mobile: ?0
+Accept: */*
+Sec-Gpc: 1
+Origin: http://127.0.0.1:5000
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: http://127.0.0.1:5000/
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJztkz1uwzAMha8iaOkSB5L1nxtk614UBiVRsVHHCmS5QBrk7lXQoe3WA3Qk-fjeN5A3OqSC60gPtWy4o8MU6YF6cBK8AoiOaWv7ELQIMSnOklXCMmNBJqWCYsEqCMLHaGzPjZABVYqRSw1JhpSSgSiYdL2zFqIVyIVhXibdex10MNEJcFwzjQGT5zx55L13tIFsK5YvGsWUs1KxrtfSd9JY1TnpXGfAMId9EtI-NsIIdRinteZypYeXGw15qbjU5jDiPOcmKXnGVj6s6X33U3EkcMlzPk0fuCN-q-T4dCYjvE_LidSSNz8juZQccF0frWveCjm3Ak64J88zwopNdyVwgmnZf0dB068VWsbvvHH6x_nH-TPOazvvtaSh5jdc2siglhpBCGkgBY3Rc4zoFXppEtM9s9i-S1t6_wRgIEkO.aOXctA.NuffkdtER39nCyujDH7wVQBr5a8
+
+
+2025-10-08 11:49:23,356 - app - INFO - Body: b'{"message":"hi"}'
+2025-10-08 11:49:23,434 - app - INFO - Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Content-Length: 16
+Sec-Ch-Ua-Platform: "Windows"
+X-Csrf-Token: IjdlNjQ2ZWEzMzQ3YWZjNmVkYjFlZGViNWViNDdmMDYyMDhlNmM3Njgi.aOXfOA.1GPDWQLXpt6aN7HwdfRgGGnNRq4
+X-Csrftoken: IjdlNjQ2ZWEzMzQ3YWZjNmVkYjFlZGViNWViNDdmMDYyMDhlNmM3Njgi.aOXfOA.1GPDWQLXpt6aN7HwdfRgGGnNRq4
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Sec-Ch-Ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+Content-Type: application/json
+Sec-Ch-Ua-Mobile: ?0
+Accept: */*
+Sec-Gpc: 1
+Origin: http://127.0.0.1:5000
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: http://127.0.0.1:5000/
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJztkz1uwzAMha8iaOkSB5L1nxtk614UBiVRsVHHCmS5QBrk7lXQoe3WA3Qk-fjeN5A3OqSC60gPtWy4o8MU6YF6cBK8AoiOaWv7ELQIMSnOklXCMmNBJqWCYsEqCMLHaGzPjZABVYqRSw1JhpSSgSiYdL2zFqIVyIVhXibdex10MNEJcFwzjQGT5zx55L13tIFsK5YvGsWUs1KxrtfSd9JY1TnpXGfAMId9EtI-NsIIdRinteZypYeXGw15qbjU5jDiPOcmKXnGVj6s6X33U3EkcMlzPk0fuCN-q-T4dCYjvE_LidSSNz8juZQccF0frWveCjm3Ak64J88zwopNdyVwgmnZf0dB068VWsbvvHH6x_nH-TPOazvvtaSh5jdc2siglhpBCGkgBY3Rc4zoFXppEtM9s9i-S1t6_wRgIEkO.aOXctA.NuffkdtER39nCyujDH7wVQBr5a8
+
+
+2025-10-08 11:49:23,486 - app - INFO - Body: b'{"message":"hi"}'
+2025-10-08 11:49:24,928 - gemini_client - ERROR - Error processing message with Gemini: 404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2025-10-08 11:49:24,931 - werkzeug - INFO - 127.0.0.1 - - [08/Oct/2025 11:49:24] "POST /api/chat HTTP/1.1" 200 -
+2025-10-08 12:00:43,614 - app - INFO - Successfully connected to Neo4j database
+2025-10-08 12:00:44,434 - app - INFO - Seeded/ensured hardcoded admin user
+2025-10-08 12:00:44,435 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
+2025-10-08 12:00:44,436 - app - INFO - models.User has get_by_email: True
+2025-10-08 12:00:45,749 - app - INFO - Existing admin account verified
+2025-10-08 12:00:45,867 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
+2025-10-08 12:00:46,596 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-10-08 12:00:46,599 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-10-08 12:00:46,750 - werkzeug - INFO -  * Restarting with stat
+2025-10-08 12:01:36,951 - app - INFO - Successfully connected to Neo4j database
+2025-10-08 12:01:37,535 - app - INFO - Seeded/ensured hardcoded admin user
+2025-10-08 12:01:37,537 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
+2025-10-08 12:01:37,537 - app - INFO - models.User has get_by_email: True
+2025-10-08 12:01:39,274 - app - INFO - Existing admin account verified
+2025-10-08 12:01:39,279 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
+2025-10-08 12:01:39,397 - werkzeug - WARNING -  * Debugger is active!
+2025-10-08 12:01:39,436 - werkzeug - INFO -  * Debugger PIN: 920-941-966
+2025-10-08 12:02:55,495 - app - INFO - Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Cache-Control: max-age=0
+Sec-Ch-Ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+Sec-Ch-Ua-Mobile: ?0
+Sec-Ch-Ua-Platform: "Windows"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8
+Sec-Gpc: 1
+Sec-Fetch-Site: none
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJztkz1uwzAMha8iaOkSB5L1nxtk614UBiVRsVHHCmS5QBrk7lXQoe3YvRvJR_J9A3mjQyq4jvRQy4Y7OkyRHqgHJ8ErgOiYtrYPQYsQk-IsWSUsMxZkUiooFqyCIHyMxvbcCBlQpRi51JBkSCkZiIJJ1ztrIVqBXBjmZdK910EHE50AxzXTGDB5zpNH3ntHG8i2YvmiUUw5KxXrei19J41VnZPOdQYMc9gnIe1jIoxQh3Faay5Xeni50ZCXikttG8ap6SXP2OLHXnrf_ZSPBC55zqfpA3fEb5Ucn85khPdpOZFa8uZnJJeSA67ro3TNWyHnlsAJ9-R5Rlix9V0JnGBa9t9W0PrXCs3jt98_zj_OH3Be222vJQ01v-HSJINaagQhpIEUNEbPMaJX6KVJTPfMYnstben9E9iXR8s.aOXfRA.F-1bgUYN8PuYPMYKu4ehd3AyE1w
+
+

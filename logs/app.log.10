@@ -1,0 +1,145 @@
+2025-10-08 11:38:22,779 - werkzeug - INFO - 127.0.0.1 - - [08/Oct/2025 11:38:22] "[36mGET /static/js/chat_bubble.js HTTP/1.1[0m" 304 -
+2025-10-08 11:38:27,372 - app - INFO - Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Content-Length: 16
+Sec-Ch-Ua-Platform: "Windows"
+X-Csrf-Token: IjdlNjQ2ZWEzMzQ3YWZjNmVkYjFlZGViNWViNDdmMDYyMDhlNmM3Njgi.aOXcrg.3hDGKk2bkDzbGvDhBm0tzZRT1tA
+X-Csrftoken: IjdlNjQ2ZWEzMzQ3YWZjNmVkYjFlZGViNWViNDdmMDYyMDhlNmM3Njgi.aOXcrg.3hDGKk2bkDzbGvDhBm0tzZRT1tA
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Sec-Ch-Ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+Content-Type: application/json
+Sec-Ch-Ua-Mobile: ?0
+Accept: */*
+Sec-Gpc: 1
+Origin: http://127.0.0.1:5000
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: http://127.0.0.1:5000/
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJztkz1uwzAMha8iaOmSBJL1nxtk614UBiVRsVHHCmS5QBrk7lXQoc0NMnQT-Ui-DwR1pX0quAx0X8uKG9qPke6pByfBK4DomLa2C0GLEJPiLFklLDMWZFIqKBasgiB8jMZ23AgZUKUYudSQZEgpGYiCSdc5ayFagVwY5mXSnddBBxOdAMc10xgwec6TR955RxvIumD5oVFMOSsV23Za-q00Vm2ddG5rwDCHXRLS3jvCALUfxqXmcqH7tysNea441zZhGJte8oTtfZ9Lb5u_8oHAOU_5OH7hhvi1ksPLiQzwOc5HUkte_YTkXHLAZbmnLnkt5NQCOOKOvE4IC7a6C4EjjPPu1wpa_VKheTz6DThN-bmInmxB_ziPOO_tvJeS-po_cG6SQS01ghDSQAoao-cY0Sv00iSmO2ax_S5t6e0bQMxJDg.aOXbdA.RhDA_AQW_l1k61QrhekGQsfP4Xc
+
+
+2025-10-08 11:38:27,386 - app - INFO - Body: b'{"message":"hi"}'
+2025-10-08 11:38:27,387 - app - INFO - Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Content-Length: 16
+Sec-Ch-Ua-Platform: "Windows"
+X-Csrf-Token: IjdlNjQ2ZWEzMzQ3YWZjNmVkYjFlZGViNWViNDdmMDYyMDhlNmM3Njgi.aOXcrg.3hDGKk2bkDzbGvDhBm0tzZRT1tA
+X-Csrftoken: IjdlNjQ2ZWEzMzQ3YWZjNmVkYjFlZGViNWViNDdmMDYyMDhlNmM3Njgi.aOXcrg.3hDGKk2bkDzbGvDhBm0tzZRT1tA
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Sec-Ch-Ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+Content-Type: application/json
+Sec-Ch-Ua-Mobile: ?0
+Accept: */*
+Sec-Gpc: 1
+Origin: http://127.0.0.1:5000
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: http://127.0.0.1:5000/
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJztkz1uwzAMha8iaOmSBJL1nxtk614UBiVRsVHHCmS5QBrk7lXQoc0NMnQT-Ui-DwR1pX0quAx0X8uKG9qPke6pByfBK4DomLa2C0GLEJPiLFklLDMWZFIqKBasgiB8jMZ23AgZUKUYudSQZEgpGYiCSdc5ayFagVwY5mXSnddBBxOdAMc10xgwec6TR955RxvIumD5oVFMOSsV23Za-q00Vm2ddG5rwDCHXRLS3jvCALUfxqXmcqH7tysNea441zZhGJte8oTtfZ9Lb5u_8oHAOU_5OH7hhvi1ksPLiQzwOc5HUkte_YTkXHLAZbmnLnkt5NQCOOKOvE4IC7a6C4EjjPPu1wpa_VKheTz6DThN-bmInmxB_ziPOO_tvJeS-po_cG6SQS01ghDSQAoao-cY0Sv00iSmO2ax_S5t6e0bQMxJDg.aOXbdA.RhDA_AQW_l1k61QrhekGQsfP4Xc
+
+
+2025-10-08 11:38:27,420 - app - INFO - Body: b'{"message":"hi"}'
+2025-10-08 11:38:28,838 - gemini_client - ERROR - Error processing message with Gemini: 404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+2025-10-08 11:38:28,852 - werkzeug - INFO - 127.0.0.1 - - [08/Oct/2025 11:38:28] "POST /api/chat HTTP/1.1" 200 -
+2025-10-08 11:47:07,969 - __main__ - INFO - Successfully connected to Neo4j database
+2025-10-08 11:47:08,461 - __main__ - INFO - Seeded/ensured hardcoded admin user
+2025-10-08 11:47:08,464 - __main__ - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
+2025-10-08 11:47:08,465 - __main__ - INFO - models.User has get_by_email: True
+2025-10-08 11:47:09,022 - __main__ - INFO - Existing admin account verified
+2025-10-08 11:47:09,024 - __main__ - INFO - Admin verified/created at startup: ermido09@gmail.com
+2025-10-08 11:48:05,930 - app - INFO - Headers: Content-Type: application/json
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.4768
+Host: localhost:5000
+Content-Length: 64
+Expect: 100-continue
+Connection: Keep-Alive
+
+
+2025-10-08 11:48:05,936 - app - INFO - Body: b'{"message":"Hello, what services are available in Catanduanes?"}'
+2025-10-08 11:48:05,939 - app - INFO - Headers: Content-Type: application/json
+User-Agent: Mozilla/5.0 (Windows NT; Windows NT 10.0; en-PH) WindowsPowerShell/5.1.26100.4768
+Host: localhost:5000
+Content-Length: 64
+Expect: 100-continue
+Connection: Keep-Alive
+
+
+2025-10-08 11:48:05,941 - app - INFO - Body: b'{"message":"Hello, what services are available in Catanduanes?"}'
+2025-10-08 11:48:05,942 - flask_wtf.csrf - INFO - The CSRF token is missing.
+2025-10-08 11:48:05,943 - app - ERROR - HTTP error occurred: 400 Bad Request: The CSRF token is missing.
+2025-10-08 11:48:05,960 - werkzeug - INFO - 127.0.0.1 - - [08/Oct/2025 11:48:05] "[31m[1mPOST /api/chat HTTP/1.1[0m" 400 -
+2025-10-08 11:48:53,830 - app - INFO - Successfully connected to Neo4j database
+2025-10-08 11:48:54,406 - app - INFO - Seeded/ensured hardcoded admin user
+2025-10-08 11:48:54,407 - app - INFO - Google OAuth configured? client_id=False redirect_uri=http://localhost:5000/callback/google
+2025-10-08 11:48:54,408 - app - INFO - models.User has get_by_email: True
+2025-10-08 11:48:55,012 - app - INFO - Existing admin account verified
+2025-10-08 11:48:55,014 - app - INFO - Admin verified/created at startup: ermido09@gmail.com
+2025-10-08 11:48:55,095 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5000
+2025-10-08 11:48:55,096 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-10-08 11:49:11,162 - app - INFO - Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Cache-Control: max-age=0
+Sec-Ch-Ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+Sec-Ch-Ua-Mobile: ?0
+Sec-Ch-Ua-Platform: "Windows"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8
+Sec-Gpc: 1
+Sec-Fetch-Site: none
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJztkz1uwzAMha8iaOkSB5L1nxtk614UBiVRsVHHCmS5QBrk7lXQoe3WA3Qk-fjeN5A3OqSC60gPtWy4o8MU6YF6cBK8AoiOaWv7ELQIMSnOklXCMmNBJqWCYsEqCMLHaGzPjZABVYqRSw1JhpSSgSiYdL2zFqIVyIVhXibdex10MNEJcFwzjQGT5zx55L13tIFsK5YvGsWUs1KxrtfSd9JY1TnpXGfAMId9EtI-NsIIdRinteZypYeXGw15qbjU5jDiPOcmKXnGVj6s6X33U3EkcMlzPk0fuCN-q-T4dCYjvE_LidSSNz8juZQccF0frWveCjm3Ak64J88zwopNdyVwgmnZf0dB068VWsbvvHH6x_nH-TPOazvvtaSh5jdc2siglhpBCGkgBY3Rc4zoFXppEtM9s9i-S1t6_wRgIEkO.aOXctA.NuffkdtER39nCyujDH7wVQBr5a8
+
+
+2025-10-08 11:49:11,167 - app - INFO - Body: b''
+2025-10-08 11:49:11,197 - app - INFO - Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Cache-Control: max-age=0
+Sec-Ch-Ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+Sec-Ch-Ua-Mobile: ?0
+Sec-Ch-Ua-Platform: "Windows"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8
+Sec-Gpc: 1
+Sec-Fetch-Site: none
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJztkz1uwzAMha8iaOkSB5L1nxtk614UBiVRsVHHCmS5QBrk7lXQoe3WA3Qk-fjeN5A3OqSC60gPtWy4o8MU6YF6cBK8AoiOaWv7ELQIMSnOklXCMmNBJqWCYsEqCMLHaGzPjZABVYqRSw1JhpSSgSiYdL2zFqIVyIVhXibdex10MNEJcFwzjQGT5zx55L13tIFsK5YvGsWUs1KxrtfSd9JY1TnpXGfAMId9EtI-NsIIdRinteZypYeXGw15qbjU5jDiPOcmKXnGVj6s6X33U3EkcMlzPk0fuCN-q-T4dCYjvE_LidSSNz8juZQccF0frWveCjm3Ak64J88zwopNdyVwgmnZf0dB068VWsbvvHH6x_nH-TPOazvvtaSh5jdc2siglhpBCGkgBY3Rc4zoFXppEtM9s9i-S1t6_wRgIEkO.aOXctA.NuffkdtER39nCyujDH7wVQBr5a8
+
+
+2025-10-08 11:49:11,265 - app - INFO - Body: b''
+2025-10-08 11:49:12,184 - werkzeug - INFO - 127.0.0.1 - - [08/Oct/2025 11:49:12] "GET / HTTP/1.1" 200 -
+2025-10-08 11:49:12,630 - app - INFO - Headers: Host: 127.0.0.1:5000
+Connection: keep-alive
+Sec-Ch-Ua-Platform: "Windows"
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36
+Sec-Ch-Ua: "Brave";v="141", "Not?A_Brand";v="8", "Chromium";v="141"
+Sec-Ch-Ua-Mobile: ?0
+Accept: text/css,*/*;q=0.1
+Sec-Gpc: 1
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: no-cors
+Sec-Fetch-Dest: style
+Referer: http://127.0.0.1:5000/
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: en-US,en;q=0.9
+Cookie: session=.eJztkz1uwzAMha8iaOkSB5L1nxtk614UBiVRsVHHCmS5QBrk7lXQoe3WA3Qk-fjeN5A3OqSC60gPtWy4o8MU6YF6cBK8AoiOaWv7ELQIMSnOklXCMmNBJqWCYsEqCMLHaGzPjZABVYqRSw1JhpSSgSiYdL2zFqIVyIVhXibdex10MNEJcFwzjQGT5zx55L13tIFsK5YvGsWUs1KxrtfSd9JY1TnpXGfAMId9EtI-NsIIdRinteZypYeXGw15qbjU5jDiPOcmKXnGVj6s6X33U3EkcMlzPk0fuCN-q-T4dCYjvE_LidSSNz8juZQccF0frWveCjm3Ak64J88zwopNdyVwgmnZf0dB068VWsbvvHH6x_nH-TPOazvvtaSh5jdc2siglhpBCGkgBY3Rc4zoFXppEtM9s9i-S1t6_wRgIEkO.aOXctA.NuffkdtER39nCyujDH7wVQBr5a8
+If-None-Match: "1759792349.1238942-4389-2210994743"
+If-Modified-Since: Mon, 06 Oct 2025 23:12:29 GMT
+
+
