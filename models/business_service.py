@@ -4,7 +4,7 @@ from database import driver, DATABASE
 import logging
 
 logger = logging.getLogger(__name__)
-from models.user import User
+from models import User
 
 class Business:
     """Business model class."""
