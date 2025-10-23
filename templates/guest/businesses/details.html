@@ -1,0 +1,409 @@
+{% extends "_layout.html" %}
+
+{% block main_content %}
+<div class="business-details-container">
+    <!-- Back Button -->
+    <a href="{{ url_for('guest.view_businesses') }}" class="btn btn-outline-primary back-button">
+        <i class="fas fa-arrow-left"></i> Back to Businesses
+    </a>
+
+    <!-- Business Details Card -->
+    <div class="business-card">
+        <div class="business-header">
+            {% if business.logo_url|default('') %}
+            <img src="{{ business.logo_url }}" alt="{{ business.name|default('Unnamed Business', true) }}" class="business-logo">
+            {% else %}
+            <div class="business-logo-placeholder">
+                {{ business.name|default('Unnamed Business', true)[:2].upper() }}
+            </div>
+            {% endif %}
+
+            <div class="business-info">
+                <h1>{{ business.name|default('Unnamed Business', true) }}</h1>
+                <div class="business-meta">
+                    <span class="category">
+                        <i class="fas fa-tag"></i> {{ business.category|default('Uncategorized', true) }}
+                    </span>
+                    <span class="location">
+                        <i class="fas fa-map-marker-alt"></i> {{ business.location|default('Location not specified', true) }}
+                    </span>
+                    {% if business.verified|default(false) %}
+                    <span class="verified-badge">
+                        <i class="fas fa-check-circle"></i> Verified
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="rating-summary">
+                    <div class="rating-stars">
+                        {% for i in range(5) %}
+                        <i class="fas fa-star {% if i < ((business.rating|default(0))|round|int) %}filled{% endif %}"></i>
+                        {% endfor %}
+                        <span class="rating-value">{{ "%.1f"|format(business.rating|default(0)) }}</span>
+                    </div>
+                    <span class="review-count">{{ business.review_count|default(0) }} reviews</span>
+                </div>
+            </div>
+
+            <div class="business-actions">
+                <a href="{{ url_for('guest.view_businesses_map') }}?highlight={{ business.id }}" 
+                   class="btn btn-outline-primary">
+                    <i class="fas fa-map-marker-alt"></i> View on Map
+                </a>
+            </div>
+        </div>
+
+        <!-- Business Description -->
+        <section class="business-section">
+            <h3>About</h3>
+            <div class="content">
+                {{ business.description|default('No description available', true)|safe }}
+            </div>
+        </section>
+
+        <!-- Contact Information -->
+        <section class="business-section">
+            <h3>Contact Information</h3>
+            <div class="contact-grid">
+                {% if business.phone|default('') %}
+                <div class="contact-item">
+                    <i class="fas fa-phone"></i>
+                    <a href="tel:{{ business.phone }}">{{ business.phone }}</a>
+                </div>
+                {% endif %}
+
+                {% if business.email|default('') %}
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <a href="mailto:{{ business.email }}">{{ business.email }}</a>
+                </div>
+                {% endif %}
+
+                {% if business.website|default('') %}
+                <div class="contact-item">
+                    <i class="fas fa-globe"></i>
+                    <a href="{{ business.website }}" target="_blank">{{ business.website }}</a>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Reviews Section -->
+        <section class="business-section">
+            <h3>Reviews</h3>
+            
+            <!-- Rating Distribution -->
+            <div class="rating-distribution">
+                {% for i in range(5, 0, -1) %}
+                <div class="rating-bar">
+                    <span class="stars">{{ i }} star{% if i != 1 %}s{% endif %}</span>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: {{ (ratings[i]|default(0) / business.review_count * 100)|round }}%"></div>
+                    </div>
+                    <span class="count">{{ ratings[i]|default(0) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Reviews List -->
+            <div class="reviews-list">
+                {% for review in comments %}
+                <div class="review-card">
+                    <div class="review-header">
+                        {% if review.user and review.user.profile_picture|default('') %}
+                        <img src="{{ review.user.profile_picture }}" alt="{{ review.user.name|default('Anonymous', true) }}" class="reviewer-photo">
+                        {% else %}
+                        <div class="reviewer-photo-placeholder">
+                            {{ (review.user.name|default('A', true))[:1].upper() }}
+                        </div>
+                        {% endif %}
+
+                        <div class="review-meta">
+                            <h4>{{ review.user.name|default('Anonymous', true) if review.user else 'Anonymous' }}</h4>
+                            <div class="rating-date">
+                                <span class="stars">
+                                    {% for i in range(5) %}
+                                    <i class="fas fa-star {% if i < (review.rating|default(0)) %}filled{% endif %}"></i>
+                                    {% endfor %}
+                                </span>
+                                <span class="date">{{ review.created_at|timeago if review.created_at else 'Some time ago' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="review-content">
+                        {{ review.comment|default('No comment provided', true)|safe }}
+                    </div>
+
+                    {% if review.reply|default('') %}
+                    <div class="review-reply">
+                        <div class="reply-header">
+                            <i class="fas fa-reply"></i>
+                            <strong>Business Response</strong>
+                        </div>
+                        <div class="reply-content">
+                            {{ review.reply|safe }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="no-reviews">
+                    <p>No reviews yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Review Login Prompt -->
+            <div class="review-prompt">
+                <p>Want to share your experience?</p>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                    Login to Write a Review
+                </a>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .business-details-container {
+        padding: 20px;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .back-button {
+        margin-bottom: 20px;
+    }
+
+    .business-card {
+        background: var(--glass-bg);
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: var(--glass-shadow);
+    }
+
+    .business-header {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 20px;
+        margin-bottom: 30px;
+        align-items: start;
+    }
+
+    .business-logo, .business-logo-placeholder {
+        width: 120px;
+        height: 120px;
+        border-radius: 10px;
+    }
+
+    .business-logo {
+        object-fit: cover;
+    }
+
+    .business-logo-placeholder {
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        font-weight: bold;
+    }
+
+    .business-info h1 {
+        margin: 0;
+        color: var(--primary-color);
+    }
+
+    .business-meta {
+        display: flex;
+        gap: 15px;
+        margin: 10px 0;
+        color: var(--text-muted);
+    }
+
+    .verified-badge {
+        display: inline-flex;
+        align-items: center;
+        background: var(--success-color);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 15px;
+        font-size: 0.8em;
+    }
+
+    .rating-summary {
+        margin-top: 15px;
+    }
+
+    .rating-stars {
+        font-size: 1.2em;
+        color: #ffd700;
+    }
+
+    .rating-stars .fa-star:not(.filled) {
+        color: #ddd;
+    }
+
+    .rating-value {
+        font-weight: bold;
+        margin-left: 5px;
+    }
+
+    .review-count {
+        color: var(--text-muted);
+        font-size: 0.9em;
+    }
+
+    .business-section {
+        margin: 30px 0;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .business-section h3 {
+        color: var(--primary-color);
+        margin-bottom: 15px;
+    }
+
+    .contact-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .contact-item a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .rating-distribution {
+        margin: 20px 0;
+    }
+
+    .rating-bar {
+        display: grid;
+        grid-template-columns: 60px 1fr 40px;
+        align-items: center;
+        gap: 10px;
+        margin: 5px 0;
+    }
+
+    .progress {
+        height: 8px;
+        background: #eee;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background: var(--primary-color);
+    }
+
+    .reviews-list {
+        margin-top: 30px;
+    }
+
+    .review-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .review-header {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .reviewer-photo, .reviewer-photo-placeholder {
+        width: 50px;
+        height: 50px;
+        border-radius: 25px;
+    }
+
+    .reviewer-photo {
+        object-fit: cover;
+    }
+
+    .reviewer-photo-placeholder {
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+
+    .review-meta h4 {
+        margin: 0;
+    }
+
+    .rating-date {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 5px;
+        font-size: 0.9em;
+    }
+
+    .review-reply {
+        margin-top: 15px;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+    }
+
+    .reply-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--primary-color);
+        margin-bottom: 8px;
+    }
+
+    .review-prompt {
+        text-align: center;
+        margin-top: 30px;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+    }
+
+    @media (max-width: 768px) {
+        .business-header {
+            grid-template-columns: 1fr;
+            text-align: center;
+        }
+
+        .business-logo, .business-logo-placeholder {
+            margin: 0 auto;
+        }
+
+        .business-meta {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .business-actions {
+            text-align: center;
+        }
+
+        .contact-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}

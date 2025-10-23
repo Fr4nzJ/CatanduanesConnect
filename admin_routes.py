@@ -1,7 +1,7 @@
-from functools import wraps
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, send_file
 from flask_login import current_user, login_required
 from models import User, Business, Job, Application, Service, Activity
+from decorators import admin_required
 import os
 from datetime import datetime
 from neo4j import GraphDatabase
@@ -18,22 +18,11 @@ logger = logging.getLogger(__name__)
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'admin':
-            flash('Unauthorized access', 'danger')
-            return redirect(url_for('home'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-
-
 @admin.route('/dashboard')
-@login_required
 @admin_required
 def dashboard():
     """Admin dashboard main view."""
+    logger.info(f"Accessing admin dashboard. User: {current_user.email if current_user else 'Unknown'}")
     try:
         # Test Neo4j connection first
         try:
@@ -111,7 +100,6 @@ def dashboard():
         return render_template('admin/dashboard.html', error="Database connection error")
 
 @admin.route('/dashboard/data')
-@login_required
 @admin_required
 def dashboard_data():
     """AJAX endpoint for dashboard data refresh."""
@@ -186,7 +174,6 @@ def dashboard_data():
         return jsonify({'error': str(e)}), 500
 
 @admin.route('/verify-users')
-@login_required
 @admin_required
 def verify_users_list():
     """Show list of users pending verification."""

@@ -1,0 +1,113 @@
+{% extends "_layout.html" %}
+
+{% block title %}Job Seeker Dashboard - {{ current_user.first_name }}{% endblock %}
+
+{% block main_content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Profile Navigation</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item">
+                        <h6 class="mb-2">Profile</h6>
+                        <div class="ms-3">
+                            <!-- Edit Profile Section -->
+                            <div class="mb-3">
+                                <h6 class="text-muted">Edit Profile</h6>
+                                <div class="ms-3">
+                                    <a href="{{ url_for('job_seeker.edit_profile_picture') }}" class="list-group-item-action d-block py-1">Change Profile Picture</a>
+                                    <a href="{{ url_for('job_seeker.edit_resume') }}" class="list-group-item-action d-block py-1">Change Resume</a>
+                                    <a href="{{ url_for('job_seeker.edit_bio') }}" class="list-group-item-action d-block py-1">Change Bio</a>
+                                    <a href="{{ url_for('job_seeker.edit_preferred_jobs') }}" class="list-group-item-action d-block py-1">Change Preferred Jobs</a>
+                                    <a href="{{ url_for('job_seeker.edit_skills') }}" class="list-group-item-action d-block py-1">Change Skills</a>
+                                </div>
+                            </div>
+                            
+                            <!-- View Profile Section -->
+                            <div class="mb-3">
+                                <h6 class="text-muted">View Profile</h6>
+                                <div class="ms-3">
+                                    <a href="{{ url_for('job_seeker.view_profile_picture') }}" class="list-group-item-action d-block py-1">View Profile Picture</a>
+                                    <a href="{{ url_for('job_seeker.view_resume') }}" class="list-group-item-action d-block py-1">View Resume</a>
+                                    <a href="{{ url_for('job_seeker.view_bio') }}" class="list-group-item-action d-block py-1">View Bio</a>
+                                    <a href="{{ url_for('job_seeker.view_preferred_jobs') }}" class="list-group-item-action d-block py-1">View Preferred Jobs</a>
+                                    <a href="{{ url_for('job_seeker.view_skills') }}" class="list-group-item-action d-block py-1">View Skills</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Applications Section -->
+                    <div class="list-group-item">
+                        <h6 class="mb-2">Pending Applications</h6>
+                        <div class="ms-3">
+                            <a href="{{ url_for('job_seeker.view_applications') }}" class="list-group-item-action d-block py-1">View Applications</a>
+                            <a href="{{ url_for('job_seeker.view_applications', status='pending') }}" class="list-group-item-action d-block py-1">Cancel Applications</a>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Updates -->
+                    <a href="{{ url_for('job_seeker.recent_updates') }}" class="list-group-item">Recent Updates</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-md-9">
+            {% block dashboard_content %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Welcome, {{ current_user.first_name }}!</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Quick Stats -->
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">Pending Applications</h6>
+                                    <p class="card-text display-6">{{ pending_applications|default(0) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">Profile Completion</h6>
+                                    <p class="card-text display-6">{{ profile_completion|default(0) }}%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title">New Job Matches</h6>
+                                    <p class="card-text display-6">{{ new_job_matches|default(0) }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .list-group-item-action {
+        text-decoration: none;
+        color: var(--bs-body-color);
+    }
+    .list-group-item-action:hover {
+        background-color: var(--bs-light);
+    }
+</style>
+{% endblock %}

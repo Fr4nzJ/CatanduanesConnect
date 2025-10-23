@@ -1,5 +1,118 @@
 from flask_login import UserMixin
 from datetime import datetime
+from database import driver, DATABASE
+
+class Statistics:
+    @staticmethod
+    def get_business_stats(business_id):
+        """Get statistics for a business"""
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (b:Business {id: $business_id})
+                OPTIONAL MATCH (b)<-[:POSTED_BY]-(j:Job)
+                OPTIONAL MATCH (j)<-[:APPLIES_TO]-(a:Application)
+                OPTIONAL MATCH (b)<-[:REVIEWS]-(r:Review)
+                RETURN {
+                    total_jobs: count(DISTINCT j),
+                    active_jobs: count(DISTINCT j) - count(DISTINCT CASE WHEN j.status = 'closed' THEN j END),
+                    total_applications: count(DISTINCT a),
+                    pending_applications: count(DISTINCT CASE WHEN a.status = 'pending' THEN a END),
+                    total_reviews: count(DISTINCT r),
+                    avg_rating: avg(r.rating)
+                } as stats
+            """, business_id=business_id)
+            stats = result.single()["stats"]
+            return {k: v if v is not None else 0 for k, v in stats.items()}
+
+    @staticmethod
+    def get_user_stats(user_id):
+        """Get statistics for a user"""
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (u:User {id: $user_id})
+                OPTIONAL MATCH (u)-[:APPLIES_TO]->(j:Job)
+                OPTIONAL MATCH (u)-[:REVIEWS]->(r:Review)
+                RETURN {
+                    total_applications: count(DISTINCT j),
+                    active_applications: count(DISTINCT CASE WHEN j.status = 'active' THEN j END),
+                    total_reviews: count(DISTINCT r)
+                } as stats
+            """, user_id=user_id)
+            stats = result.single()["stats"]
+            return {k: v if v is not None else 0 for k, v in stats.items()}
+
+    @staticmethod
+    def get_system_stats():
+        """Get overall system statistics"""
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (u:User)
+                OPTIONAL MATCH (b:Business)
+                OPTIONAL MATCH (j:Job)
+                OPTIONAL MATCH (a:Application)
+                OPTIONAL MATCH (r:Review)
+                RETURN {
+                    total_users: count(DISTINCT u),
+                    total_businesses: count(DISTINCT b),
+                    total_jobs: count(DISTINCT j),
+                    total_applications: count(DISTINCT a),
+                    total_reviews: count(DISTINCT r)
+                } as stats
+            """)
+            stats = result.single()["stats"]
+            return {k: v if v is not None else 0 for k, v in stats.items()}
+
+class Chat:
+    @staticmethod
+    def get_user_conversations(user_id):
+        """Get all conversations for a user"""
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (u:User {id: $user_id})-[r:PARTICIPATES_IN]->(c:Conversation)
+                OPTIONAL MATCH (c)<-[:SENT_IN]-(m:Message)
+                WITH c, collect(m) as messages
+                RETURN c {
+                    .id,
+                    .created_at,
+                    last_message: head([m in messages | m {
+                        .content,
+                        .sent_at
+                    } ORDER BY m.sent_at DESC])
+                }
+                ORDER BY c.created_at DESC
+            """, user_id=user_id)
+            return [dict(record["c"]) for record in result]
+
+    @staticmethod
+    def get_conversation(conversation_id):
+        """Get details of a specific conversation"""
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (c:Conversation {id: $conversation_id})
+                RETURN c {
+                    .id,
+                    .created_at,
+                    participants: [(c)<-[:PARTICIPATES_IN]-(u:User) | u {.id, .name}]
+                }
+            """, conversation_id=conversation_id)
+            return dict(result.single()["c"]) if result.peek() else None
+
+    @staticmethod
+    def get_messages(conversation_id):
+        """Get all messages in a conversation"""
+        with driver.session(database=DATABASE) as session:
+            result = session.run("""
+                MATCH (m:Message)-[:SENT_IN]->(c:Conversation {id: $conversation_id})
+                MATCH (u:User)-[:SENT]->(m)
+                RETURN m {
+                    .id,
+                    .content,
+                    .sent_at,
+                    sender: u {.id, .name}
+                }
+                ORDER BY m.sent_at ASC
+            """, conversation_id=conversation_id)
+            return [dict(record["m"]) for record in result]
 
 class User(UserMixin):
     def __init__(self, id, email, name, role='client', is_verified=False, created_at=None):

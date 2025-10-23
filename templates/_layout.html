@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/glassmorphism.css') }}">
+{% endblock %}
+
+{% from 'macros/user_checks.html' import is_role, has_role_in %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+            {% if current_user is defined and current_user is not none and current_user.is_authenticated %}
+            <div class="col-md-3">
+                <div class="sidebar-nav">
+                    {% if is_role('job_seeker') %}
+                        {% include 'job_seeker/_sidebar.html' %}
+                    {% elif is_role('service_client') %}
+                        {% include 'service_client/_sidebar.html' %}
+                    {% elif is_role('business_owner') %}
+                        {% include 'business_owner/_sidebar.html' %}
+                    {% elif is_role('admin') %}
+                        {% include 'admin/_sidebar.html' %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Main Content -->
+            <div class="{% if current_user is defined and current_user is not none and current_user.is_authenticated %}col-md-9{% else %}col-md-12{% endif %}">
+            {% block main_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Preferred Jobs - {{ current_user.first_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Change Preferred Jobs</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ csrf() }}
+                        <div class="mb-3">
+                            <label class="form-label">Select Your Preferred Job Categories</label>
+                            {% for category in job_categories %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="preferred_jobs" value="{{ category }}"
+                                    id="category-{{ loop.index }}" {% if category in current_user.preferred_jobs %}checked{% endif %}>
+                                <label class="form-check-label" for="category-{{ loop.index }}">
+                                    {{ category }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Preferences</button>
+                        <a href="{{ url_for('job_seeker.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

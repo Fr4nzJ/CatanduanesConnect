@@ -1,0 +1,54 @@
+{% extends "_layout.html" %}
+
+{% block main_content %}
+<div class="services-container">
+    <h1 class="page-title">Service Offers</h1>
+
+    <!-- Search and Filter -->
+    <div class="search-filter-container">
+        <form class="search-form">
+            <input type="text" name="search" placeholder="Search services..." class="form-control">
+            <select name="category" class="form-control">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                <option value="{{ category }}">{{ category }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+    </div>
+
+    <!-- Map View Toggle -->
+    <div class="view-toggle">
+        <a href="{{ url_for('guest.view_services_map') }}" class="btn btn-outline-primary">
+            <i class="fas fa-map-marker-alt"></i> View on Map
+        </a>
+    </div>
+
+    <!-- Services Grid -->
+    <div class="services-grid">
+        {% for service in services %}
+        <div class="service-card">
+            <h3>{{ service.title }}</h3>
+            <p class="category"><i class="fas fa-tag"></i> {{ service.category }}</p>
+            <p class="location"><i class="fas fa-map-marker-alt"></i> {{ service.location }}</p>
+            <p class="description">{{ service.description[:150] }}...</p>
+            <a href="{{ url_for('guest.view_service_details', service_id=service.id) }}" class="btn btn-primary">View Details</a>
+        </div>
+        {% else %}
+        <div class="no-results">
+            <p>No service offers found.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .services-container {
+        padding: 20px;
+    }
+</style>
+{% endblock %}

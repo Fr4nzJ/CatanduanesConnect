@@ -1,0 +1,203 @@
+{% extends "_layout.html" %}
+
+{% block main_content %}
+<div class="job-details-container">
+    <!-- Back Button -->
+    <a href="{{ url_for('guest.view_jobs') }}" class="btn btn-outline-primary back-button">
+        <i class="fas fa-arrow-left"></i> Back to Jobs
+    </a>
+
+    <!-- Job Details Card -->
+    <div class="job-card">
+        <div class="job-header">
+            {% if job.business.logo_url %}
+            <img src="{{ job.business.logo_url }}" alt="{{ job.business.name }}" class="business-logo">
+            {% endif %}
+            
+            <div class="job-title-section">
+                <h1>{{ job.title }}</h1>
+                <h3>{{ job.business.name }}</h3>
+                <div class="job-meta">
+                    <span class="location">
+                        <i class="fas fa-map-marker-alt"></i> {{ job.location }}
+                    </span>
+                    <span class="salary">
+                        <i class="fas fa-money-bill-wave"></i> {{ job.salary }}
+                    </span>
+                    <span class="posted-date">
+                        <i class="fas fa-calendar-alt"></i> Posted {{ job.created_at|timeago }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="job-body">
+            <!-- Job Description -->
+            <section class="job-section">
+                <h4>Job Description</h4>
+                <div class="content">{{ job.description|safe }}</div>
+            </section>
+
+            <!-- Requirements -->
+            <section class="job-section">
+                <h4>Requirements</h4>
+                <div class="content">
+                    {% if job.requirements %}
+                        {{ job.requirements|safe }}
+                    {% else %}
+                        <p>No specific requirements listed.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Business Information -->
+            <section class="job-section">
+                <h4>About the Business</h4>
+                <div class="content">
+                    <p>{{ job.business.description }}</p>
+                    <div class="business-meta">
+                        {% if job.business.website %}
+                        <a href="{{ job.business.website }}" target="_blank" class="business-link">
+                            <i class="fas fa-globe"></i> Website
+                        </a>
+                        {% endif %}
+                        
+                        {% if job.business.email %}
+                        <a href="mailto:{{ job.business.email }}" class="business-link">
+                            <i class="fas fa-envelope"></i> Email
+                        </a>
+                        {% endif %}
+                        
+                        {% if job.business.phone %}
+                        <a href="tel:{{ job.business.phone }}" class="business-link">
+                            <i class="fas fa-phone"></i> Phone
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="job-footer">
+            <div class="action-buttons">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login to Apply
+                </a>
+                <a href="{{ url_for('guest.view_jobs_map') }}?highlight={{ job.id }}" class="btn btn-outline-primary">
+                    <i class="fas fa-map-marker-alt"></i> View on Map
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .job-details-container {
+        padding: 20px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .back-button {
+        margin-bottom: 20px;
+    }
+
+    .job-card {
+        background: var(--glass-bg);
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: var(--glass-shadow);
+    }
+
+    .job-header {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .business-logo {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 10px;
+    }
+
+    .job-title-section h1 {
+        margin: 0;
+        color: var(--primary-color);
+    }
+
+    .job-title-section h3 {
+        margin: 5px 0;
+        color: var(--secondary-color);
+    }
+
+    .job-meta {
+        display: flex;
+        gap: 20px;
+        margin-top: 10px;
+        color: var(--text-muted);
+    }
+
+    .job-section {
+        margin: 25px 0;
+    }
+
+    .job-section h4 {
+        color: var(--primary-color);
+        margin-bottom: 15px;
+        padding-bottom: 5px;
+        border-bottom: 2px solid var(--primary-color);
+    }
+
+    .content {
+        line-height: 1.6;
+    }
+
+    .business-meta {
+        display: flex;
+        gap: 15px;
+        margin-top: 15px;
+    }
+
+    .business-link {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .business-link:hover {
+        text-decoration: underline;
+    }
+
+    .job-footer {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+        .job-header {
+            flex-direction: column;
+        }
+
+        .job-meta {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}

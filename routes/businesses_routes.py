@@ -1,17 +1,13 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, current_app
 from neo4j import exceptions as neo4j_exceptions
-
-# Prefer importing the shared Neo4j driver from the central database module
 from database import driver as neo4j_driver, DATABASE as NEO4J_DATABASE
-
 
 businesses_bp = Blueprint('businesses', __name__)
 
 
 def _record_to_dict(node):
-    # Convert neo4j.Node to plain dict with id included if present
+    """Convert neo4j.Node to dict with string id for template safety."""
     data = dict(node)
-    # ensure string types for safety in templates
     if 'id' in data and not isinstance(data['id'], str):
         data['id'] = str(data['id'])
     return data
@@ -19,34 +15,16 @@ def _record_to_dict(node):
 
 @businesses_bp.route('/', methods=['GET'])
 def list_business_owners():
-    """List business owners from User nodes where role='business_owner'.
+    """List business owners from User nodes where role='business_owner'."""
+    if not neo4j_driver:
+        return render_template(
+            'errors/500.html',
+            error="Database connection not available"
+        ), 500
 
-    Supports optional server-side filters via query params:
-    - q: search by business_name or description
-    - category: exact match on category
-    - location: matches city or province (case-insensitive contains)
-    """
     query = request.args.get('q', '').strip()
     category = request.args.get('category', '').strip()
     location = request.args.get('location', '').strip()
-
-    cypher_conditions = ["u.role = 'business_owner'"]
-    params = {}
-
-    if query:
-        cypher_conditions.append("(toLower(u.business_name) CONTAINS toLower($q) OR toLower(u.description) CONTAINS toLower($q))")
-        params['q'] = query
-
-    if category:
-        cypher_conditions.append("u.category = $category")
-        params['category'] = category
-
-    if location:
-        # match city or province via contains to be forgiving
-        cypher_conditions.append("(toLower(coalesce(u.city,'')) CONTAINS toLower($location) OR toLower(coalesce(u.province,'')) CONTAINS toLower($location) OR toLower(coalesce(u.location,'')) CONTAINS toLower($location))")
-        params['location'] = location
-
-    where_clause = " AND ".join(cypher_conditions)
 
     owners = []
     categories = set()
@@ -54,46 +32,111 @@ def list_business_owners():
 
     try:
         with neo4j_driver.session(database=NEO4J_DATABASE) as session:
-            result = session.run(
-                f"""
+            # Get business owners
+            owners_query = """
                 MATCH (u:User)
-                WHERE {where_clause}
-                WITH u, toLower(coalesce(u.business_name, u.first_name + ' ' + coalesce(u.last_name,''))) AS sortKey
-                RETURN u ORDER BY sortKey
-                """,
-                **params,
-            )
+                WHERE u.role = 'business_owner'
+                WITH u,
+                    COALESCE(u.business_name, COALESCE(u.first_name, '') + ' ' + COALESCE(u.last_name, '')) AS display_name,
+                    COALESCE(u.city, '') AS city,
+                    COALESCE(u.province, '') AS province,
+                    COALESCE(u.location, '') AS location,
+                    COALESCE(u.category, '') AS category
+                WHERE
+                    CASE WHEN $query <> '' THEN
+                        toLower(display_name) CONTAINS toLower($query) OR toLower(COALESCE(u.description, '')) CONTAINS toLower($query)
+                    ELSE true END
+                    AND
+                    CASE WHEN $category <> '' THEN category = $category ELSE true END
+                    AND
+                    CASE WHEN $location <> '' THEN
+                        toLower(city) CONTAINS toLower($location) OR
+                        toLower(province) CONTAINS toLower($location) OR
+                        toLower(location) CONTAINS toLower($location)
+                    ELSE true END
+                RETURN u, display_name
+                ORDER BY display_name
+            """
+            result = session.run(owners_query, {
+                'query': query,
+                'category': category,
+                'location': location
+            })
+
             for record in result:
-                u = _record_to_dict(record["u"])  # neo4j.Node -> dict
-                owners.append(u)
-                if u.get('category'):
-                    categories.add(u['category'])
-                # derive a simple location label for filter list
-                loc_label = (
-                    (u.get('city') or '') + (', ' if u.get('city') and u.get('province') else '') + (u.get('province') or '')
-                ).strip(', ')
-                if loc_label:
-                    locations.add(loc_label)
-                elif u.get('location'):
-                    locations.add(u['location'])
+                try:
+                    u = _record_to_dict(record["u"])
+                    # Ensure required fields have defaults
+                    u['business_name'] = u.get('business_name') or f"{u.get('first_name', '')} {u.get('last_name', '')}".strip()
+                    u['description'] = u.get('description') or 'No description available'
+                    u['category'] = u.get('category') or 'Uncategorized'
 
-    except neo4j_exceptions.ServiceUnavailable as e:
-        return render_template('businesses.html', owners=[], categories=[], locations=[], error=str(e))
-    except Exception as e:
-        return render_template('businesses.html', owners=[], categories=[], locations=[], error=str(e))
+                    # Build location string
+                    city = u.get('city', '').strip()
+                    province = u.get('province', '').strip()
+                    if city or province:
+                        loc = f"{city}{', ' if city and province else ''}{province}".strip()
+                    else:
+                        loc = u.get('location') or 'Location not specified'
+                    u['location'] = loc
 
-    # Sort filter values for stable UI
-    categories_list = sorted(categories)
-    locations_list = sorted(locations)
+                    if loc:
+                        locations.add(loc)
+
+                    owners.append(u)
+                except Exception as e:
+                    print(f"Error processing business record: {str(e)}")
+                    continue
+
+            # Get all categories
+            categories_result = session.run("""
+                MATCH (u:User {role: 'business_owner'})
+                WHERE u.category IS NOT NULL
+                RETURN DISTINCT u.category as category
+                ORDER BY category
+            """)
+            for record in categories_result:
+                if record.get('category'):
+                    categories.add(record['category'])
+
+            # Get all locations
+            locations_result = session.run("""
+                MATCH (u:User {role: 'business_owner'})
+                WHERE u.city IS NOT NULL OR u.province IS NOT NULL OR u.location IS NOT NULL
+                RETURN DISTINCT 
+                    CASE
+                        WHEN u.city IS NOT NULL OR u.province IS NOT NULL
+                        THEN COALESCE(u.city, '') + CASE 
+                            WHEN u.city IS NOT NULL AND u.province IS NOT NULL THEN ', '
+                            ELSE ''
+                        END + COALESCE(u.province, '')
+                        ELSE u.location
+                    END as location
+                ORDER BY location
+            """)
+            for record in locations_result:
+                if record.get('location'):
+                    locations.add(record['location'])
+
+    except neo4j_exceptions.ServiceUnavailable:
+        current_app.logger.exception('Neo4j service unavailable while listing business owners')
+        return render_template(
+            'errors/500.html',
+            error="Database service is currently unavailable. Please try again later."
+        ), 500
+    except Exception:
+        current_app.logger.exception('Unhandled exception in list_business_owners')
+        return render_template(
+            'errors/500.html',
+            error="An unexpected error occurred. Please try again later."
+        ), 500
 
     return render_template(
         'businesses.html',
         owners=owners,
-        categories=categories_list,
-        locations=locations_list,
+        categories=sorted(categories),
+        locations=sorted(locations),
         q=query,
         current_category=category or '',
         current_location=location or '',
     )
-
-

@@ -1,0 +1,226 @@
+{% extends "_layout.html" %}
+
+{% block main_content %}
+<div class="map-container">
+    <!-- Back Button -->
+    <div class="map-header">
+        <a href="{{ url_for('guest.view_' + type + 's') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left"></i> Back to {{ type|title }}s
+        </a>
+        
+        <!-- View Toggle -->
+        <div class="view-controls">
+            <button class="btn btn-primary active" data-view="map">
+                <i class="fas fa-map-marker-alt"></i> Map View
+            </button>
+            <button class="btn btn-outline-primary" data-view="list">
+                <i class="fas fa-list"></i> List View
+            </button>
+        </div>
+    </div>
+
+    <!-- Map and List Container -->
+    <div class="content-container">
+        <!-- Map View -->
+        <div class="map-view active" id="map"></div>
+
+        <!-- List View -->
+        <div class="list-view">
+            {% for item in items %}
+            <div class="list-item" data-id="{{ item.id }}" data-lat="{{ item.latitude }}" data-lng="{{ item.longitude }}">
+                <div class="item-content">
+                    <h3>{{ item.title or item.name }}</h3>
+                    {% if item.business %}
+                    <h4>{{ item.business.name }}</h4>
+                    {% endif %}
+                    <p class="location">{{ item.location }}</p>
+                    {% if item.salary %}
+                    <p class="salary">{{ item.salary }}</p>
+                    {% endif %}
+                    <a href="{{ url_for('guest.view_' + type + '_details', id=item.id) }}" class="btn btn-sm btn-primary">
+                        View Details
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<style>
+    .map-container {
+        height: calc(100vh - 100px);
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+    }
+
+    .map-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .content-container {
+        flex: 1;
+        display: flex;
+        gap: 20px;
+        position: relative;
+    }
+
+    .map-view {
+        flex: 2;
+        height: 100%;
+        border-radius: 10px;
+        overflow: hidden;
+        display: none;
+    }
+
+    .map-view.active {
+        display: block;
+    }
+
+    .list-view {
+        flex: 1;
+        overflow-y: auto;
+        display: none;
+        padding-right: 10px;
+    }
+
+    .list-view.active {
+        display: block;
+    }
+
+    .list-item {
+        background: var(--glass-bg);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: var(--glass-shadow);
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .list-item:hover {
+        transform: translateY(-2px);
+    }
+
+    .list-item h3 {
+        margin: 0;
+        color: var(--primary-color);
+    }
+
+    .list-item h4 {
+        margin: 5px 0;
+        color: var(--secondary-color);
+        font-size: 0.9em;
+    }
+
+    .list-item p {
+        margin: 5px 0;
+        font-size: 0.9em;
+        color: var(--text-muted);
+    }
+
+    .view-controls {
+        display: flex;
+        gap: 10px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .content-container {
+            flex-direction: column;
+        }
+
+        .map-view, .list-view {
+            width: 100%;
+        }
+
+        .map-view {
+            height: 300px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map
+    const map = L.map('map').setView([{{ center_lat|default('12.4') }}, {{ center_lng|default('124.2') }}], {{ zoom|default(13) }});
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Add markers
+    const items = {{ items|tojson|safe }};
+    const markers = {};
+    
+    items.forEach(item => {
+        if (item.latitude && item.longitude) {
+            const marker = L.marker([item.latitude, item.longitude])
+                .bindPopup(`
+                    <h3>${item.title || item.name}</h3>
+                    ${item.business ? `<h4>${item.business.name}</h4>` : ''}
+                    <p>${item.location}</p>
+                    ${item.salary ? `<p>${item.salary}</p>` : ''}
+                    <a href="/{{ type }}s/${item.id}" class="btn btn-sm btn-primary">View Details</a>
+                `);
+            markers[item.id] = marker;
+            marker.addTo(map);
+        }
+    });
+
+    // Handle view toggle
+    document.querySelectorAll('.view-controls button').forEach(button => {
+        button.addEventListener('click', () => {
+            const view = button.dataset.view;
+            document.querySelector('.view-controls .active').classList.remove('active');
+            button.classList.add('active');
+            
+            document.querySelector('.map-view').classList.toggle('active', view === 'map');
+            document.querySelector('.list-view').classList.toggle('active', view === 'list');
+            
+            if (view === 'map') {
+                map.invalidateSize();
+            }
+        });
+    });
+
+    // Handle list item hover
+    document.querySelectorAll('.list-item').forEach(item => {
+        item.addEventListener('mouseenter', () => {
+            const marker = markers[item.dataset.id];
+            if (marker) {
+                marker.openPopup();
+            }
+        });
+        
+        item.addEventListener('mouseleave', () => {
+            const marker = markers[item.dataset.id];
+            if (marker) {
+                marker.closePopup();
+            }
+        });
+    });
+
+    // Highlight specific item if provided in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const highlightId = urlParams.get('highlight');
+    if (highlightId && markers[highlightId]) {
+        const marker = markers[highlightId];
+        marker.openPopup();
+        map.setView(marker.getLatLng(), 15);
+    }
+});
+</script>
+{% endblock %}

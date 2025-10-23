@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Profile Picture - {{ current_user.first_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Change Profile Picture</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ csrf() }}
+                        <div class="mb-3">
+                            <label for="picture" class="form-label">Select New Profile Picture</label>
+                            <input type="file" class="form-control" id="picture" name="picture" accept="image/*" required>
+                            <div class="form-text">Allowed formats: PNG, JPG, JPEG. Max size: 5MB</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload Picture</button>
+                        <a href="{{ url_for('job_seeker.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

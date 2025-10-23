@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Resume - {{ current_user.first_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Change Resume</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ csrf() }}
+                        <div class="mb-3">
+                            <label for="resume" class="form-label">Select New Resume</label>
+                            <input type="file" class="form-control" id="resume" name="resume" accept=".pdf,.doc,.docx" required>
+                            <div class="form-text">Allowed formats: PDF, DOC, DOCX. Max size: 5MB</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload Resume</button>
+                        <a href="{{ url_for('job_seeker.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

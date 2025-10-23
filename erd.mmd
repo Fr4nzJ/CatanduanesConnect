@@ -1,0 +1,127 @@
+erDiagram
+
+    %% =====================
+    %% ENTITY DEFINITIONS
+    %% =====================
+
+    USER {
+        UUID id PK
+        string email
+        string password
+        string first_name
+        string last_name
+        string middle_name
+        string suffix
+        enum role
+        string phone
+        string address
+        list[string] skills
+        list[dict] experience
+        list[dict] education
+        string resume_path
+        string permit_path
+        string id_front_path
+        string id_back_path
+        enum verification_status
+        string google_id
+        string profile_picture
+    }
+
+    BUSINESS {
+        UUID id PK
+        string name
+        string description
+        string category
+        string location
+        float latitude
+        float longitude
+        string email
+        string phone
+        string website
+        datetime created_at
+        enum status
+    }
+
+    JOB {
+        UUID id PK
+        string title
+        string description
+        string category
+        string location
+        string salary
+        enum status
+        datetime created_at
+        UUID business_id FK
+    }
+
+    SERVICE {
+        UUID id PK
+        string title
+        string description
+        string category
+        float budget
+        string duration
+        string location
+        list[string] requirements
+        UUID client_id FK
+        enum status
+    }
+
+    NOTIFICATION {
+        UUID id PK
+        string message
+        enum type
+        enum status
+        datetime created_at
+        string link
+    }
+
+    ACTIVITY {
+        UUID id PK
+        string type
+        string action
+        UUID user_id FK
+        UUID target_id
+        string target_type
+        datetime timestamp
+        json details
+    }
+
+    REVIEW {
+        UUID id PK
+        integer rating
+        string comment
+        datetime created_at
+    }
+
+    APPLICATION {
+        UUID id PK
+        enum status
+        datetime created_at
+    }
+
+    %% =====================
+    %% RELATIONSHIPS
+    %% =====================
+
+    USER ||--o{ NOTIFICATION : "HAS_NOTIFICATION"
+    USER }o--o{ JOB : "APPLIES_TO"
+    USER ||--o{ BUSINESS : "OWNS"
+    USER }o--o{ SERVICE : "OFFERS"
+    USER }o--o{ BUSINESS : "REVIEWS"
+    USER ||--o{ ACTIVITY : "PERFORMS"
+
+    BUSINESS ||--o{ JOB : "HAS_JOB"
+    BUSINESS ||--o{ REVIEW : "HAS_REVIEW"
+    BUSINESS ||--o{ SERVICE : "OFFERS_SERVICE"
+
+    JOB ||--o{ APPLICATION : "HAS_APPLICATION"
+
+    SERVICE }o--|| USER : "REQUESTED_BY"
+    SERVICE }o--o{ USER : "HAS_OFFER"
+
+    APPLICATION }o--|| USER : "SUBMITTED_BY"
+    APPLICATION }o--|| JOB : "FOR_JOB"
+
+    REVIEW }o--|| USER : "WRITTEN_BY"
+    REVIEW }o--|| BUSINESS : "ABOUT"

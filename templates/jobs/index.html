@@ -39,7 +39,7 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Job Offers</h1>
-        {% if current_user.is_authenticated and current_user.role == 'business_owner' %}
+    {% if current_user is defined and current_user is not none and current_user.is_authenticated and current_user.role == 'business_owner' %}
         <a href="{{ url_for('jobs.create') }}" class="btn btn-primary">Post a Job</a>
         {% endif %}
     </div>

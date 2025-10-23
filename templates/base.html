@@ -44,6 +44,7 @@
     
     {% from 'macros/forms.html' import csrf, form_start, form_end, form_errors %}
     {% from 'macros/chat_bubble.html' import render_chat_bubble %}
+    {% from 'macros/user_checks.html' import is_role, has_role_in %}
     
     <style>
         /* Basic layout */
@@ -67,7 +68,6 @@
         }
 
         .card-header {
-            background-color: var(--bg-light);
             border-bottom: 1px solid rgba(0, 0, 0, 0.125);
         }
 
@@ -187,18 +187,24 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('jobs.index') }}">Job Offers</a>
+                        <a class="nav-link" href="{{ url_for('guest.view_jobs') }}">Job Offers</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('businesses.list_business_owners') }}">Businesses</a>
+                        <a class="nav-link" href="{{ url_for('guest.view_businesses') }}">Businesses</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('about') }}">About Us</a>
+                        <a class="nav-link" href="{{ url_for('guest.view_services') }}">Service Offers</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('guest.about') }}">About Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('chatbot.chat') }}">ChatBot</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
-                        {% if current_user.role in ['job_seeker', 'business_owner'] %}
+                        {% if has_role_in(['job_seeker', 'business_owner']) %}
                             <li class="nav-item">
                                 <span class="status-badge 
                                     {% if current_user.verification_status == 'verified' %}badge-success
@@ -222,36 +228,40 @@
                 </ul>
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
-                    <li class="nav-item">
-                        <a href="{{ url_for('view_notifications') }}" class="nav-link position-relative">
-                            <i class="fas fa-bell"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="unreadCount" style="display: none;">
-                                0
-                            </span>
-                        </a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            {{ current_user.first_name }} {{ current_user.last_name }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
-                            {% if current_user.role == 'admin' %}
-                            <li><a class="dropdown-item" href="{{ url_for('admin_blueprint.dashboard') }}"><i class="fas fa-cog me-2"></i>Admin Dashboard</a></li>
-                            {% else %}
-                            <li><a class="dropdown-item" href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                        </ul>
-                    </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('view_notifications') }}" class="nav-link position-relative">
+                                <i class="fas fa-bell"></i>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="unreadCount" style="display: none;">
+                                    0
+                                </span>
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                {{ current_user.first_name }} {{ current_user.last_name }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                <!-- Debug info -->
+                                <li class="dropdown-item text-muted">Role: {{ current_user.role }}</li>
+                                {% if is_role('admin') == true %}
+                                <li><a class="dropdown-item" href="{{ url_for('admin_blueprint.dashboard') }}"><i class="fas fa-cog me-2"></i>Admin Dashboard</a></li>
+                                {% endif %}
+                                {% if is_role('job_seeker') == true %}
+                                <li><a class="dropdown-item" href="{{ url_for('job_seeker_bp.dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Job Seeker Dashboard</a></li>
+                                {% endif %}
+                                {% if is_role('business_owner') == true %}
+                                <li><a class="dropdown-item" href="{{ url_for('business_owner.dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Business Owner Dashboard</a></li>
+                                {% endif %}
+                                {% if is_role('service_client') == true %}
+                                <li><a class="dropdown-item" href="{{ url_for('service_client.dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Service Client Dashboard</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                            </ul>
+                        </li>
                     {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('signup') }}">Sign Up</a>
-                    </li>
+                        <!-- No login/signup for guest-accessible pages -->
                     {% endif %}
                 </ul>
             </div>

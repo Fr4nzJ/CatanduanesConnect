@@ -38,9 +38,23 @@ from routes.job_routes import bp as jobs_bp
 from routes.service_routes import bp as services_bp
 from routes.business_routes import bp as business_bp
 from routes.businesses_routes import businesses_bp
+from routes.guest.routes import guest_bp
+from routes.job_seeker.routes import job_seeker_bp
+from routes.service_client.routes import service_client_bp
+from routes.business_owner.routes import business_owner_bp
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Configure session security
+app.config['SESSION_COOKIE_SECURE'] = not app.debug  # Only enforce HTTPS in production
+app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to session cookie
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)  # Session timeout
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Protect against CSRF
+
+# Debug mode settings
+if app.debug:
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # Allow OAuth over HTTP in development
 
 # Initialize a simple module logger early so startup code can log before
 # the full logging configuration is applied later in this file. This
@@ -48,6 +62,7 @@ app = Flask(__name__)
 # import handling) needs to emit logs.
 logger = logging.getLogger(__name__)
 if not logger.handlers:
+    logger.addHandler(logging.StreamHandler())
     handler = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
@@ -104,6 +119,10 @@ app.register_blueprint(dashboard)
 app.register_blueprint(jobs_bp)
 app.register_blueprint(services_bp)
 app.register_blueprint(businesses_bp, url_prefix="/businesses")
+app.register_blueprint(guest_bp)  # Guest routes are now top-level and public
+app.register_blueprint(job_seeker_bp, url_prefix="/job-seeker")
+app.register_blueprint(service_client_bp, url_prefix="/service-client")
+app.register_blueprint(business_owner_bp, url_prefix="/business-owner")
 
 # Custom template filters
 @app.template_filter('datetime')
@@ -143,11 +162,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[logging.StreamHandler()])
 
-# Routes
-@app.route('/about')
-def about():
-    """Render the about us page."""
-    return render_template('about.html')
+
+## Removed conflicting top-level guest routes: /about
 
 
  
@@ -829,14 +845,8 @@ def dashboard():
         flash('An unexpected error occurred. Please try again.', 'danger')
         return redirect(url_for('home'))
 
-@app.route('/jobs')
-def jobs():
-    try:
-        page = request.args.get('page', 1, type=int)
-        per_page = 10
-        
-        # Get all jobs
-        jobs = Job.get_all()
+
+## Removed conflicting top-level guest routes: /jobs
         
         # Apply filters manually
         job_type = request.args.get('job_type')
@@ -1189,33 +1199,6 @@ def add_review(business_id):
     
     return redirect(url_for('business_details', id=business_id))
 
-# Service Request Routes
-@app.route('/services')
-def services():
-    try:
-        category = request.args.get('category')
-        location = request.args.get('location')
-        status = request.args.get('status', 'open')
-        
-        services = Service.get_all(status=status)
-        
-        # Apply filters
-        if category:
-            services = [s for s in services if s.category == category]
-        if location:
-            services = [s for s in services if location.lower() in s.location.lower()]
-        
-        return render_template(
-            'services/index.html',
-            services=services,
-            categories=Service.CATEGORIES,
-            current_category=category,
-            current_location=location,
-            current_status=status
-        )
-    except Exception as e:
-        flash(f'Error loading services: {str(e)}', 'danger')
-        return redirect(url_for('home'))
 
 
 @app.route('/service/create', methods=['GET', 'POST'])
@@ -1314,15 +1297,8 @@ def accept_offer(service_id, job_seeker_id):
 
 # Removed duplicate route - this was causing the conflict
 
-@app.route('/chatbot')
-def chatbot_main():
-    """General chat interface"""
-    return render_template('chatbot/main.html')
 
-@app.route('/chatbot/ai')
-def chatbot_ai():
-    """AI-powered job assistant"""
-    return render_template('chatbot/ai.html')
+## Removed conflicting top-level guest routes: /chatbot
 
 @app.route('/chatbot/support')
 def chatbot_support():

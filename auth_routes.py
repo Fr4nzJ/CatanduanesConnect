@@ -178,29 +178,56 @@ def complete_registration():
 # --------------------------
 @auth.route("/login", methods=["GET", "POST"])
 def login():
-    if current_user.is_authenticated:
-        if current_user.role == 'admin':
-            return redirect(url_for("admin_blueprint.dashboard"))
-        return redirect(url_for("dashboard"))
+    # Handle GET request
+    if request.method == "GET":
+        return render_template("auth/login.html")
 
-    if request.method == "POST":
-        email = request.form.get("email")
-        password = request.form.get("password")
-        remember = True if request.form.get("remember") else False
+    # Handle POST request
+    email = request.form.get("email")
+    password = request.form.get("password")
+    remember = True if request.form.get("remember") else False
 
+    if not email or not password:
+        flash("Please provide both email and password.", "danger")
+        return redirect(url_for("auth.login"))
+
+    try:
         user = User.get_by_email(email)
-
         if not user or not check_password_hash(user.password, password):
             flash("Please check your login details and try again.", "danger")
             return redirect(url_for("auth.login"))
+    except Exception as e:
+        current_app.logger.error(f"Error retrieving user: {str(e)}")
+        flash("An error occurred during login. Please try again.", "danger")
+        return redirect(url_for("auth.login"))
 
+    # Ensure default attributes
+    if not hasattr(user, 'is_active'):
+        user.is_active = True
+    if not hasattr(user, 'role') or not user.role:
+        user.role = 'job_seeker'
+        try:
+            user.save()
+        except Exception as e:
+            current_app.logger.error(f"Error updating user role: {str(e)}")
+
+    # Log the user in
+    try:
         login_user(user, remember=remember)
-        next_page = request.args.get("next")
-        if user.role == 'admin':
-            return redirect(next_page or url_for("admin_blueprint.dashboard"))
-        return redirect(next_page or url_for("dashboard"))
+    except Exception as e:
+        current_app.logger.error(f"Error during login_user: {str(e)}")
+        flash("An unexpected error occurred. Please try again.", "danger")
+        return redirect(url_for("auth.login"))
 
-    return render_template("auth/login.html")
+    # Determine redirect
+    next_page = request.args.get("next")
+    if user.role == 'admin':
+        if next_page and next_page.startswith('/'):
+            return redirect(next_page)
+        return redirect(url_for("admin.dashboard"))
+
+    # Non-admin user redirect
+    return redirect(next_page or url_for("dashboard"))
 
 
 # --------------------------
@@ -210,7 +237,7 @@ def login():
 def signup():
     if current_user.is_authenticated:
         if current_user.role == 'admin':
-            return redirect(url_for("admin_blueprint.dashboard"))
+            return redirect(url_for("admin.dashboard"))
         return redirect(url_for("dashboard"))
 
     if request.method == "POST":
@@ -256,23 +283,49 @@ def google_login():
         return redirect(url_for("dashboard"))
 
     try:
+        # Clear any existing OAuth session data
+        session.pop('google_state', None)
+        
         # Validate that OAuth credentials are configured inside request context
         client_id = current_app.config.get('GOOGLE_CLIENT_ID')
         client_secret = current_app.config.get('GOOGLE_CLIENT_SECRET')
         redirect_uri = current_app.config.get('GOOGLE_REDIRECT_URI')
+        
+        # Log OAuth configuration (without secrets)
+        current_app.logger.info("OAuth Configuration Check:")
+        current_app.logger.info(f"- Client ID configured: {bool(client_id)}")
+        current_app.logger.info(f"- Client Secret configured: {bool(client_secret)}")
+        current_app.logger.info(f"- Redirect URI: {redirect_uri}")
+        
         if not client_id or not client_secret or not redirect_uri:
-            current_app.logger.error('Google OAuth credentials not configured (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET/GOOGLE_REDIRECT_URI).')
-            flash('Google OAuth is not configured on the server. Please set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI.', 'danger')
+            current_app.logger.error('Google OAuth credentials not configured.')
+            flash('Google OAuth is not configured on the server.', 'danger')
             return redirect(url_for('auth.login'))
 
+        # Initialize OAuth flow
         flow = get_google_auth_flow_from_config(client_id, client_secret, redirect_uri)
+        
+        # Generate authorization URL with state
         authorization_url, state = flow.authorization_url(
             access_type='offline',
             include_granted_scopes='true',
             prompt='consent'
         )
+        
+        # Store state in session and log (not the actual state value)
         session['google_state'] = state
+        current_app.logger.info("Generated new OAuth state and stored in session")
+        
+        # Log the authorization URL (without query parameters for security)
+        base_auth_url = authorization_url.split('?')[0]
+        current_app.logger.info(f"Redirecting to Google OAuth: {base_auth_url}")
+        
+        # Return the redirect response
         return redirect(authorization_url)
+    except Exception as e:
+        current_app.logger.error(f"Error in Google login: {str(e)}", exc_info=True)
+        flash("An error occurred during Google login. Please try again.", "danger")
+        return redirect(url_for("auth.login"))
     except Exception as e:
         import traceback
         current_app.logger.error(f"Error in Google login: {str(e)}\n{traceback.format_exc()}")
@@ -284,12 +337,29 @@ def google_login():
 def google_callback():
     if current_user.is_authenticated:
         if current_user.role == 'admin':
-            return redirect(url_for("admin_blueprint.dashboard"))
+            return redirect(url_for("admin.dashboard"))
         return redirect(url_for("dashboard"))
 
-    state = session.get("google_state")
-    if not state or state != request.args.get("state"):
-        flash("Invalid or missing state parameter. Please try signing in again.", "danger")
+    # Get state from session and request
+    stored_state = session.get("google_state")
+    received_state = request.args.get("state")
+    
+    # Log state information for debugging (don't log the actual state values)
+    current_app.logger.info(f"OAuth state check: stored_exists={bool(stored_state)}, received_exists={bool(received_state)}")
+    
+    if not stored_state:
+        current_app.logger.error("No state found in session")
+        flash("Session expired. Please try signing in again.", "danger")
+        return redirect(url_for("auth.login"))
+        
+    if not received_state:
+        current_app.logger.error("No state parameter in callback URL")
+        flash("No state parameter received. Please try signing in again.", "danger")
+        return redirect(url_for("auth.login"))
+        
+    if stored_state != received_state:
+        current_app.logger.error("State mismatch in OAuth callback")
+        flash("Invalid state parameter. Please try signing in again.", "danger")
         return redirect(url_for("auth.login"))
     try:
         # Validate that OAuth credentials are configured
@@ -312,6 +382,16 @@ def google_callback():
 
         # Exchange authorization code for tokens
         try:
+            # Log critical OAuth parameters
+            current_app.logger.info(f"OAuth Flow Debug:")
+            current_app.logger.info(f"- Debug mode: {current_app.debug}")
+            current_app.logger.info(f"- Configured redirect URI: {current_app.config.get('GOOGLE_REDIRECT_URI')}")
+            current_app.logger.info(f"- Request URL: {request.url}")
+            current_app.logger.info(f"- Authorization code present: {'code' in request.args}")
+            current_app.logger.info(f"- Code parameter: {request.args.get('code', 'MISSING')[:5]}... (truncated)")
+            current_app.logger.info(f"- Error parameter: {request.args.get('error', 'None')}")
+            current_app.logger.info(f"- Error description: {request.args.get('error_description', 'None')}")
+            
             # Some platforms (Railway, Heroku, etc.) terminate TLS at the edge
             # and send X-Forwarded-Proto: https to the backend. If ProxyFix
             # isn't causing Flask to see request.scheme as 'https', oauthlib
@@ -320,17 +400,43 @@ def google_callback():
             authorization_response = request.url
             xf_proto = (request.headers.get('X-Forwarded-Proto') or
                         request.environ.get('HTTP_X_FORWARDED_PROTO'))
-            if request.scheme != 'https' and xf_proto and xf_proto.lower() == 'https':
-                # Replace only the scheme portion once
+            # If the request was forwarded with X-Forwarded-Proto=https but Flask sees it as http,
+            # force the authorization_response to use https in non-debug mode so oauthlib doesn't raise InsecureTransportError.
+            if request.scheme != 'https' and xf_proto and xf_proto.lower() == 'https' and not current_app.debug:
                 authorization_response = authorization_response.replace('http://', 'https://', 1)
                 current_app.logger.info('Overriding authorization_response to https based on X-Forwarded-Proto')
                 current_app.logger.info('Original request.scheme=%s, X-Forwarded-Proto=%s, using authorization_response=%s', request.scheme, xf_proto, authorization_response)
 
-            # Ensure flow.redirect_uri matches the configured HTTPS redirect URI
-            if getattr(flow, 'redirect_uri', None) != current_app.config.get('GOOGLE_REDIRECT_URI'):
-                flow.redirect_uri = current_app.config.get('GOOGLE_REDIRECT_URI')
+            # Get authorization code and validate
+            code = request.args.get('code')
+            if not code:
+                current_app.logger.error("No authorization code in callback")
+                flash("Authorization code missing from callback. Please try again.", "danger")
+                return redirect(url_for("auth.login"))
 
-            flow.fetch_token(authorization_response=authorization_response)
+            # Check for error in callback
+            if request.args.get('error'):
+                error_msg = request.args.get('error_description', request.args.get('error'))
+                current_app.logger.error(f"Google OAuth error: {error_msg}")
+                flash(f"Authentication error: {error_msg}", "danger")
+                return redirect(url_for("auth.login"))
+
+            # Ensure flow matches configuration
+            flow.redirect_uri = current_app.config.get('GOOGLE_REDIRECT_URI')
+            current_app.logger.info(f"Using redirect URI: {flow.redirect_uri}")
+
+            # Log token exchange attempt
+            current_app.logger.info("Starting token exchange:")
+            current_app.logger.info(f"- Authorization code present (first 5 chars): {code[:5]}...")
+            current_app.logger.info(f"- Request scheme: {request.scheme}")
+            current_app.logger.info(f"- Full request URL: {request.url}")
+
+            # Perform token exchange
+            flow.fetch_token(
+                code=code,
+                authorization_response=request.url
+            )
+
         except Exception as fetch_exc:
             # Provide rich diagnostic logs so we can see why the token exchange failed
             try:

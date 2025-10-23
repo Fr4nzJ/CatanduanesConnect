@@ -56,7 +56,7 @@
             </div>
 
             <!-- Apply Button -->
-            {% if current_user.is_authenticated %}
+            {% if current_user is defined and current_user is not none and current_user.is_authenticated %}
                 {% if current_user.role == 'job_seeker' %}
                     {% if has_applied %}
                         <div class="alert alert-info">

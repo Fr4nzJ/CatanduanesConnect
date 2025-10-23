@@ -35,11 +35,12 @@
 </style>
 {% endblock %}
 
+{% from 'macros/user_checks.html' import is_role, has_role_in %}
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Service Needed</h1>
-        {% if current_user.is_authenticated %}
+    {% if current_user is defined and current_user is not none and current_user.is_authenticated %}
         <a href="{{ url_for('services.create') }}" class="btn btn-primary">Request a Service</a>
         {% endif %}
     </div>
@@ -95,7 +96,7 @@
 
         <!-- Services List Section -->
         <div class="col-md-9">
-            {% if current_user.role == 'client' %}
+            {% if is_role('client') %}
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>Service Requests</h2>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#postServiceModal">
@@ -148,7 +149,7 @@
                                     <br>
                                     {{ service.created_at|datetime }}
                                 </small>
-                                {% if service.status == 'open' and current_user.role == 'provider' %}
+                                {% if service.status == 'open' and is_role('provider') %}
                                 <button class="btn btn-primary btn-sm offer-service"
                                         data-service-id="{{ service.id }}">
                                     Offer Service
@@ -169,7 +170,7 @@
 </div>
 
 <!-- Post Service Modal -->
-{% if current_user.role == 'client' %}
+{% if is_role('client') %}
 <div class="modal fade" id="postServiceModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">

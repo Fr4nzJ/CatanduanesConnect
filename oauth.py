@@ -6,21 +6,35 @@ import logging
 
 
 def get_google_auth_flow_from_config(client_id: str, client_secret: str, redirect_uri: str) -> Flow:
-    """Create and return a google-auth-oauthlib Flow using explicit values.
-
-    This avoids accessing Flask's `current_app` at import time. Callers
-    should obtain config values inside a request or app context and pass
-    them in.
-    """
+    """Create and return a google-auth-oauthlib Flow using explicit values."""
+    import os
+    # Allow HTTP for local development
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+    
     config = {
         "web": {
             "client_id": client_id,
             "client_secret": client_secret,
+            "project_id": "catanduanes-connect",  # Add your project ID
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
             "redirect_uris": [redirect_uri],
+            "javascript_origins": ["http://localhost:5000"]
         }
     }
+    
+    flow = Flow.from_client_config(
+        config,
+        scopes=[
+            "openid",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile",
+        ],
+        redirect_uri=redirect_uri
+    )
+    
+    return flow
 
     return Flow.from_client_config(
         config,

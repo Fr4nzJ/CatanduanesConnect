@@ -99,14 +99,13 @@ def get_relevant_data(query: str) -> Optional[str]:
         logger.error(f"Error retrieving relevant data: {str(e)}")
         return None
 
+
 @bp.route('/chat')
-@login_required
 def chat():
     """Render the chat interface."""
     return render_template('chatbot/chat.html')
 
 @bp.route('/api/chat', methods=['POST'])
-@login_required
 def chat_api():
     """
     Handle chat API requests.

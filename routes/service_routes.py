@@ -8,33 +8,59 @@ bp = Blueprint('services', __name__)
 @bp.route('/service_needed')
 @role_required('job_seeker')
 def index():
-    driver = get_neo4j_driver()
-    with driver.session(database=DATABASE) as session:
-        # Collect categories and locations from service request nodes
-        result = session.run("MATCH (s:ServiceRequest) RETURN DISTINCT s.category as category, s.location as location")
-        categories = set()
-        locations = set()
-        for record in result:
-            if record.get('category'):
-                categories.add(record['category'])
-            if record.get('location'):
-                locations.add(record['location'])
-        categories = sorted(list(categories))
-        locations = sorted(list(locations))
+    try:
+        driver = get_neo4j_driver()
+        if not driver:
+            current_app.logger.error("Failed to get Neo4j driver")
+            return render_template('errors/500.html',
+                                error="Database connection is not available."), 500
+                                
+        with driver.session(database=DATABASE) as session:
+            # Get all available data in a single query
+            result = session.run("""
+                MATCH (s:ServiceRequest)
+                OPTIONAL MATCH (s)<-[:REQUESTED]-(u:User)
+                WITH s, u,
+                    COALESCE(s.category, 'Uncategorized') as category,
+                    COALESCE(s.location, 'Location not specified') as location
+                RETURN 
+                    collect(DISTINCT category) as categories,
+                    collect(DISTINCT location) as locations,
+                    collect({
+                        id: s.id,
+                        title: COALESCE(s.title, 'Untitled Service'),
+                        description: COALESCE(s.description, 'No description available'),
+                        category: category,
+                        location: location,
+                        budget: COALESCE(s.budget, 0.0),
+                        status: COALESCE(s.status, 'open'),
+                        created_at: COALESCE(s.created_at, datetime()),
+                        latitude: COALESCE(s.latitude, 0.0),
+                        longitude: COALESCE(s.longitude, 0.0),
+                        client: CASE WHEN u IS NOT NULL THEN {
+                            id: u.id,
+                            name: COALESCE(u.first_name, '') + ' ' + COALESCE(u.last_name, ''),
+                            email: u.email
+                        } END
+                    }) as services
+            """)
 
-        # Get all service requests with requester info and latitude/longitude
-        result = session.run("""
-            MATCH (s:ServiceRequest)
-            OPTIONAL MATCH (s)<-[:REQUESTED]-(u:User)
-            RETURN s { .*, latitude: s.latitude, longitude: s.longitude, client: u { .* } } as service
-            ORDER BY s.created_at DESC
-        """)
-        services = [dict(record['service']) for record in result]
+            record = result.single()
+            if not record:
+                return render_template('services/index.html',
+                                    services=[],
+                                    categories=[],
+                                    locations=[])
 
-    return render_template('services/index.html',
-                         services=services,
-                         categories=categories,
-                         locations=locations)
+            return render_template('services/index.html',
+                                services=record['services'],
+                                categories=record['categories'],
+                                locations=record['locations'])
+
+    except Exception as e:
+        current_app.logger.error(f"Service route error: {str(e)}")
+        return render_template('errors/500.html',
+                            error="An error occurred while loading services. Please try again later."), 500
 
 @bp.route('/service_needed/create', methods=['GET', 'POST'])
 @login_required

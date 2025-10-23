@@ -124,7 +124,7 @@
                     <i class="fas fa-briefcase feature-icon"></i>
                     <h3 class="card-title h4">Job Portal</h3>
                     <p class="card-text">Find your dream job with our comprehensive job search platform. Browse listings, apply directly, and track your applications.</p>
-                    <a href="{{ url_for('jobs') }}" class="btn btn-primary btn-custom mt-3">Find Jobs</a>
+                    <a href="{{ url_for('guest.view_jobs') }}" class="btn btn-primary btn-custom mt-3">Find Jobs</a>
                 </div>
             </div>
         </div>
@@ -134,7 +134,7 @@
                     <i class="fas fa-building feature-icon"></i>
                     <h3 class="card-title h4">Business Directory</h3>
                     <p class="card-text">Explore local businesses, read reviews, and connect with employers. Find the perfect match for your career goals.</p>
-                    <a href="{{ url_for('businesses.list_business_owners') }}" class="btn btn-primary btn-custom mt-3">Browse Businesses</a>
+                    <a href="{{ url_for('guest.view_businesses') }}" class="btn btn-primary btn-custom mt-3">Browse Businesses</a>
                 </div>
             </div>
         </div>
@@ -144,7 +144,7 @@
                     <i class="fas fa-map-marked-alt feature-icon"></i>
                     <h3 class="card-title h4">Interactive Map</h3>
                     <p class="card-text">Visualize job opportunities and business locations across Catanduanes. Find the perfect location for your next career move.</p>
-                    <a href="{{ url_for('businesses.list_business_owners') }}" class="btn btn-primary btn-custom mt-3">View Businesses Map</a>
+                    <a href="{{ url_for('guest.view_businesses_map') }}" class="btn btn-primary btn-custom mt-3">View Businesses Map</a>
                 </div>
             </div>
         </div>
@@ -160,7 +160,7 @@
                     <i class="fas fa-robot feature-icon"></i>
                     <h3 class="card-title h4">AI Assistant</h3>
                     <p class="card-text">Get personalized job recommendations and assistance from our AI-powered chatbot. Find opportunities tailored to your skills and preferences.</p>
-                    <a href="{{ url_for('chatbot_main') }}" class="btn btn-primary btn-custom mt-3">Chat Now</a>
+                    <a href="{{ url_for('chatbot.chat') }}" class="btn btn-primary btn-custom mt-3">Chat Now</a>
                 </div>
             </div>
         </div>

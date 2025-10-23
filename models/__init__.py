@@ -34,27 +34,29 @@ if _candidate.exists():
         for name in ('User', 'Business', 'Job', 'Service', 'Application', 'Notification', 'Review', 'Activity'):
             if hasattr(models_main, name):
                 globals()[name] = getattr(models_main, name)
-
-        __all__ = [n for n in ('User', 'Business', 'Job', 'Service', 'Application', 'Notification', 'Review', 'Activity') if n in globals()]
+        # Always import Statistics from .base
+        from .base import Statistics
+        globals()['Statistics'] = Statistics
+        __all__ = [n for n in ('User', 'Business', 'Job', 'Service', 'Application', 'Notification', 'Review', 'Activity', 'Statistics') if n in globals()]
     else:
         # Fallback to local base module
         from .base import (
             User, Business, Job, Service, Application, 
-            Notification, Review, Activity
+            Notification, Review, Activity, Statistics
         )
         __all__ = [
             'User', 'Business', 'Job', 'Service', 'Application',
-            'Notification', 'Review', 'Activity'
+            'Notification', 'Review', 'Activity', 'Statistics'
         ]
 else:
     # No top-level models.py found; use package-local implementations
     from .base import (
         User, Business, Job, Service, Application, 
-        Notification, Review, Activity
+        Notification, Review, Activity, Statistics
     )
     __all__ = [
         'User', 'Business', 'Job', 'Service', 'Application',
-        'Notification', 'Review', 'Activity'
+        'Notification', 'Review', 'Activity', 'Statistics'
     ]
 
 # Import and expose search method models

@@ -1,0 +1,27 @@
+{# Macros to safely check authenticated user role and status #}
+{# These guard against the case where `current_user` isn't injected into the template context. #}
+{% macro is_role(role) %}
+    {%- if current_user is defined and current_user is not none and current_user.is_authenticated -%}
+        {%- if role == 'admin' -%}
+            {{- (current_user.role == 'admin') -}}
+        {%- elif role == 'job_seeker' -%}
+            {{- (current_user.role == 'job_seeker') -}}
+        {%- elif role == 'business_owner' -%}
+            {{- (current_user.role == 'business_owner') -}}
+        {%- elif role == 'service_client' -%}
+            {{- (current_user.role == 'service_client') -}}
+        {%- else -%}
+            {{- false -}}
+        {%- endif -%}
+    {%- else -%}
+        {{- false -}}
+    {%- endif -%}
+{% endmacro %}
+
+{% macro has_role_in(roles) %}
+    {%- if current_user is defined and current_user is not none -%}
+        {{ (current_user.is_authenticated and current_user.role in roles) | tojson | safe }}
+    {%- else -%}
+        {{ false | tojson | safe }}
+    {%- endif -%}
+{% endmacro %}
